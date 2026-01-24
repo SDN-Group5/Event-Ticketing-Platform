@@ -1,9 +1,14 @@
 import "dotenv/config";
 import express, { Request, Response } from "express";
 import mongoose from "mongoose";
-import authRoutes from "./src/express/routes/auth";
+import authRoutes from "./src/routes/auth";
+import userRoutes from "./src/routes/users";
 import cookieParser from "cookie-parser";
-import healthRoutes from "./src/express/routes/health";
+import healthRoutes from "./src/routes/health";
+import adminRoutes from "./src/routes/admin";
+import organizerRoutes from "./src/routes/organizer";
+import staffRoutes from "./src/routes/staff";
+import customerRoutes from "./src/routes/customer";
 import swaggerUi from "swagger-ui-express";
 import { specs } from "./src/shared/swagger";
 import helmet from "helmet";
@@ -140,7 +145,12 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/api/auth", authRoutes);                                               // Đăng nhập, đăng xuất
+app.use("/api/users", userRoutes);                                              // Quản lý người dùng
 app.use("/api/health", healthRoutes);                                           // Kiểm tra trạng thái hệ thống
+app.use("/api/admin", adminRoutes);                                             // Admin routes (RBAC: admin only)
+app.use("/api/organizer", organizerRoutes);                                     // Organizer routes (RBAC: organizer only)
+app.use("/api/staff", staffRoutes);                                             // Staff routes (RBAC: staff only)
+app.use("/api/customer", customerRoutes);                                       // Customer routes (RBAC: customer only)
 
 //=======================================================================
 // --- TÀI LIỆU API (SWAGGER) ---

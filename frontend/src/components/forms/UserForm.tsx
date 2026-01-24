@@ -24,7 +24,8 @@ const userSchema = z.object({
     email: z.string().email("Email không hợp lệ"),
     firstName: z.string().min(1, "Tên là bắt buộc"),
     lastName: z.string().min(1, "Họ là bắt buộc"),
-    role: z.enum(["user", "hotel_owner", "receptionist", "manager"]),
+    // Event Ticketing Platform roles
+    role: z.enum(["customer", "organizer", "staff", "admin"]),
     phone: z.string().optional(),
     isActive: z.boolean().optional(),
 });
@@ -44,7 +45,7 @@ const UserForm = ({ user, onSuccess, onCancel }: UserFormProps) => {
             email: user?.email || "",
             firstName: user?.firstName || "",
             lastName: user?.lastName || "",
-            role: user?.role || "user",
+            role: (user?.role as any) || "customer",
             phone: user?.phone || "",
             isActive: user?.isActive ?? true,
         },
@@ -52,7 +53,7 @@ const UserForm = ({ user, onSuccess, onCancel }: UserFormProps) => {
 
     const updateMutation = useMutation({
         mutationFn: (data: Partial<UserFormData>) =>
-            apiClient.updateUser(user._id, data),
+            apiClient.updateUser(user._id, data as any),
         onSuccess: () => {
             showToast({
                 title: "User Updated",

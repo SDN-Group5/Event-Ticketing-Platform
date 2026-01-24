@@ -1,8 +1,8 @@
-import Footer from "../components/Footer";
-import Header from "../components/Header";
 import { useLocation } from "react-router-dom";
 // import Hero from "../components/Hero";
 // import SearchBar from "../components/SearchBar";
+import TicketVibeNavbar from "../components/common/TicketVibeNavbar";
+import TicketVibeFooter from "../components/common/TicketVibeFooter";
 
 interface Props {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ const Layout = ({ children }: Props) => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      <TicketVibeNavbar />
       {/* <Hero /> */}
       {/* <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <SearchBar />
@@ -28,7 +28,7 @@ const Layout = ({ children }: Props) => {
           {children}
         </div>
       )}
-      <Footer />
+      <TicketVibeFooter />
     </div>
   );
 };

@@ -9,10 +9,11 @@ interface UserState {
   setCurrentUser: (user: UserType | null) => void;
   clearCurrentUser: () => void;
   getUserRole: () => string | null;
-  isOwner: () => boolean;
-  isManager: () => boolean;
-  isReceptionist: () => boolean;
+  // Event Ticketing Platform roles
   isCustomer: () => boolean;
+  isOrganizer: () => boolean;
+  isStaff: () => boolean;
+  isAdmin: () => boolean;
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -30,21 +31,20 @@ export const useUserStore = create<UserState>((set, get) => ({
     return get().currentUser?.role || null;
   },
 
-  isOwner: () => {
-    return get().currentUser?.role === "hotel_owner";
-  },
-
-  isManager: () => {
-    return get().currentUser?.role === "manager";
-  },
-
-  isReceptionist: () => {
-    return get().currentUser?.role === "receptionist";
-  },
-
   isCustomer: () => {
-    const role = get().currentUser?.role;
-    return !role || role === "user";
+    return get().currentUser?.role === "customer";
+  },
+
+  isOrganizer: () => {
+    return get().currentUser?.role === "organizer";
+  },
+
+  isStaff: () => {
+    return get().currentUser?.role === "staff";
+  },
+
+  isAdmin: () => {
+    return get().currentUser?.role === "admin";
   },
 }));
 

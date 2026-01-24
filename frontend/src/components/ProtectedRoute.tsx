@@ -28,17 +28,32 @@ const ProtectedRoute = ({
   redirectTo = "/sign-in",
 }: ProtectedRouteProps) => {
   const { isLoggedIn, checkAuth } = useAuthStore();
-  const { getUserRole, isCustomer } = useUserStore();
+  const { getUserRole, setCurrentUser } = useUserStore();
 
   // ✅ FIX: Chỉ validate token khi có token trong localStorage (tránh lỗi 401 không cần thiết)
   const token = localStorage.getItem("session_id");
-  const { isLoading } = useQuery({
+  const { isLoading: isValidating } = useQuery({
     queryKey: ["validateToken"],
     queryFn: apiClient.validateToken,
     retry: false,
     refetchOnWindowFocus: false,
     enabled: !!token, // ✅ CHỈ chạy khi có token
   });
+
+  // Fetch user info nếu chưa có
+  const { isLoading: isLoadingUser } = useQuery({
+    queryKey: ["fetchCurrentUser"],
+    queryFn: async () => {
+      const user = await apiClient.fetchCurrentUser();
+      setCurrentUser(user);
+      return user;
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    enabled: !!token && isLoggedIn, // Chỉ fetch khi đã login
+  });
+
+  const isLoading = isValidating || isLoadingUser;
 
   // Check auth từ localStorage nếu query chưa chạy
   const hasAuth = isLoggedIn || checkAuth();
@@ -57,23 +72,14 @@ const ProtectedRoute = ({
   if (allowedRoles && allowedRoles.length > 0) {
     const userRole = getUserRole();
 
-    // Nếu chưa có user role (chưa fetch user info)
-    if (!userRole) {
-      // Nếu là customer và không có role, có thể là chưa fetch user
-      // Cho phép truy cập nếu không có role requirement cụ thể
-      if (isCustomer() && !allowedRoles.includes("customer")) {
-        return <Navigate to="/" replace />;
-      }
-    }
-
     // Kiểm tra role có trong danh sách allowed không
     if (userRole && !allowedRoles.includes(userRole)) {
       // Redirect về dashboard theo role hoặc home
       const roleRedirects: Record<string, string> = {
-        hotel_owner: "/dashboard/owner",
-        manager: "/dashboard/manager",
-        receptionist: "/dashboard/receptionist",
         customer: "/",
+        organizer: "/dashboard/organizer",
+        staff: "/dashboard/staff",
+        admin: "/dashboard/admin",
       };
 
       const redirectPath = roleRedirects[userRole] || "/";

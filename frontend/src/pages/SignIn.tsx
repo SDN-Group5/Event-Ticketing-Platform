@@ -1,26 +1,12 @@
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod"; // ✅ THÊM: Zod resolver cho React Hook Form
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMutationWithLoading } from "../hooks/useLoadingHooks";
 import * as apiClient from "../api-client";
 import useAppContext from "../hooks/useAppContext";
 import { useUserStore } from "../stores/userStore";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, LogIn, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
-import { Label } from "../components/ui/label";
-import { Separator } from "../components/ui/separator";
-import { Badge } from "../components/ui/badge";
-// ✅ THÊM: Import Zod schema
 import { signInSchema, type SignInFormData } from "../schemas/auth.schemas";
 
 const SignIn = () => {
@@ -65,12 +51,12 @@ const SignIn = () => {
         // Lưu user info vào Zustand store
         setCurrentUser(currentUser);
 
-        // Redirect theo role
+        // Redirect theo role (Event Ticketing Platform)
         const roleRedirects: Record<string, string> = {
-          hotel_owner: "/dashboard/owner",
-          manager: "/dashboard/manager",
-          receptionist: "/dashboard/receptionist",
           customer: location.state?.from?.pathname || "/",
+          organizer: "/dashboard/organizer",
+          staff: "/dashboard/staff",
+          admin: "/dashboard/admin",
         };
 
         const userRole = currentUser.role || "customer";
@@ -99,187 +85,182 @@ const SignIn = () => {
   });
 
   return (
-    <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-xl w-full space-y-8">
-        {/* Modern Card Container */}
-        <Card className="relative overflow-hidden border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
-          {/* Decorative Background Elements */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-500 to-primary-600"></div>
-          <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary-100 rounded-full opacity-50"></div>
-          <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-primary-200 rounded-full opacity-30"></div>
-
+    <main className="flex-1 flex items-center justify-center p-6 concert-bg">
+      <div className="w-full max-w-[480px] neon-border-glow">
+        <div className="glass-card rounded-3xl p-8 md:p-12 relative overflow-hidden">
           {/* Header */}
-          <CardHeader className="text-center relative z-10 pb-8">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-              <LogIn className="w-8 h-8 text-white" />
-            </div>
-            <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-white mb-3">
               Welcome Back
-            </CardTitle>
-            <CardDescription className="text-gray-600">
-              Sign in to your account to continue
-            </CardDescription>
+            </h1>
+            <p className="text-slate-400">
+              Please enter your details to sign in
+            </p>
+          </div>
 
-            {/* Development Notice */}
-            {!import.meta.env.PROD && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  <strong>Development Note:</strong> Authentication state
-                  persists between sessions. If you're seeing a logged-in state
-                  unexpectedly, use the "Clear Auth" button in the header.
-                </p>
-              </div>
-            )}
-          </CardHeader>
-
-          {/* Form */}
-          <CardContent className="space-y-6">
-            <form className="space-y-6" onSubmit={onSubmit}>
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="email"
-                  className="text-sm font-semibold text-gray-700"
-                >
-                  Email Address
-                </Label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                    <Mail className="h-6 w-6 text-gray-600" />
-                  </div>
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    className="pl-10 pr-3 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm"
-                    placeholder="Enter your email"
-                    {...register("email", { required: "Email is required" })}
-                  />
+          <form className="space-y-6" onSubmit={onSubmit}>
+            {/* Email */}
+            <div className="space-y-2">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-slate-300 ml-1"
+              >
+                Email Address
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-primary transition-colors">
+                  <span className="material-symbols-outlined text-xl">
+                    mail
+                  </span>
                 </div>
-                {errors.email && (
-                  <div className="flex items-center mt-1">
-                    <Badge
-                      variant="outline"
-                      className="text-red-500 border-red-200 bg-red-50"
-                    >
-                      <Sparkles className="w-4 h-4 mr-1" />
-                      {errors.email.message}
-                    </Badge>
-                  </div>
-                )}
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  className="block w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                  placeholder="name@example.com"
+                  {...register("email")}
+                />
               </div>
+              {errors.email && (
+                <p className="text-xs text-red-400 mt-1 ml-1">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
 
-              {/* Password Field */}
-              <div className="space-y-2">
-                <Label
+            {/* Password */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between ml-1">
+                <label
                   htmlFor="password"
-                  className="text-sm font-semibold text-gray-700"
+                  className="text-sm font-medium text-slate-300"
                 >
                   Password
-                </Label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                    <Lock className="h-6 w-6 text-gray-600" />
-                  </div>
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    className="pl-10 pr-12 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm"
-                    placeholder="Enter your password"
-                    {...register("password", {
-                      required: "Password is required",
-                      minLength: {
-                        value: 6,
-                        message: "Password must be at least 6 characters",
-                      },
-                    })}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute inset-y-0 right-0 pr-3 h-full"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </Button>
-                </div>
-                {errors.password && (
-                  <div className="flex items-center mt-1">
-                    <Badge
-                      variant="outline"
-                      className="text-red-500 border-red-200 bg-red-50"
-                    >
-                      <Sparkles className="w-4 h-4 mr-1" />
-                      {errors.password.message}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 px-4 rounded-md text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-              >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Signing in...
-                  </div>
-                ) : (
-                  <div className="flex items-center">
-                    <LogIn className="w-5 h-5 mr-2" />
-                    Sign In
-                  </div>
-                )}
-              </Button>
-
-              {/* Divider */}
-              <div className="relative my-6">
-                <Separator className="bg-gray-300" />
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">or</span>
-                </div>
-              </div>
-
-              {/* Registration Link */}
-              <div className="text-center">
-                <p className="text-sm text-gray-600">
-                  Don't have an account?{" "}
+                </label>
+                <a
+                  href="#"
+                  className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+                >
                   <Link
-                    to="/register"
-                    className="font-semibold text-primary-600 hover:text-primary-700 transition-colors duration-200 underline decoration-2 underline-offset-2"
+                    to="/forgot-password"
+                    className="text-primary hover:text-primary/80 font-semibold transition-colors"
                   >
-                    Create one here
+                    Forgot Password?
                   </Link>
-                </p>
+                </a>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-primary transition-colors">
+                  <span className="material-symbols-outlined text-xl">
+                    lock
+                  </span>
+                </div>
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="block w-full pl-11 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                  placeholder="••••••••"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-white transition-colors"
+                >
+                  <span className="material-symbols-outlined text-xl">
+                    {showPassword ? "visibility_off" : "visibility"}
+                  </span>
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-xs text-red-400 mt-1 ml-1">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
 
-        {/* Additional Info */}
-        <div className="text-center">
-          <p className="text-xs text-gray-500">
-            By signing in, you agree to our{" "}
-            <a href="#" className="text-primary-600 hover:underline">
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a href="#" className="text-primary-600 hover:underline">
-              Privacy Policy
-            </a>
-          </p>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-4 text-white font-bold rounded-xl transition-all text-lg disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center
+              bg-gradient-to-r from-[#8655f6] via-[#a855f7] to-[#d946ef]
+              shadow-[0_18px_45px_-18px_rgba(134,85,246,0.65)]
+              hover:shadow-[0_22px_55px_-18px_rgba(217,70,239,0.55)]
+              hover:-translate-y-0.5 active:scale-[0.98]"
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-5 w-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  Signing in...
+                </span>
+              ) : (
+                "Login"
+              )}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative my-10">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-[#1e1a29]/70 backdrop-blur px-4 text-slate-400 tracking-widest rounded-full border border-white/10">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          {/* Social buttons */}
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              className="flex items-center justify-center gap-3 px-4 py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors group"
+            >
+              <img
+                alt="Google"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLcouL7qZ7mkawm7hPgHfIdzVBiEw6H_hrOgRZaZ4PHyaBTvJL5pFIBfbdVc6ZmLtdauwdRzoarkostlw-geXwZDStz4myxiqbVG40-CBOF14AKWCctxkK3np74Y4RNeqqB7Chr8qkmksh79hzTmIhl6fi9k3EESE3eSnhWdgCMzdIr53eAzHxaB6lujVM2JD_JYLspJDOnUSpCiwB2EK5tRxoh_lyPWDA0QcIBL_a7RwKvsr8unJn1GxUG6gFzFRU6K-E5cfwhdPl"
+                className="w-5 h-5"
+              />
+              <span className="text-sm font-semibold text-slate-200">
+                Google
+              </span>
+            </button>
+            <button
+              type="button"
+              className="flex items-center justify-center gap-3 px-4 py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors group"
+            >
+              <svg
+                className="w-5 h-5 fill-white"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701z" />
+              </svg>
+              <span className="text-sm font-semibold text-slate-200">
+                Apple
+              </span>
+            </button>
+          </div>
+
+          {/* Footer inside card */}
+          <div className="mt-10 text-center">
+            <p className="text-slate-400 text-sm">
+              Don't have an account?{" "}
+              <Link
+                to="/register"
+                className="text-primary hover:text-primary/80 font-bold transition-colors"
+              >
+                Sign up
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 

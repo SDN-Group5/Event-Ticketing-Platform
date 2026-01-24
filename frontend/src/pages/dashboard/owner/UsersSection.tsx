@@ -450,16 +450,16 @@ const UsersSection = () => {
                                         <td className="px-6 py-4">{user.email}</td>
                                         <td className="px-6 py-4">
                                             <Badge
-                                                className={`border-2 border-black font-bold ${user.role === "hotel_owner"
+                                                className={`border-2 border-black font-bold ${(user.role as any) === "admin"
                                                     ? "bg-yellow-100 text-yellow-800"
-                                                    : user.role === "manager"
-                                                        ? "bg-blue-100 text-blue-800"
-                                                        : user.role === "receptionist"
-                                                            ? "bg-green-100 text-green-800"
-                                                            : "bg-gray-100 text-gray-800"
+                                                    : (user.role as any) === "organizer"
+                                                      ? "bg-blue-100 text-blue-800"
+                                                      : (user.role as any) === "staff"
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-gray-100 text-gray-800"
                                                     }`}
                                             >
-                                                {user.role || "user"}
+                                                {user.role || "customer"}
                                             </Badge>
                                         </td>
                                         <td className="px-6 py-4">{user.phone || "N/A"}</td>

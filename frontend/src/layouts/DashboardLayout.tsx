@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import Sidebar from "../components/dashboard/Sidebar";
-import Header from "../components/Header";
+import TicketVibeNavbar from "../components/common/TicketVibeNavbar";
 
 /**
  * DashboardLayout Component
@@ -15,7 +15,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <Header />
+      <TicketVibeNavbar />
 
       {/* Main Layout */}
       <div className="flex pt-16 lg:pt-0">

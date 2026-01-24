@@ -12,8 +12,8 @@ const userSchema = new mongoose.Schema(
     // New fields for better user management
     role: {
       type: String,
-      enum: ["user", "admin", "hotel_owner", "receptionist", "manager"], // ✅ THÊM: "receptionist", "manager"
-      default: "user",
+      enum: ["customer", "organizer", "staff", "admin"], // Event Ticketing Platform roles
+      default: "customer",
     },
     phone: { type: String },
     address: {
@@ -36,7 +36,13 @@ const userSchema = new mongoose.Schema(
     totalSpent: { type: Number, default: 0 },
     lastLogin: { type: Date },
     isActive: { type: Boolean, default: true },
+    // Email verification (OTP)
     emailVerified: { type: Boolean, default: false },
+    emailVerificationCode: { type: String, default: null },
+    emailVerificationExpires: { type: Date, default: null },
+    // Password reset (OTP)
+    passwordResetCode: { type: String, default: null },
+    passwordResetExpires: { type: Date, default: null },
     // Audit fields
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
@@ -53,6 +59,8 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-const User = mongoose.model<UserType>("User", userSchema);
+// Mongoose tự động chuyển "User" → collection "users" (số nhiều)
+// Nhưng để rõ ràng, mình chỉ định collection name là "users"
+const User = mongoose.model<UserType>("User", userSchema, "users");
 
 export default User;

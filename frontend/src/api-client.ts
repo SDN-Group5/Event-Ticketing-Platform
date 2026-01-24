@@ -92,7 +92,43 @@ export const activateUser = async (userId: string) => {
 };
 
 export const register = async (formData: RegisterFormData) => {
-  const response = await axiosInstance.post("/api/users/register", formData);
+  const response = await axiosInstance.post("/api/auth/register", formData);
+  return response.data;
+};
+
+export const verifyEmail = async (payload: { email: string; code: string }) => {
+  const response = await axiosInstance.post("/api/auth/verify-email", payload);
+  return response.data;
+};
+
+export const resendVerification = async (payload: { email: string }) => {
+  const response = await axiosInstance.post(
+    "/api/auth/resend-verification",
+    payload
+  );
+  return response.data;
+};
+
+// ============================================
+// Forget Password APIs
+// ============================================
+
+export const forgotPassword = async (payload: { email: string }) => {
+  const response = await axiosInstance.post("/api/auth/forgot-password", payload);
+  return response.data;
+};
+
+export const verifyResetCode = async (payload: { email: string; code: string }) => {
+  const response = await axiosInstance.post("/api/auth/verify-reset-code", payload);
+  return response.data;
+};
+
+export const resetPassword = async (payload: {
+  email: string;
+  code: string;
+  newPassword: string;
+}) => {
+  const response = await axiosInstance.post("/api/auth/reset-password", payload);
   return response.data;
 };
 

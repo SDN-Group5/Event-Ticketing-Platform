@@ -7,7 +7,7 @@ export type UserType = {
   password: string; // Password đã hash
   firstName: string;
   lastName: string;
-  role?: "user" | "admin" | "hotel_owner" | "receptionist" | "manager";
+  role?: "customer" | "organizer" | "staff" | "admin";
   phone?: string;
   
   address?: {
@@ -33,6 +33,10 @@ export type UserType = {
   companyId?: string; // ID công ty (cho employees: manager, receptionist, hotel_owner)
   isActive?: boolean;
   emailVerified?: boolean;
+  emailVerificationCode?: string | null;
+  emailVerificationExpires?: Date | null;
+  passwordResetCode?: string | null;
+  passwordResetExpires?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 };

@@ -1,5 +1,5 @@
-import Footer from "../components/Footer";
-import Header from "../components/Header";
+import TicketVibeNavbar from "../components/common/TicketVibeNavbar";
+import TicketVibeFooter from "../components/common/TicketVibeFooter";
 
 interface Props {
   children: React.ReactNode;
@@ -7,10 +7,10 @@ interface Props {
 
 const AuthLayout = ({ children }: Props) => {
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
+    <div className="flex flex-col min-h-screen w-full bg-background-light dark:bg-background-dark text-white">
+      <TicketVibeNavbar />
       <div className="flex-1">{children}</div>
-      <Footer />
+      <TicketVibeFooter />
     </div>
   );
 };

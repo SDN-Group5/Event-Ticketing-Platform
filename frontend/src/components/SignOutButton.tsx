@@ -4,6 +4,7 @@ import * as apiClient from "../api-client";
 import useAppContext from "../hooks/useAppContext";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Trash2, RefreshCw, ChevronDown } from "lucide-react";
+import { Button } from "./ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,44 +84,44 @@ const SignOutButton = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          className="flex items-center px-6 py-2 bg-white border-4 border-black text-black font-black text-sm uppercase transition-all duration-150 hover:translate-x-1 hover:translate-y-1 active:translate-x-0 active:translate-y-0"
-          style={{ boxShadow: "4px 4px 0px 0px #000" }}
+        <Button
+          type="button"
+          variant="outline"
+          className="border-white/10 bg-white/5 text-white hover:bg-white/10"
         >
-          <LogOut className="w-4 h-4 mr-2" strokeWidth={3} />
+          <LogOut className="w-4 h-4 mr-2" />
           Sign Out
-          <ChevronDown className="w-4 h-4 ml-1" strokeWidth={3} />
-        </button>
+          <ChevronDown className="w-4 h-4 ml-1" />
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-56 bg-white border-4 border-black"
+        className="w-56 bg-[#1e1a29] border border-white/10 text-white"
         align="end"
-        style={{ boxShadow: "6px 6px 0px 0px #000" }}
       >
         <DropdownMenuItem
           onClick={handleSignOut}
-          className="text-black font-black uppercase focus:bg-yellow-100 focus:text-black"
+          className="text-white focus:bg-white/10 focus:text-white"
         >
-          <LogOut className="w-4 h-4 mr-2" strokeWidth={3} />
+          <LogOut className="w-4 h-4 mr-2" />
           Sign Out
         </DropdownMenuItem>
 
         {/* Development utilities - only show in development */}
         {!import.meta.env.PROD && (
           <>
-            <DropdownMenuSeparator className="bg-black" />
+            <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuItem
               onClick={handleClearAuth}
-              className="text-red-600 font-black uppercase focus:bg-yellow-100"
+              className="text-red-400 focus:bg-white/10"
             >
-              <Trash2 className="w-4 h-4 mr-2" strokeWidth={3} />
+              <Trash2 className="w-4 h-4 mr-2" />
               Clear Auth State
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={clearAllStorage}
-              className="text-orange-600 font-black uppercase focus:bg-yellow-100"
+              className="text-orange-300 focus:bg-white/10"
             >
-              <RefreshCw className="w-4 h-4 mr-2" strokeWidth={3} />
+              <RefreshCw className="w-4 h-4 mr-2" />
               Clear All Storage
             </DropdownMenuItem>
           </>

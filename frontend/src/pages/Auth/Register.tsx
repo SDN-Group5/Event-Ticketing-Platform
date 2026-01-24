@@ -1,11 +1,11 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutationWithLoading } from "../hooks/useLoadingHooks";
-import * as apiClient from "../api-client";
-import useAppContext from "../hooks/useAppContext";
+import { useMutationWithLoading } from "../../hooks/useLoadingHooks";
+import * as apiClient from "../../api-client";
+import useAppContext from "../../hooks/useAppContext";
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
-import { registerSchema, type RegisterFormData } from "../schemas/auth.schemas";
+import { registerSchema, type RegisterFormData } from "../../schemas/auth.schemas";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -24,40 +24,18 @@ const Register = () => {
 
   const mutation = useMutationWithLoading(apiClient.register, {
     onSuccess: async (data) => {
-      console.log("📧 Register response:", data); // Debug log
-
-      // Backend trả về: { message, requiresEmailVerification, email }
-      const email = data?.email || "";
-
+      showToast({
+        title: "Registration Successful",
+        description:
+          "Your account has been created. Please verify your email address to continue.",
+        type: "SUCCESS",
+      });
+      const email = data?.email || data?.user?.email || "";
       if (email) {
-        console.log(`🔀 Redirecting to verify-email with email: ${email}`);
-        // Delay một chút để đảm bảo loading modal đã đóng và React đã render xong
-        setTimeout(() => {
-          try {
-            navigate(`/verify-email?email=${encodeURIComponent(email)}`, { replace: true });
-            console.log(`✅ Navigation triggered to /verify-email`);
-          } catch (error) {
-            console.error("❌ Navigation error:", error);
-            // Fallback: dùng window.location nếu navigate() fail
-            window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
-          }
-        }, 300);
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
       } else {
-        console.warn("⚠️ No email in response, redirecting to sign-in");
-        setTimeout(() => {
-          navigate("/sign-in", { replace: true });
-        }, 300);
+        navigate("/sign-in");
       }
-
-      // Show toast sau khi đã navigate (để không chặn navigation)
-      setTimeout(() => {
-        showToast({
-          title: "Registration Successful",
-          description:
-            "Your account has been created. Please verify your email address to continue.",
-          type: "SUCCESS",
-        });
-      }, 200);
     },
     onError: (error: Error) => {
       showToast({

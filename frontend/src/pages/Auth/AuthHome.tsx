@@ -1,7 +1,7 @@
-import { Button } from "../components/ui/button";
-import useAppContext from "../hooks/useAppContext";
-import * as authApi from "../services/auth.api";
-import { useMutationWithLoading } from "../hooks/useLoadingHooks";
+import { Button } from "../../components/ui/button";
+import useAppContext from "../../hooks/useAppContext";
+import * as apiClient from "../../api-client";
+import { useMutationWithLoading } from "../../hooks/useLoadingHooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -10,7 +10,7 @@ export default function AuthHome() {
   const { isLoggedIn, showToast } = useAppContext();
   const queryClient = useQueryClient();
 
-  const signOutMutation = useMutationWithLoading(authApi.signOut, {
+  const signOutMutation = useMutationWithLoading(apiClient.signOut, {
     onSuccess: async () => {
       showToast({
         title: "Đã đăng xuất",
@@ -53,7 +53,7 @@ export default function AuthHome() {
 
               <Button
                 className="w-full"
-                onClick={() => signOutMutation.mutate()}
+                onClick={() => signOutMutation.mutate(undefined as any)}
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Đăng xuất

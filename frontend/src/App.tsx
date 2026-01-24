@@ -5,31 +5,34 @@ import {
   Navigate,                // Dùng để chuyển hướng người dùng (Redirect)
 } from "react-router-dom";
 import AuthLayout from "./layouts/AuthLayout"; // Giao diện riêng cho các trang đăng nhập/đăng ký
+import PublicLayout from "./layouts/PublicLayout";
 import ScrollToTop from "./components/ScrollToTop"; // Tự động cuộn lên đầu trang khi chuyển trang
 import { Toaster } from "./components/ui/toaster"; // Hiển thị các thông báo (toast) cho người dùng
 import SignIn from "./pages/SignIn";
-import useAppContext from "./hooks/useAppContext"; // Hook lấy trạng thái ứng dụng (ví dụ: đã đăng nhập chưa)
-import AuthHome from "./pages/AuthHome";
+import Register from "./pages/Register";
+import VerifyEmail from "./pages/VerifyEmail";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import LandingPage from "./pages/LandingPage";
 
 const App = () => {
-  // Lấy giá trị isLoggedIn từ Context để kiểm tra người dùng đã đăng nhập hay chưa
-  const { isLoggedIn } = useAppContext();
-
   return (
     <Router>
       {/* Luôn cuộn lên đầu trang mỗi khi route thay đổi */}
       <ScrollToTop />
 
       <Routes>
-        {/* --- AUTH ONLY --- */}
+        {/* --- PUBLIC --- */}
         <Route
           path="/"
           element={
-            <AuthLayout>
-              <AuthHome />
-            </AuthLayout>
+            <PublicLayout>
+              <LandingPage />
+            </PublicLayout>
           }
         />
+
+        {/* --- AUTH --- */}
         <Route
           path="/sign-in"
           element={
@@ -38,9 +41,38 @@ const App = () => {
             </AuthLayout>
           }
         />
-
-        {/* Nếu chưa login mà vào / → redirect sang /sign-in */}
-        {!isLoggedIn && <Route path="*" element={<Navigate to="/sign-in" />} />}
+        <Route
+          path="/register"
+          element={
+            <AuthLayout>
+              <Register />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/verify-email"
+          element={
+            <AuthLayout>
+              <VerifyEmail />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <AuthLayout>
+              <ForgotPassword />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <AuthLayout>
+              <ResetPassword />
+            </AuthLayout>
+          }
+        />
 
         {/* --- XỬ LÝ KHI KHÔNG TÌM THẤY TRANG --- 
             Nếu URL không khớp với bất kỳ route nào ở trên, chuyển hướng về trang chủ */}

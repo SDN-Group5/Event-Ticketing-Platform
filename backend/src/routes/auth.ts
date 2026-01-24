@@ -120,6 +120,11 @@ router.post(
 router.post("/logout", authController.logout);
 
 // ============================================
+// GET /api/auth/validate-token
+// Validate JWT token and return user info
+router.get("/validate-token", verifyToken, authController.validateToken);
+
+// ============================================
 // POST /api/auth/forgot-password
 router.post(
   "/forgot-password",

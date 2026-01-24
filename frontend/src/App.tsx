@@ -14,6 +14,9 @@ import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import LandingPage from "./pages/LandingPage";
+import Profile from "./pages/Profile";
+import ProfileSettings from "./pages/ProfileSettings";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
   return (
@@ -71,6 +74,24 @@ const App = () => {
             <AuthLayout>
               <ResetPassword />
             </AuthLayout>
+          }
+        />
+
+        {/* --- PROFILE (Protected) --- */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/settings"
+          element={
+            <ProtectedRoute>
+              <ProfileSettings />
+            </ProtectedRoute>
           }
         />
 

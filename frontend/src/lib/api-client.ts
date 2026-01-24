@@ -56,6 +56,12 @@ axiosInstance.interceptors.request.use((config: CustomAxiosRequestConfig) => {
   //   }
   // }
 
+  // ✅ QUAN TRỌNG: Nếu là FormData, không set Content-Type
+  // Browser sẽ tự động set Content-Type với boundary
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
+
   // Khởi tạo retry count = 0
   config.metadata = { retryCount: 0 };
 

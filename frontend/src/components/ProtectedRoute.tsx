@@ -32,15 +32,17 @@ const ProtectedRoute = ({
 
   // ✅ FIX: Chỉ validate token khi có token trong localStorage (tránh lỗi 401 không cần thiết)
   const token = localStorage.getItem("session_id");
-  const { isLoading: isValidating } = useQuery({
+  const { isLoading: isValidating, isError: isTokenError } = useQuery({
     queryKey: ["validateToken"],
     queryFn: apiClient.validateToken,
     retry: false,
     refetchOnWindowFocus: false,
+    refetchOnMount: false, // Không refetch khi component mount lại
+    staleTime: 5 * 60 * 1000, // Cache 5 phút
     enabled: !!token, // ✅ CHỈ chạy khi có token
   });
 
-  // Fetch user info nếu chưa có
+  // Fetch user info nếu chưa có (chỉ khi token valid)
   const { isLoading: isLoadingUser } = useQuery({
     queryKey: ["fetchCurrentUser"],
     queryFn: async () => {
@@ -50,7 +52,8 @@ const ProtectedRoute = ({
     },
     retry: false,
     refetchOnWindowFocus: false,
-    enabled: !!token && isLoggedIn, // Chỉ fetch khi đã login
+    refetchOnMount: false,
+    enabled: !!token && !isTokenError && !isValidating, // Chỉ fetch khi token valid và không đang validate
   });
 
   const isLoading = isValidating || isLoadingUser;

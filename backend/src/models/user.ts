@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema(
       default: "customer",
     },
     phone: { type: String },
+    avatar: { type: String, default: null }, // Cloudinary URL
     address: {
       street: String,
       city: String,

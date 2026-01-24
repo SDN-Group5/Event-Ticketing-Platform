@@ -24,6 +24,82 @@ router.get("/me", verifyToken, userController.getCurrentUser);
 
 /**
  * @swagger
+ * /api/users/me/avatar:
+ *   patch:
+ *     summary: Upload user avatar
+ *     description: Upload avatar image to Cloudinary and update user profile. Any authenticated user can access.
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - avatar
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Avatar uploaded successfully
+ *       401:
+ *         description: Unauthorized
+ *       400:
+ *         description: No image file provided
+ */
+// ✅ QUAN TRỌNG: Route /me/avatar phải đặt TRƯỚC route /me để tránh conflict
+router.patch(
+  "/me/avatar",
+  verifyToken,
+  (req, res, next) => {
+    userController.uploadAvatarMiddleware(req, res, (err) => {
+      if (err) {
+        return userController.handleMulterError(err, req, res, next);
+      }
+      next();
+    });
+  },
+  userController.uploadAvatar
+);
+
+/**
+ * @swagger
+ * /api/users/me:
+ *   patch:
+ *     summary: Update current user profile
+ *     description: User can update their own profile information. Any authenticated user can access.
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.patch("/me", verifyToken, userController.updateCurrentUser);
+
+/**
+ * @swagger
  * /api/users:
  *   get:
  *     summary: Get all users (Admin only)

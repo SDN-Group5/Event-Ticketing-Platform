@@ -9,7 +9,7 @@ export type UserType = {
   lastName: string;
   role?: "customer" | "organizer" | "staff" | "admin";
   phone?: string;
-  
+  avatar?: string | null; // Cloudinary URL
   address?: {
     street: string;
     city: string;

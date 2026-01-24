@@ -16,6 +16,7 @@ import morgan from "morgan";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import cors, { CorsOptions } from "cors";
+import { v2 as cloudinary } from "cloudinary";
 
 //=======================================================================
 // Kiểm tra biến môi trường (ENV)
@@ -37,6 +38,18 @@ console.log("✅ Tất cả biến môi trường đã sẵn sàng");
 console.log(`🌍 Môi trường: ${process.env.NODE_ENV || "development"}`);
 console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || "Not set"}`);
 
+//=======================================================================
+// -- CẤU HÌNH CLOUDINARY --
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+  console.log("✅ Cloudinary đã được cấu hình");
+} else {
+  console.log("⚠️  Cloudinary chưa được cấu hình (CLOUDINARY_* env vars)");
+}
 
 //=======================================================================
 // -- KẾT NỐI CƠ SỞ DỮ LIỆU MONGODB --
@@ -90,7 +103,7 @@ const generalLimiter = rateLimit({
     legacyHeaders: false,
 })
 
-
+  
 
 
   app.use("/api/", generalLimiter);
@@ -121,9 +134,17 @@ const corsOptions: CorsOptions = {
     },
     credentials: true,  // Cho phép gửi cookie/token
     optionsSuccessStatus: 200,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-    
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ✅ Thêm PATCH
+    allowedHeaders: [
+        "Content-Type", 
+        "Authorization", 
+        "X-Requested-With", 
+        "Accept",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers"
+    ], // ✅ Thêm các headers cần thiết cho CORS preflight
+    exposedHeaders: ["Content-Range", "X-Content-Range"], // Headers mà client có thể đọc
 };
 
 app.use(cors(corsOptions));

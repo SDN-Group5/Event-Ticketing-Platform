@@ -1,8 +1,21 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 
 export const PaymentSuccessPage: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Get confirmed order data
+    const orderData = location.state;
+
+    // Use effect to handle missing state gracefully if need be, 
+    // but for now we'll just return Navigate in render if missing.
+    if (!orderData) {
+        return <Navigate to="/" replace />;
+    }
+
+    const { event, zone, ticketCount, orderId } = orderData;
+    const seats = orderData.seats || [];
 
     return (
         <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -29,12 +42,16 @@ export const PaymentSuccessPage: React.FC = () => {
 
                 <div
                     className="h-48 bg-cover bg-center relative"
-                    style={{ backgroundImage: 'url(https://lh3.googleusercontent.com/aida-public/AB6AXuDi6Oy71QOrOhpI-eEIZzHCZiMS_yadvN2UnsBAJsc0c9onFTs33e__ir4YWKaYR6eM-SDx4P9LmTzvTfsjNZ9DeRiTs97ZsBA6xSbHFhbu__IpgbqKDQ5AoKI6LL13YZQO-uKaKWYpRDe1Z2yfGY4HZU3DTsc68i27BNEhYnNebUw1ty7S9Qx6n1LG7aO2ruJdhaWzl8zC0KLUYm2ILm8ZxUWXNhcq72VRo79cKc3NBeZSrp43nmH9skeO7byVQjk2AtdTux1kRS8y)' }}
+                    style={{ backgroundImage: `url(${event.image})` }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1e293b] to-transparent" />
                     <div className="absolute bottom-4 left-6">
-                        <span className="px-3 py-1 bg-[#8655f6] text-white text-xs font-bold rounded-full">VIP ACCESS</span>
-                        <h2 className="text-2xl font-bold text-white mt-2">Neon Nights 2024</h2>
+                        <span className="px-3 py-1 bg-[#8655f6] text-white text-xs font-bold rounded-full uppercase">{zone.name} ACCESS</span>
+                        <h2 className="text-2xl font-bold text-white mt-2 mb-1">{event.title}</h2>
+                        <p className="text-xs text-gray-300 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[10px]">location_on</span>
+                            {event.location}
+                        </p>
                     </div>
                 </div>
 
@@ -42,34 +59,41 @@ export const PaymentSuccessPage: React.FC = () => {
                     <div className="flex justify-between">
                         <div>
                             <p className="text-xs text-gray-400 uppercase">Date</p>
-                            <p className="font-semibold">Sep 24, 2024</p>
+                            <p className="font-semibold">{new Date(event.date).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right">
                             <p className="text-xs text-gray-400 uppercase">Time</p>
-                            <p className="font-semibold">8:00 PM EST</p>
+                            <p className="font-semibold">{new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                     </div>
                     <div className="flex justify-between">
                         <div>
-                            <p className="text-xs text-gray-400 uppercase">Venue</p>
-                            <p className="font-semibold">Grand Arena, NY</p>
+                            <p className="text-xs text-gray-400 uppercase">Tickets</p>
+                            <p className="font-semibold">{ticketCount} × {zone.type}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-400 uppercase">Zone</p>
-                            <p className="font-semibold">Zone A (VIP)</p>
+                            <p className="text-xs text-gray-400 uppercase">Total Paid</p>
+                            <p className="font-semibold text-[#8655f6]">${orderData.total + 20}</p>
                         </div>
                     </div>
-                    <div>
-                        <p className="text-xs text-gray-400 uppercase">Tickets</p>
-                        <p className="font-semibold">2 × VIP Access</p>
-                    </div>
+
+                    {seats.length > 0 && (
+                        <div>
+                            <p className="text-xs text-gray-400 uppercase mb-1">Selected Seats</p>
+                            <div className="flex flex-wrap gap-1">
+                                {seats.map((s: any) => (
+                                    <span key={s.id} className="text-xs bg-white/5 border border-white/10 px-2 py-0.5 rounded">R{s.row}-{s.number}</span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="p-6 bg-white/5 flex flex-col items-center justify-center">
                     <div className="bg-white p-3 rounded-xl mb-3">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=TicketVibe-VIP-2024" alt="QR" className="w-28 h-28" />
+                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${orderId}`} alt="QR" className="w-28 h-28" />
                     </div>
-                    <p className="text-xs text-gray-500 font-mono">Order ID: TV-2024-8X92K291</p>
+                    <p className="text-xs text-gray-500 font-mono">Order ID: {orderId}</p>
                 </div>
             </div>
 

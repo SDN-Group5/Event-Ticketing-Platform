@@ -5,3 +5,6 @@ export { ZoneSelectionPage } from './ZoneSelectionPage';
 export { CheckoutPage } from './CheckoutPage';
 export { PaymentSuccessPage } from './PaymentSuccessPage';
 export { ProfilePage } from './ProfilePage';
+export { WishlistPage } from './WishlistPage';
+export { MyTicketsPage } from './MyTicketsPage';
+export { RefundRequestPage } from './RefundRequestPage';

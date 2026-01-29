@@ -6,6 +6,7 @@ import { getEventLayout } from '../../services/layoutService';
 
 import eventsData from '../../data/events.json';
 import seatMapsData from '../../data/seatMaps.json';
+import { Zone360Viewer } from '../../components/Zone360Viewer';
 
 export const ZoneSelectionPage: React.FC = () => {
     const navigate = useNavigate();
@@ -13,7 +14,7 @@ export const ZoneSelectionPage: React.FC = () => {
     const [ticketCount, setTicketCount] = useState(2); // Keep for potential future use or max validation
     const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
     const [previewSeat, setPreviewSeat] = useState<SeatType | null>(null);
-
+    const [is360ViewerOpen, setIs360ViewerOpen] = useState(false);
     // Load event data
     const event = useMemo(() => eventsData.find(e => e.id === id), [id]);
 
@@ -46,6 +47,7 @@ export const ZoneSelectionPage: React.FC = () => {
         return selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
     }, [selectedSeats]);
 
+    const selectedZoneData = zones.find(z => z.id === selectedSeats);
     const handleSeatToggle = (seat: SelectedSeat) => {
         setSelectedSeats(prev => {
             const exists = prev.find(s => s.id === seat.id);
@@ -67,17 +69,12 @@ export const ZoneSelectionPage: React.FC = () => {
         navigate('/checkout');
     };
 
-    if (!event) {
-        return (
-            <div className="min-h-screen bg-[#151022] text-white flex flex-col items-center justify-center p-6">
-                <span className="material-symbols-outlined text-6xl text-red-500 mb-4">error</span>
-                <h1 className="text-3xl font-black mb-2">Event Not Found</h1>
-                <button onClick={() => navigate('/')} className="px-6 py-3 bg-white/10 rounded-xl font-bold mt-4">
-                    Back to Home
-                </button>
-            </div>
-        );
-    }
+    const handleOpen360 = () => {
+        // Mở tab phụ để user kiểm tra WebGL (spinning cube)
+        window.open('https://get.webgl.org/', '_blank', 'noopener,noreferrer');
+        // Đồng thời mở modal 360 trong app
+        setIs360ViewerOpen(true);
+    };
 
     return (
         <div className="min-h-screen bg-[#151022] text-white p-6 flex flex-col">
@@ -109,7 +106,7 @@ export const ZoneSelectionPage: React.FC = () => {
             </div>
 
             {/* Bottom Bar */}
-            <div className="fixed bottom-0 left-0 w-full bg-[#151022]/90 backdrop-blur border-t border-white/10 p-6">
+            <div className="fixed bottom-0 left-0 w-full bg-[#151022]/90 backdrop-blur border-t border-white/10 p-6 z-[150]">
                 <div className="max-w-[1280px] mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-4">
                         <div>
@@ -123,6 +120,13 @@ export const ZoneSelectionPage: React.FC = () => {
                             <p className="text-xs text-[#a59cba] uppercase font-bold">Total</p>
                             <p className="text-2xl font-black">${total.toLocaleString()}</p>
                         </div>
+                        <button
+                            onClick={handleOpen360}
+                            className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:brightness-110 transition-all flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined">360</span>
+                            View 360° from this zone
+                        </button>
                         <button
                             onClick={handleCheckout}
                             disabled={selectedSeats.length === 0}
@@ -138,15 +142,13 @@ export const ZoneSelectionPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Panorama Preview (Optional integration if we add preview button/logic back) */}
-            {previewSeat && (
-                <PanoramaViewer
-                    seat={previewSeat}
-                    onClose={() => setPreviewSeat(null)}
-                    zoneColor="#8655f6"
-                    zoneName="Preview"
-                />
-            )}
+            {/* 360 Viewer Modal */}
+            <Zone360Viewer
+                imageUrl={selectedZoneData?.view360Url || ''}
+                isOpen={is360ViewerOpen}
+                onClose={() => setIs360ViewerOpen(false)}
+                zoneName={selectedZoneData ? `${selectedZoneData.name} (${selectedZoneData.type})` : ''}
+            />
         </div>
     );
 };

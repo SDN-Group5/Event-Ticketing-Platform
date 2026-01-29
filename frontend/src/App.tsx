@@ -9,16 +9,16 @@ import { OrganizerLayout } from './layouts/OrganizerLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 
 // Client Pages
-import { HomePage, SearchPage, EventDetailsPage, ZoneSelectionPage, CheckoutPage, PaymentSuccessPage, ProfilePage } from './pages/client';
+import { HomePage, SearchPage, EventDetailsPage, ZoneSelectionPage, CheckoutPage, PaymentSuccessPage, ProfilePage, WishlistPage, MyTicketsPage, RefundRequestPage } from './pages/client';
 
 // Auth Pages
 import { LoginPage, OTPPage, ResetPasswordPage } from './pages/auth';
 
 // Organizer Pages
-import { DashboardPage as OrganizerDashboard, CreateEventPage, AttendeesPage, AnalyticsPage } from './pages/organizer';
+import { DashboardPage as OrganizerDashboard, CreateEventPage, AttendeesPage, AnalyticsPage, EventsPage, ManageVouchersPage, ManageStaffPage, NotificationsPage, CheckInPage } from './pages/organizer';
 
 // Admin Pages  
-import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage } from './pages/admin';
+import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage, EventApprovalsPage, RefundRequestsPage, AdminAnalyticsPage, AdminSettingsPage } from './pages/admin';
 
 // Role Switcher Component (Demo purposes)
 const RoleSwitcher: React.FC = () => {
@@ -226,6 +226,21 @@ const AppRoutes: React.FC = () => {
                     <ProfilePage />
                 </ProtectedRoute>
             } />
+            <Route path="/wishlist" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                    <ClientLayout><WishlistPage /></ClientLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/my-tickets" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                    <ClientLayout><MyTicketsPage /></ClientLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/refund-requests" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                    <ClientLayout><RefundRequestPage /></ClientLayout>
+                </ProtectedRoute>
+            } />
 
             {/* Auth Routes */}
             <Route path="/login" element={
@@ -242,17 +257,47 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/organizer/create-event" element={
                 <ProtectedRoute allowedRoles={['organizer']}>
-                    <CreateEventPage />
+                    <OrganizerLayout title="Create Event"><CreateEventPage /></OrganizerLayout>
                 </ProtectedRoute>
             } />
             <Route path="/organizer/attendees" element={
                 <ProtectedRoute allowedRoles={['organizer']}>
-                    <AttendeesPage />
+                    <OrganizerLayout title="Attendees"><AttendeesPage /></OrganizerLayout>
                 </ProtectedRoute>
             } />
             <Route path="/organizer/analytics" element={
                 <ProtectedRoute allowedRoles={['organizer']}>
-                    <AnalyticsPage />
+                    <OrganizerLayout title="Analytics"><AnalyticsPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/events" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="My Events"><EventsPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/vouchers" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="Manage Vouchers"><ManageVouchersPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/staff" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="Manage Staff"><ManageStaffPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/notifications" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="Notifications"><NotificationsPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/check-in" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="Check-In"><CheckInPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/stage-builder" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="Stage Builder"><LayoutEditorPage /></OrganizerLayout>
                 </ProtectedRoute>
             } />
 
@@ -274,7 +319,27 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/admin/layout-editor" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                    <LayoutEditorPage />
+                    <AdminLayout title="Layout Editor"><LayoutEditorPage /></AdminLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/admin/event-approvals" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminLayout title="Event Approvals"><EventApprovalsPage /></AdminLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/admin/refund-requests" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminLayout title="Refund Requests"><RefundRequestsPage /></AdminLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/admin/analytics" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminLayout title="Analytics"><AdminAnalyticsPage /></AdminLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminLayout title="Settings"><AdminSettingsPage /></AdminLayout>
                 </ProtectedRoute>
             } />
 
@@ -287,10 +352,9 @@ const AppRoutes: React.FC = () => {
 // Main App Content
 const AppContent: React.FC = () => {
     return (
-        <div className="pb-20">
+        <div>
             <RoleSwitcher />
             <AppRoutes />
-            <QuickNav />
         </div>
     );
 };

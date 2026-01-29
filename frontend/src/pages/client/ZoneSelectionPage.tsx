@@ -1,16 +1,40 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Zone360Viewer } from '../../components/Zone360Viewer';
 
 export const ZoneSelectionPage: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const [selectedZone, setSelectedZone] = useState<string>('A');
     const [ticketCount, setTicketCount] = useState(2);
+    const [is360ViewerOpen, setIs360ViewerOpen] = useState(false);
 
     const zones = [
-        { id: 'A', name: 'Zone A', type: 'VIP', price: 120, color: '#8655f6' },
-        { id: 'B', name: 'Zone B', type: 'Standard', price: 80, color: '#3b82f6' },
-        { id: 'C', name: 'Zone C', type: 'General', price: 45, color: '#22c55e' },
+        {
+            id: 'A',
+            name: 'Zone A',
+            type: 'VIP',
+            price: 120,
+            color: '#8655f6',
+            view360Url: '/360/concert-hall-360.jpg', // ảnh 360 cho Zone A
+        },
+        {
+            id: 'B',
+            name: 'Zone B',
+            type: 'Standard',
+            price: 80,
+            color: '#3b82f6',
+            // dùng ảnh Blackpink 3000x1500 mà bạn mới thêm
+            view360Url: '/360/Blackpinks-Deadline-World-Tour (2).png',
+        },
+        {
+            id: 'C',
+            name: 'Zone C',
+            type: 'General',
+            price: 45,
+            color: '#22c55e',
+            view360Url: '/360/concert-hall-1.jpg', // tạm dùng chung với Zone B
+        },
     ];
 
     const selectedZoneData = zones.find(z => z.id === selectedZone);
@@ -18,6 +42,13 @@ export const ZoneSelectionPage: React.FC = () => {
 
     const handleCheckout = () => {
         navigate('/checkout');
+    };
+
+    const handleOpen360 = () => {
+        // Mở tab phụ để user kiểm tra WebGL (spinning cube)
+        window.open('https://get.webgl.org/', '_blank', 'noopener,noreferrer');
+        // Đồng thời mở modal 360 trong app
+        setIs360ViewerOpen(true);
     };
 
     return (
@@ -78,7 +109,7 @@ export const ZoneSelectionPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="fixed bottom-0 left-0 w-full bg-[#151022]/90 backdrop-blur border-t border-white/10 p-6">
+            <div className="fixed bottom-0 left-0 w-full bg-[#151022]/90 backdrop-blur border-t border-white/10 p-6 z-[150]">
                 <div className="max-w-[1280px] mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-4">
                         <div
@@ -112,6 +143,13 @@ export const ZoneSelectionPage: React.FC = () => {
                             <p className="text-2xl font-black">${total.toLocaleString()}</p>
                         </div>
                         <button
+                            onClick={handleOpen360}
+                            className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:brightness-110 transition-all flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined">360</span>
+                            View 360° from this zone
+                        </button>
+                        <button
                             onClick={handleCheckout}
                             className="bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:brightness-110 transition-all flex items-center gap-2"
                         >
@@ -121,6 +159,14 @@ export const ZoneSelectionPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* 360 Viewer Modal */}
+            <Zone360Viewer
+                imageUrl={selectedZoneData?.view360Url || ''}
+                isOpen={is360ViewerOpen}
+                onClose={() => setIs360ViewerOpen(false)}
+                zoneName={selectedZoneData ? `${selectedZoneData.name} (${selectedZoneData.type})` : ''}
+            />
         </div>
     );
 };

@@ -1,20 +1,23 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import path from 'path';
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  // Removed proxy since we're making direct requests to backend
-  server: {
-    hmr: {
-      // Giữ nguyên state khi HMR (tránh mất session)
-      overlay: true, // Hiển thị overlay khi có lỗi
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, '.', '');
+  return {
+    server: {
+      port: 3000,
+      host: '0.0.0.0',
     },
-  },
-  // QUAN TRỌNG: Preserve module state khi HMR
-  // Giúp giữ nguyên queryClient và cache khi code được update
-  optimizeDeps: {
-    // Giữ nguyên dependencies khi HMR
-    holdUntilCrawlEnd: false,
-  },
+    plugins: [react()],
+    define: {
+      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      }
+    }
+  };
 });

@@ -9,16 +9,16 @@ import { OrganizerLayout } from './layouts/OrganizerLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 
 // Client Pages
-import { HomePage, SearchPage, EventDetailsPage, ZoneSelectionPage, CheckoutPage, PaymentSuccessPage, ProfilePage } from './pages/client';
+import { HomePage, SearchPage, EventDetailsPage, ZoneSelectionPage, CheckoutPage, PaymentSuccessPage, ProfilePage, WishlistPage, MyTicketsPage, RefundRequestPage } from './pages/client';
 
 // Auth Pages
 import { LoginPage, OTPPage, ResetPasswordPage } from './pages/auth';
 
 // Organizer Pages
-import { DashboardPage as OrganizerDashboard, CreateEventPage, AttendeesPage, AnalyticsPage } from './pages/organizer';
+import { DashboardPage as OrganizerDashboard, CreateEventPage, AttendeesPage, AnalyticsPage, EventsPage, ManageVouchersPage, ManageStaffPage, NotificationsPage, CheckInPage } from './pages/organizer';
 
 // Admin Pages  
-import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage } from './pages/admin';
+import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage, EventApprovalsPage, RefundRequestsPage, AdminAnalyticsPage, AdminSettingsPage } from './pages/admin';
 
 // Role Switcher Component (Demo purposes)
 const RoleSwitcher: React.FC = () => {
@@ -122,54 +122,8 @@ const RoleSwitcher: React.FC = () => {
     );
 };
 
-// Quick Navigation Bar
-const QuickNav: React.FC = () => {
-    const { user, isAuthenticated } = useAuth();
-    const navigate = useNavigate();
-    const location = useLocation();
-
-    if (!isAuthenticated) return null;
-
-    const navItems = user?.role === 'customer' ? [
-        { path: '/', label: 'Home', icon: 'home' },
-        { path: '/search', label: 'Search', icon: 'search' },
-        { path: '/profile', label: 'Profile', icon: 'person' },
-    ] : user?.role === 'organizer' ? [
-        { path: '/organizer', label: 'Dashboard', icon: 'dashboard' },
-        { path: '/organizer/create-event', label: 'Create Event', icon: 'add_circle' },
-        { path: '/organizer/attendees', label: 'Attendees', icon: 'group' },
-        { path: '/organizer/analytics', label: 'Analytics', icon: 'insights' },
-    ] : [
-        { path: '/admin/payouts', label: 'Payouts', icon: 'payments' },
-        { path: '/admin/events', label: 'Events', icon: 'queue' },
-        { path: '/admin/users', label: 'Users', icon: 'manage_accounts' },
-        { path: '/admin/layout-editor', label: 'Layout', icon: 'edit_square' },
-    ];
-
-    return (
-        <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-[#151022]/95 backdrop-blur-lg border-t border-[#2d2839] shadow-xl">
-            <div className="max-w-lg mx-auto px-4 py-2">
-                <div className="flex justify-around">
-                    {navItems.map(item => (
-                        <button
-                            key={item.path}
-                            onClick={() => navigate(item.path)}
-                            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${location.pathname === item.path
-                                    ? 'text-[#8655f6]'
-                                    : 'text-gray-400 hover:text-white'
-                                }`}
-                        >
-                            <span className={`material-symbols-outlined ${location.pathname === item.path ? 'filled' : ''}`}>
-                                {item.icon}
-                            </span>
-                            <span className="text-[10px] font-medium">{item.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-        </nav>
-    );
-};
+// Quick Navigation Bar - REMOVED IN FAVOR OF SIDEBAR INTEGRATION
+// Navigation is now integrated into Sidebar for OrganizerLayout and AdminLayout
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{
@@ -220,6 +174,21 @@ const AppRoutes: React.FC = () => {
                     <ProfilePage />
                 </ProtectedRoute>
             } />
+            <Route path="/wishlist" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                    <ClientLayout><WishlistPage /></ClientLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/my-tickets" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                    <ClientLayout><MyTicketsPage /></ClientLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/refund-requests" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                    <ClientLayout><RefundRequestPage /></ClientLayout>
+                </ProtectedRoute>
+            } />
 
             {/* Auth Routes */}
             <Route path="/login" element={
@@ -236,17 +205,47 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/organizer/create-event" element={
                 <ProtectedRoute allowedRoles={['organizer']}>
-                    <CreateEventPage />
+                    <OrganizerLayout title="Create Event"><CreateEventPage /></OrganizerLayout>
                 </ProtectedRoute>
             } />
             <Route path="/organizer/attendees" element={
                 <ProtectedRoute allowedRoles={['organizer']}>
-                    <AttendeesPage />
+                    <OrganizerLayout title="Attendees"><AttendeesPage /></OrganizerLayout>
                 </ProtectedRoute>
             } />
             <Route path="/organizer/analytics" element={
                 <ProtectedRoute allowedRoles={['organizer']}>
-                    <AnalyticsPage />
+                    <OrganizerLayout title="Analytics"><AnalyticsPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/events" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="My Events"><EventsPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/vouchers" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="Manage Vouchers"><ManageVouchersPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/staff" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="Manage Staff"><ManageStaffPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/notifications" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="Notifications"><NotificationsPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/check-in" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="Check-In"><CheckInPage /></OrganizerLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/organizer/stage-builder" element={
+                <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerLayout title="Stage Builder"><LayoutEditorPage /></OrganizerLayout>
                 </ProtectedRoute>
             } />
 
@@ -268,7 +267,27 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/admin/layout-editor" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                    <LayoutEditorPage />
+                    <AdminLayout title="Layout Editor"><LayoutEditorPage /></AdminLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/admin/event-approvals" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminLayout title="Event Approvals"><EventApprovalsPage /></AdminLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/admin/refund-requests" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminLayout title="Refund Requests"><RefundRequestsPage /></AdminLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/admin/analytics" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminLayout title="Analytics"><AdminAnalyticsPage /></AdminLayout>
+                </ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminLayout title="Settings"><AdminSettingsPage /></AdminLayout>
                 </ProtectedRoute>
             } />
 
@@ -281,10 +300,9 @@ const AppRoutes: React.FC = () => {
 // Main App Content
 const AppContent: React.FC = () => {
     return (
-        <div className="pb-20">
+        <div>
             <RoleSwitcher />
             <AppRoutes />
-            <QuickNav />
         </div>
     );
 };

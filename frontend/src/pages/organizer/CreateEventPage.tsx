@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sidebar } from '../../components/navigation/Sidebar';
-import { organizerSidebarItems } from '../../constants/navigation';
 
 export const CreateEventPage: React.FC = () => {
     const navigate = useNavigate();
@@ -36,18 +34,10 @@ export const CreateEventPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0c10] flex">
-            <Sidebar
-                items={organizerSidebarItems}
-                currentPath="/organizer/create-event"
-                variant="organizer"
-                onNavigate={(path) => navigate(path)}
-            />
-
-            <main className="flex-1 p-8 ml-64 overflow-y-auto">
-                <div className="max-w-4xl mx-auto">
-                    {/* Header */}
-                    <div className="flex items-center gap-4 mb-8">
+        <div>
+            <div className="max-w-4xl mx-auto">
+                {/* Header */}
+                <div className="flex items-center gap-4 mb-8">
                         <button
                             onClick={() => navigate('/organizer')}
                             className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
@@ -263,9 +253,8 @@ export const CreateEventPage: React.FC = () => {
                                 )}
                             </button>
                         </div>
-                    </div>
                 </div>
-            </main>
+            </div>
         </div>
     );
 };

@@ -30,20 +30,25 @@ export const navItems: NavItem[] = [
 
 // Sidebar items for Admin
 export const adminSidebarItems = [
-    { name: 'Dashboard', icon: 'dashboard', path: '/admin' },
+    { name: 'Dashboard', icon: 'dashboard', path: '/admin/payouts' },
     { name: 'Event Queue', icon: 'inbox', path: '/admin/events' },
     { name: 'Organizers', icon: 'group', path: '/admin/users' },
-    { name: 'Analytics', icon: 'insights', path: '/admin/analytics' },
+    { name: 'Event Approvals', icon: 'check_circle', path: '/admin/event-approvals' },
+    { name: 'Refund Requests', icon: 'undo', path: '/admin/refund-requests' },
+    { name: 'Analytics', icon: 'bar_chart', path: '/admin/analytics' },
     { name: 'Settings', icon: 'settings', path: '/admin/settings' },
 ];
 
 // Sidebar items for Organizer
 export const organizerSidebarItems = [
     { name: 'Dashboard', icon: 'dashboard', path: '/organizer' },
-    { name: 'Events', icon: 'calendar_month', path: '/organizer/events' },
-    { name: 'Orders', icon: 'receipt_long', path: '/organizer/orders' },
-    { name: 'Payouts', icon: 'payments', path: '/organizer/payouts' },
-    { name: 'Team', icon: 'group', path: '/organizer/team' },
+    { name: 'My Events', icon: 'event_note', path: '/organizer/events' },
+    { name: 'Create Event', icon: 'add_circle', path: '/organizer/create-event' },
+    { name: 'Attendees', icon: 'group', path: '/organizer/attendees' },
+    { name: 'Vouchers', icon: 'card_giftcard', path: '/organizer/vouchers' },
+    { name: 'Staff', icon: 'people', path: '/organizer/staff' },
+    { name: 'Check-in', icon: 'qr_code_scanner', path: '/organizer/check-in' },
+    { name: 'Stage Builder', icon: 'edit_square', path: '/organizer/stage-builder' },
+    { name: 'Notifications', icon: 'notifications', path: '/organizer/notifications' },
     { name: 'Analytics', icon: 'bar_chart', path: '/organizer/analytics' },
-    { name: 'Settings', icon: 'settings', path: '/organizer/settings' },
 ];

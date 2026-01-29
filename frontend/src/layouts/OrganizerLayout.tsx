@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '../components/navigation/Sidebar';
 import { organizerSidebarItems } from '../constants/navigation';
+import { useLocation } from 'react-router-dom';
 
 interface OrganizerLayoutProps {
     children: React.ReactNode;
@@ -11,7 +12,12 @@ export const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({
     children,
     title,
 }) => {
-    const [activePath, setActivePath] = useState('/organizer');
+    const location = useLocation();
+    const [activePath, setActivePath] = useState(location.pathname);
+
+    useEffect(() => {
+        setActivePath(location.pathname);
+    }, [location.pathname]);
 
     return (
         <div className="flex min-h-screen bg-[#0f0f12] text-white">

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '../components/navigation/Sidebar';
 import { adminSidebarItems } from '../constants/navigation';
+import { useLocation } from 'react-router-dom';
 
 interface AdminLayoutProps {
     children: React.ReactNode;
@@ -8,7 +9,12 @@ interface AdminLayoutProps {
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
-    const [activePath, setActivePath] = useState('/admin');
+    const location = useLocation();
+    const [activePath, setActivePath] = useState(location.pathname);
+
+    useEffect(() => {
+        setActivePath(location.pathname);
+    }, [location.pathname]);
 
     return (
         <div className="flex min-h-screen bg-[#0f172a] text-slate-100 font-sans">

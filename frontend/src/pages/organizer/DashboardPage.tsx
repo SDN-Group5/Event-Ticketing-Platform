@@ -54,27 +54,6 @@ export const DashboardPage: React.FC = () => {
                 ))}
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                    { label: 'View Analytics', icon: 'insights', path: '/organizer/analytics' },
-                    { label: 'Manage Attendees', icon: 'group', path: '/organizer/attendees' },
-                    { label: 'Create Event', icon: 'add_circle', path: '/organizer/create-event' },
-                    { label: 'Settings', icon: 'settings', path: '/organizer' },
-                ].map((action) => (
-                    <button
-                        key={action.label}
-                        onClick={() => navigate(action.path)}
-                        className="flex flex-col items-center gap-3 p-6 bg-[#1e293b]/40 border border-white/5 rounded-xl hover:bg-[#1e293b]/60 hover:border-[#8655f6]/30 transition-all group"
-                    >
-                        <span className="material-symbols-outlined text-3xl text-slate-400 group-hover:text-[#8655f6] transition-colors">
-                            {action.icon}
-                        </span>
-                        <span className="text-sm font-medium text-slate-300">{action.label}</span>
-                    </button>
-                ))}
-            </div>
-
             {/* Upcoming Events */}
             <div className="bg-[#1e293b]/40 border border-white/5 rounded-2xl overflow-hidden">
                 <div className="p-6 border-b border-white/5 flex justify-between items-center">

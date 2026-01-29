@@ -1,11 +1,34 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import eventsData from '../../data/events.json';
 
 export const EventDetailsPage: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const { isAuthenticated } = useAuth();
+
+    const event = useMemo(() => eventsData.find(e => e.id === id), [id]);
+
+    if (!event) {
+        return (
+            <div className="min-h-screen bg-[#151022] text-white flex flex-col items-center justify-center p-6">
+                <span className="material-symbols-outlined text-6xl text-red-500 mb-4">error</span>
+                <h1 className="text-3xl font-black mb-2">Event Not Found</h1>
+                <p className="text-[#a59cba] mb-6">We couldn't find the event you're looking for.</p>
+                <button
+                    onClick={() => navigate('/')}
+                    className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold transition-all"
+                >
+                    Back to Home
+                </button>
+            </div>
+        );
+    }
+
+    const eventDate = new Date(event.date);
+    const dateStr = eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const timeStr = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
     const handleBuyTicket = () => {
         if (!isAuthenticated) {
@@ -19,9 +42,9 @@ export const EventDetailsPage: React.FC = () => {
         <div className="min-h-screen bg-[#151022] text-white">
             <div className="w-full h-[450px] relative">
                 <img
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO6O6_GS5zOq5KquXUroZhSksr1uonwL0IwXRWAJzcNxazCWswLLUalYasfdLfHnrqqKL4cPQZGlxYekLWCtOxBzz7eHBXnlx911eRTrH8tu1oFksiohQWdw_lGYt3KCxbVlxQR5qcOGek59GwTIrfRrfk_DjGv1QOVnC_F6lR8sGlSAUDiXYCz-BS7O_5J-6wYVA_r0zMPehkF9DCCIa04pV3yIoXwwztd5nxTwC1dz_JtIMUEyFsi_7PRHOsWAJckw4Rg1Be2iZV"
+                    src={event.image}
                     className="w-full h-full object-cover"
-                    alt="Hero"
+                    alt={event.title}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#151022] via-[#151022]/40 to-transparent" />
                 <button
@@ -32,9 +55,9 @@ export const EventDetailsPage: React.FC = () => {
                     Back
                 </button>
                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-10 max-w-[1280px] mx-auto">
-                    <h1 className="text-4xl md:text-6xl font-bold mb-2">Neon Nights Festival 2024</h1>
+                    <h1 className="text-4xl md:text-6xl font-bold mb-2">{event.title}</h1>
                     <p className="text-xl font-medium flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[#8655f6]">calendar_month</span> Sep 24, 2024 • 8:00 PM
+                        <span className="material-symbols-outlined text-[#8655f6]">calendar_month</span> {dateStr} • {timeStr}
                     </p>
                 </div>
             </div>
@@ -46,34 +69,33 @@ export const EventDetailsPage: React.FC = () => {
                             <span className="p-3 rounded-full bg-[#2d2839] text-[#a59cba] material-symbols-outlined">calendar_today</span>
                             <div>
                                 <p className="text-[#a59cba] text-sm">Date</p>
-                                <p className="font-medium">Sat, Sep 24</p>
+                                <p className="font-medium">{dateStr}</p>
                             </div>
                         </div>
                         <div className="flex gap-4 items-center">
                             <span className="p-3 rounded-full bg-[#2d2839] text-[#a59cba] material-symbols-outlined">schedule</span>
                             <div>
                                 <p className="text-[#a59cba] text-sm">Time</p>
-                                <p className="font-medium">8:00 PM</p>
+                                <p className="font-medium">{timeStr}</p>
                             </div>
                         </div>
                         <div className="flex gap-4 items-center">
                             <span className="p-3 rounded-full bg-[#2d2839] text-[#a59cba] material-symbols-outlined">location_on</span>
                             <div>
                                 <p className="text-[#a59cba] text-sm">Venue</p>
-                                <p className="font-medium">Grand Arena</p>
+                                <p className="font-medium">{event.location}</p>
                             </div>
                         </div>
                     </div>
 
                     <h2 className="text-2xl font-bold mb-4">About the Event</h2>
                     <p className="text-gray-300 leading-relaxed mb-8">
-                        Get ready for the most electrifying night of the year! Neon Nights Music Festival returns with a bigger lineup, louder bass, and an immersive light show that will transport you to another dimension.
-                        Experience world-class DJs, stunning visual effects, and an atmosphere like no other. This is more than just a concert—it's a journey into the heart of electronic music.
+                        {event.description}
                     </p>
 
                     <h2 className="text-2xl font-bold mb-4">Line-up</h2>
                     <div className="flex gap-6 overflow-x-auto pb-4">
-                        {['DJ Thunder', 'Bass Queen', 'Neon Wave', 'Electric Soul'].map((artist, i) => (
+                        {['Headliner Act', 'Special Guest', 'Opening Artist'].map((artist, i) => (
                             <div key={i} className="flex flex-col items-center gap-3 shrink-0">
                                 <div className="w-24 h-24 rounded-full border-2 border-[#8655f6] p-1">
                                     <img src={`https://picsum.photos/100?random=${i + 10}`} className="w-full h-full rounded-full object-cover" alt={artist} />
@@ -88,9 +110,8 @@ export const EventDetailsPage: React.FC = () => {
                     <div className="sticky top-24 bg-[#2d2839]/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
                         <h3 className="text-xl font-bold mb-6">Select Tickets</h3>
                         {[
-                            { type: 'General Admission', price: 45, available: true },
-                            { type: 'VIP Access', price: 120, available: true },
-                            { type: 'Backstage Pass', price: 250, available: false },
+                            { type: 'Standard Access', price: event.minPrice, available: true },
+                            { type: 'VIP Experience', price: event.maxPrice, available: true },
                         ].map((ticket, i) => (
                             <div key={ticket.type} className={`mb-4 p-4 rounded-xl border ${ticket.available ? 'border-[#2d2839] bg-[#1e1a29]/50 hover:border-[#8655f6]/50 cursor-pointer' : 'border-[#2d2839] bg-[#1e1a29]/30 opacity-50'} transition-all`}>
                                 <div className="flex justify-between mb-2">
@@ -102,11 +123,6 @@ export const EventDetailsPage: React.FC = () => {
                                         <span className="material-symbols-outlined text-xs">{ticket.available ? 'check_circle' : 'cancel'}</span>
                                         {ticket.available ? 'Available' : 'Sold Out'}
                                     </span>
-                                    {ticket.available && (
-                                        <button className="w-8 h-8 rounded bg-[#2d2839] hover:bg-[#8655f6] flex items-center justify-center transition-colors">
-                                            <span className="material-symbols-outlined text-sm">add</span>
-                                        </button>
-                                    )}
                                 </div>
                             </div>
                         ))}

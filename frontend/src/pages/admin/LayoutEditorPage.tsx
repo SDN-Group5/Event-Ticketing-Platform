@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { saveEventLayout, getEventLayout } from '../../services/layoutService';
+import { LayoutZone } from '../../types/layout';
+import eventsData from '../../data/events.json';
 
 // Types
 interface Position {
@@ -63,6 +66,10 @@ export const LayoutEditorPage: React.FC = () => {
     const navigate = useNavigate();
     const canvasRef = useRef<HTMLDivElement>(null);
 
+    // Event selection state
+    const [selectedEventId, setSelectedEventId] = useState<string>('');
+    const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
     // State
     const [zones, setZones] = useState<Zone[]>(initialZones);
     const [selectedTool, setSelectedTool] = useState<ToolType>('select');
@@ -76,6 +83,25 @@ export const LayoutEditorPage: React.FC = () => {
     const [historyIndex, setHistoryIndex] = useState(0);
     const [showSeatGrid, setShowSeatGrid] = useState(false);
     const [isSaved, setIsSaved] = useState(true);
+
+    // Load existing layout when event is selected
+    useEffect(() => {
+        if (selectedEventId) {
+            const existingLayout = getEventLayout(selectedEventId);
+            if (existingLayout) {
+                setZones(existingLayout.zones as Zone[]);
+                setHistory([existingLayout.zones as Zone[]]);
+                setHistoryIndex(0);
+                setIsSaved(true);
+            } else {
+                // Reset to initial zones for new event
+                setZones(initialZones);
+                setHistory([initialZones]);
+                setHistoryIndex(0);
+                setIsSaved(false);
+            }
+        }
+    }, [selectedEventId]);
 
     // Selected zone
     const selectedZone = zones.find(z => z.id === selectedZoneId);
@@ -276,9 +302,22 @@ export const LayoutEditorPage: React.FC = () => {
 
     // Save layout
     const saveLayout = () => {
-        console.log('Saving layout:', zones);
-        setIsSaved(true);
-        // Here you would send to API
+        if (!selectedEventId) {
+            setSaveMessage({ type: 'error', text: 'Please select an event first' });
+            setTimeout(() => setSaveMessage(null), 3000);
+            return;
+        }
+
+        try {
+            const event = eventsData.find(e => e.id === selectedEventId);
+            saveEventLayout(selectedEventId, zones as LayoutZone[], event?.title);
+            setIsSaved(true);
+            setSaveMessage({ type: 'success', text: 'Layout saved successfully!' });
+            setTimeout(() => setSaveMessage(null), 3000);
+        } catch (error) {
+            setSaveMessage({ type: 'error', text: 'Failed to save layout' });
+            setTimeout(() => setSaveMessage(null), 3000);
+        }
     };
 
     // Generate seats for a zone
@@ -339,8 +378,8 @@ export const LayoutEditorPage: React.FC = () => {
                                 <div
                                     key={seat.id}
                                     className={`w-4 h-4 rounded-sm text-[6px] flex items-center justify-center font-bold transition-colors hover:scale-110 cursor-pointer ${seat.status === 'available' ? 'bg-emerald-500/80 hover:bg-emerald-400' :
-                                            seat.status === 'reserved' ? 'bg-amber-500/80' :
-                                                'bg-slate-600/80'
+                                        seat.status === 'reserved' ? 'bg-amber-500/80' :
+                                            'bg-slate-600/80'
                                         }`}
                                     title={`Row ${seat.row}, Seat ${seat.number}`}
                                 >
@@ -427,6 +466,26 @@ export const LayoutEditorPage: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Event Selector */}
+                <div className="mb-6">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Select Event</h3>
+                    <select
+                        value={selectedEventId}
+                        onChange={(e) => setSelectedEventId(e.target.value)}
+                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30 transition-all"
+                    >
+                        <option value="">-- Select an event --</option>
+                        {eventsData.map(event => (
+                            <option key={event.id} value={event.id}>{event.title}</option>
+                        ))}
+                    </select>
+                    {selectedEventId && (
+                        <p className="text-xs text-slate-400 mt-2">
+                            Editing layout for: <span className="text-[#8655f6] font-medium">{eventsData.find(e => e.id === selectedEventId)?.title}</span>
+                        </p>
+                    )}
+                </div>
+
                 {/* Tools */}
                 <div className="mb-6">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Tools</h3>
@@ -436,8 +495,8 @@ export const LayoutEditorPage: React.FC = () => {
                                 key={tool.type}
                                 onClick={() => setSelectedTool(tool.type)}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${selectedTool === tool.type
-                                        ? 'bg-[#8655f6]/20 text-[#8655f6] border border-[#8655f6]/30'
-                                        : 'text-slate-400 hover:bg-white/5'
+                                    ? 'bg-[#8655f6]/20 text-[#8655f6] border border-[#8655f6]/30'
+                                    : 'text-slate-400 hover:bg-white/5'
                                     }`}
                             >
                                 <span className="material-symbols-outlined text-lg">{tool.icon}</span>
@@ -580,12 +639,28 @@ export const LayoutEditorPage: React.FC = () => {
                 <header className="h-14 flex items-center justify-between px-6 border-b border-slate-800 bg-[#0f1219]/80 backdrop-blur">
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 text-sm">
-                            <span className="text-slate-400">Madison Square Garden</span>
+                            <span className="text-slate-400">
+                                {selectedEventId
+                                    ? eventsData.find(e => e.id === selectedEventId)?.title
+                                    : 'No event selected'}
+                            </span>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isSaved ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
                                 }`}>
                                 {isSaved ? 'Saved' : 'Unsaved'}
                             </span>
                         </div>
+                        {/* Toast Message */}
+                        {saveMessage && (
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium animate-pulse ${saveMessage.type === 'success'
+                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                    : 'bg-rose-500/20 text-rose-400'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">
+                                    {saveMessage.type === 'success' ? 'check_circle' : 'error'}
+                                </span>
+                                {saveMessage.text}
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-3">
                         <label className="flex items-center gap-2 text-sm text-slate-400">

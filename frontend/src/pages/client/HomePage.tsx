@@ -2,12 +2,15 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EventCard } from '../../components/common/Card';
 
-const featuredEvents = [
-    { id: '1', title: "Midnight Bass Festival", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDi6Oy71QOrOhpI-eEIZzHCZiMS_yadvN2UnsBAJsc0c9onFTs33e__ir4YWKaYR6eM-SDx4P9LmTzvTfsjNZ9DeRiTs97ZsBA6xSbHFhbu__IpgbqKDQ5AoKI6LL13YZQO-uKaKWYpRDe1Z2yfGY4HZU3DTsc68i27BNEhYnNebUw1ty7S9Qx6n1LG7aO2ruJdhaWzl8zC0KLUYm2ILm8ZxUWXNhcq72VRo79cKc3NBeZSrp43nmH9skeO7byVQjk2AtdTux1kRS8y", date: "24", month: "Oct" },
-    { id: '2', title: "Neon Nights Tour", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAh2nqKN4dfkx_cnZP0iEoY6bSjZJ2uWrgMWMWS5wh7Z9fTX6PgHxZ7ky5mQfWkEdEf0qDNz9UCg4T7FksyVeOsLxyiFiMmDLFdMnaEpnfhOJF2l0dwITFrO7s4pabD4_nJ0rV9j3ACNr_0BY65jkg7nkXJaT5JPZq1nPyXaahJ0kdvQXQvsdG9RzjP-_nXJsfSFXouAfy45ZUVDd4TrMzlqVYGdR5nhExRtrP2CilHZc_zB_j_JBySSP5jZLzAsdGntY9ORv_A_ji8", date: "02", month: "Nov" },
-    { id: '3', title: "Acoustic Sunday", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFKPgI3neKtoFLBwPHGnnXGqo02lVoYR8smPkzZuw0v4uA8i-ElOrDFw3nBgytl9QfPLf4Pstk9Xr87Q1H1zO8zJAkmSvi65XrvvQ3_J2K6hxLWyihYprE53gPYkq4-nBrlOlpcdRj6YHFO4kVOCAMtR8XmWbVTzOofALc4ublWwNmICgw-dPzj8QaR9_KNLQmmZtmwRgA6lfF6rje9LCkNVsW8WtobqNNm3J1NQVmWBxqrj0gEaUujGxQRVcZyweFCpNZ0x-LZvHW", date: "15", month: "Nov" },
-    { id: '4', title: "Rock Symphony", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDNvJZmi9V4NuAXXmRFmR0AQBPcNn93Q0QeSAH3yrkfuos3hgrksYSMjDa7mZAWddPAMZxnJfFeaskiVRgn84KM10C65miITV1ibQkM0oOkkPix9aXLuqYx675Lzu2us2zqH1vX3Z5sBTWQOnfqsmS3Rn0QRJ9p5ZxQuOlyaqzcfXB6mm0eOF5CCg93H8m7vVHwA69_vZFchTwmfpwF3K_n4YD4S-Pj2Uhzj5_ueN6yB8YrbPeS3ObDyQ0cuHbzHlOrq74TJhWOQFGF", date: "05", month: "Dec" },
-];
+import eventsData from '../../data/events.json';
+
+const getEventDateParts = (dateString: string) => {
+    const date = new Date(dateString);
+    return {
+        date: date.getDate().toString().padStart(2, '0'),
+        month: date.toLocaleString('default', { month: 'short' })
+    };
+};
 
 export const HomePage: React.FC = () => {
     const navigate = useNavigate();
@@ -102,16 +105,22 @@ export const HomePage: React.FC = () => {
             <div className="w-full px-4 md:px-10 pb-20 max-w-[1440px] mx-auto">
                 <h2 className="text-3xl font-bold text-white mb-8">Trending Now</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {featuredEvents.map((item) => (
-                        <EventCard
-                            key={item.id}
-                            title={item.title}
-                            imageUrl={item.img}
-                            date={item.date}
-                            month={item.month}
-                            onBuyClick={() => navigate(`/event/${item.id}`)}
-                        />
-                    ))}
+                    {eventsData
+                        .filter(event => event.status === 'published')
+                        .map((item) => {
+                            const { date, month } = getEventDateParts(item.date);
+                            return (
+                                <EventCard
+                                    key={item.id}
+                                    title={item.title}
+                                    imageUrl={item.image}
+                                    date={date}
+                                    month={month}
+                                    price={`From $${item.minPrice}`}
+                                    onBuyClick={() => navigate(`/event/${item.id}`)}
+                                />
+                            );
+                        })}
                 </div>
             </div>
         </>

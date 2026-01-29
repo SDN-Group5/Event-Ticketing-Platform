@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface SidebarItem {
     name: string;
@@ -26,6 +27,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     logo,
     variant = 'default',
 }) => {
+    const navigate = useNavigate();
+    
     const variantClasses = {
         default: 'bg-[#0f0f12] border-[#2d2839]',
         admin: 'bg-[#0f1219] border-slate-800',
@@ -60,7 +63,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     return (
                         <button
                             key={item.path}
-                            onClick={() => onNavigate(item.path)}
+                            onClick={() => {
+                                onNavigate(item.path);
+                                navigate(item.path);
+                            }}
                             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left ${isActive
                                     ? activeClasses[variant]
                                     : 'text-gray-500 hover:text-white hover:bg-white/5'

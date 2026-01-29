@@ -8,6 +8,9 @@ export const ROUTES = {
   CHECKOUT: '/checkout',
   PAYMENT_SUCCESS: '/payment-success',
   PROFILE: '/profile',
+  WISHLIST: '/wishlist',
+  MY_TICKETS: '/my-tickets',
+  REFUND_REQUESTS: '/refund-requests',
   
   // Auth routes
   LOGIN: '/login',
@@ -18,14 +21,24 @@ export const ROUTES = {
   ORGANIZER_HUB: '/organizer',
   ORGANIZER_ADMIN: '/organizer/admin',
   CREATE_EVENT: '/organizer/create-event',
+  ORGANIZER_EVENTS: '/organizer/events',
   ATTENDEES: '/organizer/attendees',
   ORGANIZER_ANALYTICS: '/organizer/analytics',
+  MANAGE_VOUCHERS: '/organizer/vouchers',
+  MANAGE_STAFF: '/organizer/staff',
+  NOTIFICATIONS: '/organizer/notifications',
+  CHECK_IN: '/organizer/check-in',
+  STAGE_BUILDER: '/organizer/stage-builder',
   
   // Admin routes
   ADMIN_PAYOUTS: '/admin/payouts',
   ADMIN_EVENT_QUEUE: '/admin/events',
   ADMIN_USERS: '/admin/users',
   LAYOUT_EDITOR: '/admin/layout-editor',
+  ADMIN_EVENT_APPROVALS: '/admin/event-approvals',
+  ADMIN_REFUND_REQUESTS: '/admin/refund-requests',
+  ADMIN_ANALYTICS: '/admin/analytics',
+  ADMIN_SETTINGS: '/admin/settings',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

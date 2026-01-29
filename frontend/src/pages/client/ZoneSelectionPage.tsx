@@ -35,19 +35,26 @@ export const ZoneSelectionPage: React.FC = () => {
                     rows: zone.rows || 1,
                     seatsPerRow: zone.seatsPerRow || 1,
                     position: zone.position,
-                    size: zone.size
+                    size: zone.size,
+                    view360Url: 'https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg' // Mock 360 image
                 }));
         }
 
         const seatMap = seatMapsData.find(sm => sm.id === event?.seatMapId);
-        return seatMap?.zones || [];
+        return seatMap?.zones.map(z => ({ ...z, view360Url: 'https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg' })) || [];
     }, [id, event]);
 
     const total = useMemo(() => {
         return selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
     }, [selectedSeats]);
 
-    const selectedZoneData = zones.find(z => z.id === selectedSeats);
+    const selectedZoneData = useMemo(() => {
+        if (selectedSeats.length > 0) {
+            const lastSeat = selectedSeats[selectedSeats.length - 1];
+            return zones.find(z => z.name === lastSeat.zone);
+        }
+        return zones[0];
+    }, [selectedSeats, zones]);
     const handleSeatToggle = (seat: SelectedSeat) => {
         setSelectedSeats(prev => {
             const exists = prev.find(s => s.id === seat.id);

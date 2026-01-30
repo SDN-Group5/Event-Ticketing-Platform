@@ -652,7 +652,6 @@ export const LayoutEditorPage: React.FC = () => {
                                             <input
                                                 type="range"
                                                 min="0"
-                                                min="0"
                                                 max={selectedZone.type === 'stage' ? "10" : "20"}
                                                 step={selectedZone.type === 'stage' ? "0.5" : "1"}
                                                 value={selectedZone.elevation || 0}

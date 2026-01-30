@@ -28,37 +28,37 @@ export const getEventLayout = (eventId: string): EventLayout | null => {
 /**
  * Save layout for an event (creates or updates)
  */
-export const saveEventLayout = (
-    eventId: string,
-    zones: LayoutZone[],
-    eventName?: string
-): EventLayout => {
-    const layouts = getAllEventLayouts();
-    const existingIndex = layouts.findIndex(l => l.eventId === eventId);
+export const saveEventLayout = (eventId: string, zones: LayoutZone[], eventName?: string, canvasSettings?: { width: number, height: number, color: string }): void => {
+    const existingLayouts = getAllEventLayouts(); // Changed getStoredLayouts to getAllEventLayouts to match existing functions
     const now = new Date().toISOString();
 
-    const layout: EventLayout = {
+    const newLayout: EventLayout = {
         eventId,
         eventName,
         zones,
-        createdAt: existingIndex >= 0 ? layouts[existingIndex].createdAt : now,
-        updatedAt: now,
+        canvasWidth: canvasSettings?.width,
+        canvasHeight: canvasSettings?.height,
+        canvasColor: canvasSettings?.color,
+        createdAt: now,
+        updatedAt: now
     };
 
+    // Check if update or create
+    const existingIndex = existingLayouts.findIndex(l => l.eventId === eventId);
     if (existingIndex >= 0) {
-        layouts[existingIndex] = layout;
+        // Preserve creation date
+        newLayout.createdAt = existingLayouts[existingIndex].createdAt;
+        existingLayouts[existingIndex] = newLayout;
     } else {
-        layouts.push(layout);
+        existingLayouts.push(newLayout);
     }
 
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(existingLayouts));
     } catch (error) {
         console.error('Error saving layout to localStorage:', error);
         throw new Error('Failed to save layout');
     }
-
-    return layout;
 };
 
 /**

@@ -1,15 +1,39 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useNavigate, useLocation, Navigate } from 'react-router-dom';
+import eventsData from '../../data/events.json';
 
 export const CheckoutPage: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Get checkout data from navigation state
+    const checkoutData = location.state;
+
+    const event = useMemo(() =>
+        checkoutData?.eventId ? eventsData.find(e => e.id === checkoutData.eventId) : null,
+        [checkoutData?.eventId]);
+
+    if (!checkoutData || !event) {
+        return <Navigate to="/" replace />;
+    }
+
+    const { zone, seats, ticketCount, total } = checkoutData;
 
     const handlePayment = () => {
         setIsProcessing(true);
         // Simulate payment processing
         setTimeout(() => {
-            navigate('/payment-success');
+            navigate('/payment-success', {
+                state: {
+                    event,
+                    zone,
+                    seats,
+                    ticketCount,
+                    total,
+                    orderId: `TV-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 8).toUpperCase()}`
+                }
+            });
         }, 1500);
     };
 
@@ -91,19 +115,35 @@ export const CheckoutPage: React.FC = () => {
                             <h2 className="text-xl font-bold mb-6">Order Summary</h2>
                             <div className="flex gap-4 mb-6">
                                 <div
-                                    className="w-16 h-16 rounded bg-cover bg-center"
-                                    style={{ backgroundImage: 'url(https://lh3.googleusercontent.com/aida-public/AB6AXuDi6Oy71QOrOhpI-eEIZzHCZiMS_yadvN2UnsBAJsc0c9onFTs33e__ir4YWKaYR6eM-SDx4P9LmTzvTfsjNZ9DeRiTs97ZsBA6xSbHFhbu__IpgbqKDQ5AoKI6LL13YZQO-uKaKWYpRDe1Z2yfGY4HZU3DTsc68i27BNEhYnNebUw1ty7S9Qx6n1LG7aO2ruJdhaWzl8zC0KLUYm2ILm8ZxUWXNhcq72VRo79cKc3NBeZSrp43nmH9skeO7byVQjk2AtdTux1kRS8y)' }}
+                                    className="w-16 h-16 rounded bg-cover bg-center shrink-0"
+                                    style={{ backgroundImage: `url(${event.image})` }}
                                 />
                                 <div>
-                                    <h4 className="font-bold">Neon Nights Festival</h4>
-                                    <p className="text-xs text-gray-400">Sep 24, 2024 • 8:00 PM</p>
-                                    <p className="text-xs text-[#8655f6] mt-1">Zone A (VIP) × 2</p>
+                                    <h4 className="font-bold line-clamp-2">{event.title}</h4>
+                                    <p className="text-xs text-gray-400">
+                                        {new Date(event.date).toLocaleDateString()} • {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                    <p className="text-xs text-[#8655f6] mt-1">
+                                        {zone.name} ({zone.type}) × {ticketCount}
+                                    </p>
                                 </div>
                             </div>
+
+                            {/* Selected Seats List */}
+                            {seats && seats.length > 0 && (
+                                <div className="mb-4 flex flex-wrap gap-2">
+                                    {seats.map((seat: any) => (
+                                        <span key={seat.id} className="text-[10px] px-2 py-1 rounded bg-white/10 text-gray-300">
+                                            Row {seat.row}-{seat.number}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="border-t border-white/10 py-4 space-y-2">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-400">Tickets (2 × $120)</span>
-                                    <span>$240.00</span>
+                                    <span className="text-gray-400">Tickets ({ticketCount} × ${zone.price})</span>
+                                    <span>${(ticketCount * zone.price).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-400">Service Fee</span>
@@ -116,7 +156,7 @@ export const CheckoutPage: React.FC = () => {
                             </div>
                             <div className="border-t border-white/10 pt-4 flex justify-between items-end mb-6">
                                 <span className="text-gray-400">Total</span>
-                                <span className="text-3xl font-bold">$260.00</span>
+                                <span className="text-3xl font-bold">${(total + 20).toLocaleString()}</span>
                             </div>
                             <button
                                 onClick={handlePayment}
@@ -131,7 +171,7 @@ export const CheckoutPage: React.FC = () => {
                                 ) : (
                                     <>
                                         <span className="material-symbols-outlined">lock</span>
-                                        Confirm and Pay $260.00
+                                        Confirm and Pay ${(total + 20).toLocaleString()}
                                     </>
                                 )}
                             </button>

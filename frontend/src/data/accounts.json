@@ -1,0 +1,30 @@
+[
+    {
+        "id": "u1",
+        "username": "customer_demo",
+        "email": "customer@example.com",
+        "password": "password123",
+        "role": "customer",
+        "fullName": "John Doe",
+        "avatar": "https://i.pravatar.cc/150?u=customer"
+    },
+    {
+        "id": "u2",
+        "username": "organizer_demo",
+        "email": "organizer@example.com",
+        "password": "password123",
+        "role": "organizer",
+        "fullName": "Event Master",
+        "avatar": "https://i.pravatar.cc/150?u=organizer",
+        "organizationName": "Global Events Inc."
+    },
+    {
+        "id": "u3",
+        "username": "admin_demo",
+        "email": "admin@example.com",
+        "password": "password123",
+        "role": "admin",
+        "fullName": "System Admin",
+        "avatar": "https://i.pravatar.cc/150?u=admin"
+    }
+]

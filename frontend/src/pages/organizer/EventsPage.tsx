@@ -123,7 +123,7 @@ export const EventsPage: React.FC = () => {
   const fillPercentage = (sold: number, total: number) => (sold / total) * 100;
 
   return (
-    <div className="container mx-auto px-4 py-8 mb-20">
+    <div className="pb-20">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">My Events</h1>
@@ -144,11 +144,10 @@ export const EventsPage: React.FC = () => {
           <button
             key={status}
             onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-              filter === status
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${filter === status
                 ? 'bg-[#8655f6] text-white'
                 : 'bg-[#2a2436] text-gray-400 hover:bg-[#342640]'
-            }`}
+              }`}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
           </button>

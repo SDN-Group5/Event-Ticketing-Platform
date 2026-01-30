@@ -10,6 +10,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 
 // Client Pages
 import { HomePage, SearchPage, EventDetailsPage, ZoneSelectionPage, CheckoutPage, PaymentSuccessPage, ProfilePage, WishlistPage, MyTicketsPage, RefundRequestPage } from './pages/client';
+import Venue3DPage from './pages/client/Venue3DPage';
 
 // Auth Pages
 import { LoginPage, OTPPage, ResetPasswordPage } from './pages/auth';
@@ -48,7 +49,7 @@ const RoleSwitcher: React.FC = () => {
     };
 
     return (
-        <div className="fixed top-4 right-4 z-[200]">
+        <div className="fixed bottom-4 right-4 z-[200]">
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-2 bg-[#1e293b]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-2 text-white shadow-xl hover:bg-[#1e293b] transition-all"
@@ -60,8 +61,8 @@ const RoleSwitcher: React.FC = () => {
                         </div>
                         <span className="text-sm font-medium hidden sm:block">{user.name}</span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${user.role === 'admin' ? 'bg-orange-500/20 text-orange-400' :
-                                user.role === 'organizer' ? 'bg-purple-500/20 text-purple-400' :
-                                    'bg-blue-500/20 text-blue-400'
+                            user.role === 'organizer' ? 'bg-purple-500/20 text-purple-400' :
+                                'bg-blue-500/20 text-blue-400'
                             }`}>{user.role}</span>
                     </>
                 ) : (
@@ -74,7 +75,7 @@ const RoleSwitcher: React.FC = () => {
             </button>
 
             {isOpen && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-[#1e293b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="absolute bottom-full right-0 mb-2 w-64 bg-[#1e293b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
                     <div className="p-4 border-b border-white/10">
                         <p className="text-xs text-gray-400 uppercase font-bold mb-3">Switch Role (Demo)</p>
                         <div className="space-y-2">
@@ -83,8 +84,8 @@ const RoleSwitcher: React.FC = () => {
                                     key={role}
                                     onClick={() => handleRoleSwitch(role)}
                                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${user?.role === role
-                                            ? 'bg-white/10 ring-1 ring-white/20'
-                                            : 'hover:bg-white/5'
+                                        ? 'bg-white/10 ring-1 ring-white/20'
+                                        : 'hover:bg-white/5'
                                         }`}
                                 >
                                     <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center`}>
@@ -122,8 +123,60 @@ const RoleSwitcher: React.FC = () => {
     );
 };
 
-// Quick Navigation Bar - REMOVED IN FAVOR OF SIDEBAR INTEGRATION
-// Navigation is now integrated into Sidebar for OrganizerLayout and AdminLayout
+// Quick Navigation Bar
+const QuickNav: React.FC = () => {
+    const { user, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    if (!isAuthenticated) return null;
+
+    // Hide QuickNav on specific pages (booking flow, layout editor)
+    const hiddenRoutes = ['/zones', '/checkout', '/payment-success', '/layout-editor'];
+    const isHidden = hiddenRoutes.some(route => location.pathname.includes(route));
+
+    if (isHidden) return null;
+
+    const navItems = user?.role === 'customer' ? [
+        { path: '/', label: 'Home', icon: 'home' },
+        { path: '/search', label: 'Search', icon: 'search' },
+        { path: '/profile', label: 'Profile', icon: 'person' },
+    ] : user?.role === 'organizer' ? [
+        { path: '/organizer', label: 'Dashboard', icon: 'dashboard' },
+        { path: '/organizer/create-event', label: 'Create Event', icon: 'add_circle' },
+        { path: '/organizer/attendees', label: 'Attendees', icon: 'group' },
+        { path: '/organizer/analytics', label: 'Analytics', icon: 'insights' },
+    ] : [
+        { path: '/admin/payouts', label: 'Payouts', icon: 'payments' },
+        { path: '/admin/events', label: 'Events', icon: 'queue' },
+        { path: '/admin/users', label: 'Users', icon: 'manage_accounts' },
+        { path: '/admin/layout-editor', label: 'Layout', icon: 'edit_square' },
+    ];
+
+    return (
+        <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-[#151022]/95 backdrop-blur-lg border-t border-[#2d2839] shadow-xl">
+            <div className="max-w-lg mx-auto px-4 py-2">
+                <div className="flex justify-around">
+                    {navItems.map(item => (
+                        <button
+                            key={item.path}
+                            onClick={() => navigate(item.path)}
+                            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${location.pathname === item.path
+                                ? 'text-[#8655f6]'
+                                : 'text-gray-400 hover:text-white'
+                                }`}
+                        >
+                            <span className={`material-symbols-outlined ${location.pathname === item.path ? 'filled' : ''}`}>
+                                {item.icon}
+                            </span>
+                            <span className="text-[10px] font-medium">{item.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </nav>
+    );
+};
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{
@@ -157,6 +210,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/search" element={<ClientLayout><SearchPage /></ClientLayout>} />
             <Route path="/event/:id" element={<ClientLayout><EventDetailsPage /></ClientLayout>} />
             <Route path="/event/:id/zones" element={<ZoneSelectionPage />} />
+            <Route path="/venue-3d" element={<Venue3DPage />} />
 
             {/* Protected Client Routes */}
             <Route path="/checkout" element={
@@ -245,7 +299,7 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/organizer/stage-builder" element={
                 <ProtectedRoute allowedRoles={['organizer']}>
-                    <OrganizerLayout title="Stage Builder"><LayoutEditorPage /></OrganizerLayout>
+                    <OrganizerLayout title="Stage Builder" fullWidth><LayoutEditorPage /></OrganizerLayout>
                 </ProtectedRoute>
             } />
 
@@ -267,7 +321,7 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/admin/layout-editor" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminLayout title="Layout Editor"><LayoutEditorPage /></AdminLayout>
+                    <AdminLayout title="Layout Editor" fullWidth><LayoutEditorPage /></AdminLayout>
                 </ProtectedRoute>
             } />
             <Route path="/admin/event-approvals" element={

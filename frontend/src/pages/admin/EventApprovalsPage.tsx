@@ -133,7 +133,7 @@ export const EventApprovalsPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 mb-20">
+    <div className="pb-20">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Event Approvals</h1>
         <p className="text-gray-400">Review and approve event submissions</p>
@@ -145,11 +145,10 @@ export const EventApprovalsPage: React.FC = () => {
           <button
             key={status}
             onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-              filter === status
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${filter === status
                 ? 'bg-[#8655f6] text-white'
                 : 'bg-[#2a2436] text-gray-400 hover:bg-[#342640]'
-            }`}
+              }`}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)} ({events.filter(e => e.status === status).length})
           </button>

@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { saveEventLayout, getEventLayout } from '../../services/layoutService';
+import { LayoutZone } from '../../types/layout';
+import eventsData from '../../data/events.json';
 
 // Types
 interface Position {
@@ -12,7 +15,7 @@ interface Size {
     height: number;
 }
 
-type ZoneType = 'seats' | 'standing' | 'stage' | 'exit' | 'barrier';
+type ZoneType = 'seats' | 'standing' | 'stage' | 'exit' | 'barrier' | 'spotlight';
 
 interface Zone {
     id: string;
@@ -24,6 +27,8 @@ interface Zone {
     rows?: number;
     seatsPerRow?: number;
     price?: number;
+    elevation?: number; // Height in 3D view
+    hideScreen?: boolean; // Hide screen in 2D/3D
 }
 
 interface Seat {
@@ -44,7 +49,7 @@ const TOOLS: { type: ToolType; label: string; icon: string }[] = [
     { type: 'standing', label: 'Standing Area', icon: 'crop_square' },
     { type: 'stage', label: 'Stage', icon: 'mic' },
     { type: 'exit', label: 'Exit', icon: 'meeting_room' },
-    { type: 'barrier', label: 'Barrier', icon: 'fence' },
+
 ];
 
 // Generate unique ID
@@ -63,6 +68,10 @@ export const LayoutEditorPage: React.FC = () => {
     const navigate = useNavigate();
     const canvasRef = useRef<HTMLDivElement>(null);
 
+    // Event selection state
+    const [selectedEventId, setSelectedEventId] = useState<string>('');
+    const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
     // State
     const [zones, setZones] = useState<Zone[]>(initialZones);
     const [selectedTool, setSelectedTool] = useState<ToolType>('select');
@@ -76,6 +85,25 @@ export const LayoutEditorPage: React.FC = () => {
     const [historyIndex, setHistoryIndex] = useState(0);
     const [showSeatGrid, setShowSeatGrid] = useState(false);
     const [isSaved, setIsSaved] = useState(true);
+
+    // Load existing layout when event is selected
+    useEffect(() => {
+        if (selectedEventId) {
+            const existingLayout = getEventLayout(selectedEventId);
+            if (existingLayout) {
+                setZones(existingLayout.zones as Zone[]);
+                setHistory([existingLayout.zones as Zone[]]);
+                setHistoryIndex(0);
+                setIsSaved(true);
+            } else {
+                // Reset to initial zones for new event
+                setZones(initialZones);
+                setHistory([initialZones]);
+                setHistoryIndex(0);
+                setIsSaved(false);
+            }
+        }
+    }, [selectedEventId]);
 
     // Selected zone
     const selectedZone = zones.find(z => z.id === selectedZoneId);
@@ -138,15 +166,27 @@ export const LayoutEditorPage: React.FC = () => {
         const x = (e.clientX - rect.left) / (zoom / 100);
         const y = (e.clientY - rect.top) / (zoom / 100);
 
+        const rows = selectedTool === 'seats' ? 4 : undefined;
+        const seatsPerRow = selectedTool === 'seats' ? 8 : undefined;
+
+        let width = 150;
+        let height = 80;
+
+        // Calculate exact size for seats to avoid padding
+        if (selectedTool === 'seats') {
+            width = 8 * 18;
+            height = 4 * 18;
+        }
+
         const newZone: Zone = {
             id: generateId(),
             name: `New ${selectedTool.charAt(0).toUpperCase() + selectedTool.slice(1)}`,
             type: selectedTool as ZoneType,
-            position: { x: x - 75, y: y - 40 },
-            size: { width: 150, height: 80 },
+            position: { x: x - width / 2, y: y - height / 2 },
+            size: { width, height },
             color: COLORS[Math.floor(Math.random() * COLORS.length)],
-            rows: selectedTool === 'seats' ? 4 : undefined,
-            seatsPerRow: selectedTool === 'seats' ? 8 : undefined,
+            rows,
+            seatsPerRow,
             price: selectedTool === 'stage' || selectedTool === 'barrier' ? undefined : 50,
         };
 
@@ -193,11 +233,18 @@ export const LayoutEditorPage: React.FC = () => {
         const y = (e.clientY - rect.top) / (zoom / 100);
 
         if (isDragging && selectedZoneId) {
-            setZones(zones.map(z =>
-                z.id === selectedZoneId
-                    ? { ...z, position: { x: x - dragOffset.x, y: y - dragOffset.y } }
-                    : z
-            ));
+            setZones(zones.map(z => {
+                if (z.id !== selectedZoneId) return z;
+
+                const rawX = x - dragOffset.x;
+                const rawY = y - dragOffset.y;
+
+                // Snap to 10px grid
+                const snappedX = Math.round(rawX / 10) * 10;
+                const snappedY = Math.round(rawY / 10) * 10;
+
+                return { ...z, position: { x: snappedX, y: snappedY } };
+            }));
         }
 
         if (isResizing && selectedZoneId && resizeHandle) {
@@ -209,21 +256,25 @@ export const LayoutEditorPage: React.FC = () => {
                 let newX = z.position.x;
                 let newY = z.position.y;
 
+                // Snap mouse to grid
+                const snappedMouseX = Math.round(x / 10) * 10;
+                const snappedMouseY = Math.round(y / 10) * 10;
+
                 if (resizeHandle.includes('e')) {
-                    newWidth = Math.max(60, x - z.position.x);
+                    newWidth = Math.max(60, snappedMouseX - z.position.x);
                 }
                 if (resizeHandle.includes('w')) {
-                    const deltaX = z.position.x - x;
+                    const deltaX = z.position.x - snappedMouseX;
                     newWidth = Math.max(60, z.size.width + deltaX);
-                    newX = x;
+                    newX = snappedMouseX;
                 }
                 if (resizeHandle.includes('s')) {
-                    newHeight = Math.max(40, y - z.position.y);
+                    newHeight = Math.max(40, snappedMouseY - z.position.y);
                 }
                 if (resizeHandle.includes('n')) {
-                    const deltaY = z.position.y - y;
+                    const deltaY = z.position.y - snappedMouseY;
                     newHeight = Math.max(40, z.size.height + deltaY);
-                    newY = y;
+                    newY = snappedMouseY;
                 }
 
                 return { ...z, position: { x: newX, y: newY }, size: { width: newWidth, height: newHeight } };
@@ -251,7 +302,25 @@ export const LayoutEditorPage: React.FC = () => {
 
     // Update zone property
     const updateZone = (zoneId: string, updates: Partial<Zone>) => {
-        const newZones = zones.map(z => z.id === zoneId ? { ...z, ...updates } : z);
+        let finalUpdates = { ...updates };
+        const zone = zones.find(z => z.id === zoneId);
+
+        if (zone && zone.type === 'seats') {
+            // Auto-resize if rows or seatsPerRow changed
+            if (updates.rows !== undefined || updates.seatsPerRow !== undefined) {
+                const newRows = updates.rows !== undefined ? updates.rows : (zone.rows || 4);
+                const newSeatsPerRow = updates.seatsPerRow !== undefined ? updates.seatsPerRow : (zone.seatsPerRow || 8);
+
+                // 16px seat + 2px gap = 18px per unit
+                // Remove extra padding as requested
+                finalUpdates.size = {
+                    width: newSeatsPerRow * 18,
+                    height: newRows * 18
+                };
+            }
+        }
+
+        const newZones = zones.map(z => z.id === zoneId ? { ...z, ...finalUpdates } : z);
         setZones(newZones);
         addToHistory(newZones);
     };
@@ -276,9 +345,22 @@ export const LayoutEditorPage: React.FC = () => {
 
     // Save layout
     const saveLayout = () => {
-        console.log('Saving layout:', zones);
-        setIsSaved(true);
-        // Here you would send to API
+        if (!selectedEventId) {
+            setSaveMessage({ type: 'error', text: 'Please select an event first' });
+            setTimeout(() => setSaveMessage(null), 3000);
+            return;
+        }
+
+        try {
+            const event = eventsData.find(e => e.id === selectedEventId);
+            saveEventLayout(selectedEventId, zones as LayoutZone[], event?.title);
+            setIsSaved(true);
+            setSaveMessage({ type: 'success', text: 'Layout saved successfully!' });
+            setTimeout(() => setSaveMessage(null), 3000);
+        } catch (error) {
+            setSaveMessage({ type: 'error', text: 'Failed to save layout' });
+            setTimeout(() => setSaveMessage(null), 3000);
+        }
     };
 
     // Generate seats for a zone
@@ -317,20 +399,22 @@ export const LayoutEditorPage: React.FC = () => {
                 }}
                 onMouseDown={(e) => handleZoneMouseDown(e, zone.id)}
             >
-                {/* Zone content */}
                 <div
-                    className={`w-full h-full rounded-xl border-2 transition-all flex flex-col items-center justify-center ${zone.type === 'stage' ? 'rounded-t-[50%]' : ''
-                        } ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0f1219]' : ''}`}
+                    className={`w-full h-full rounded-xl border-2 transition-all flex flex-col items-center justify-center ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0f1219]' : ''}`}
                     style={{
                         borderColor: zone.color,
                         backgroundColor: `${zone.color}15`,
                         borderStyle: zone.type === 'barrier' ? 'dashed' : 'solid',
                     }}
                 >
+                    {/* Screen indicator for stage */}
+                    {zone.type === 'stage' && !zone.hideScreen && (
+                        <div className="absolute top-1 w-3/4 h-1 bg-current opacity-50 rounded-full" style={{ color: zone.color }} />
+                    )}
                     {/* Seat grid */}
                     {showSeatGrid && zone.type === 'seats' && seats.length > 0 ? (
                         <div
-                            className="grid gap-0.5 p-2"
+                            className="grid gap-0.5"
                             style={{
                                 gridTemplateColumns: `repeat(${zone.seatsPerRow}, 1fr)`,
                             }}
@@ -339,8 +423,8 @@ export const LayoutEditorPage: React.FC = () => {
                                 <div
                                     key={seat.id}
                                     className={`w-4 h-4 rounded-sm text-[6px] flex items-center justify-center font-bold transition-colors hover:scale-110 cursor-pointer ${seat.status === 'available' ? 'bg-emerald-500/80 hover:bg-emerald-400' :
-                                            seat.status === 'reserved' ? 'bg-amber-500/80' :
-                                                'bg-slate-600/80'
+                                        seat.status === 'reserved' ? 'bg-amber-500/80' :
+                                            'bg-slate-600/80'
                                         }`}
                                     title={`Row ${seat.row}, Seat ${seat.number}`}
                                 >
@@ -359,17 +443,12 @@ export const LayoutEditorPage: React.FC = () => {
                             {zone.type === 'standing' && (
                                 <span className="text-[10px] text-slate-400 mt-1">Standing</span>
                             )}
-                            {zone.price && (
-                                <span className="text-[10px] font-bold mt-1" style={{ color: zone.color }}>
-                                    ${zone.price}
-                                </span>
-                            )}
                         </>
                     )}
                 </div>
 
-                {/* Resize handles */}
-                {isSelected && selectedTool === 'select' && (
+                {/* Resize handles - disabled for seats (auto-sized) */}
+                {isSelected && selectedTool === 'select' && zone.type !== 'seats' && (
                     <>
                         {['nw', 'ne', 'sw', 'se'].map(handle => (
                             <div
@@ -413,18 +492,38 @@ export const LayoutEditorPage: React.FC = () => {
             {/* Left Sidebar - Tools */}
             <aside className="w-72 hidden lg:flex flex-col p-5 bg-[#0f1219] border-r border-slate-800">
                 <div className="flex items-center gap-3 mb-6">
-                    <button
+                    {/* <button
                         onClick={() => navigate('/admin/payouts')}
                         className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                     >
                         <span className="material-symbols-outlined text-sm">arrow_back</span>
-                    </button>
+                    </button> */}
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-[#8655f6] rounded-lg flex items-center justify-center">
                             <span className="material-symbols-outlined text-sm">grid_view</span>
                         </div>
                         <span className="font-bold">Layout Editor</span>
                     </div>
+                </div>
+
+                {/* Event Selector */}
+                <div className="mb-6">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Select Event</h3>
+                    <select
+                        value={selectedEventId}
+                        onChange={(e) => setSelectedEventId(e.target.value)}
+                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30 transition-all"
+                    >
+                        <option value="">-- Select an event --</option>
+                        {eventsData.map(event => (
+                            <option key={event.id} value={event.id}>{event.title}</option>
+                        ))}
+                    </select>
+                    {selectedEventId && (
+                        <p className="text-xs text-slate-400 mt-2">
+                            Editing layout for: <span className="text-[#8655f6] font-medium">{eventsData.find(e => e.id === selectedEventId)?.title}</span>
+                        </p>
+                    )}
                 </div>
 
                 {/* Tools */}
@@ -436,8 +535,8 @@ export const LayoutEditorPage: React.FC = () => {
                                 key={tool.type}
                                 onClick={() => setSelectedTool(tool.type)}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${selectedTool === tool.type
-                                        ? 'bg-[#8655f6]/20 text-[#8655f6] border border-[#8655f6]/30'
-                                        : 'text-slate-400 hover:bg-white/5'
+                                    ? 'bg-[#8655f6]/20 text-[#8655f6] border border-[#8655f6]/30'
+                                    : 'text-slate-400 hover:bg-white/5'
                                     }`}
                             >
                                 <span className="material-symbols-outlined text-lg">{tool.icon}</span>
@@ -480,6 +579,21 @@ export const LayoutEditorPage: React.FC = () => {
                                         className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
                                     />
                                 </div>
+
+                                {selectedZone.type === 'stage' && (
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="hideScreen"
+                                            checked={selectedZone.hideScreen || false}
+                                            onChange={(e) => updateZone(selectedZone.id, { hideScreen: e.target.checked })}
+                                            className="w-4 h-4 rounded border-slate-700 bg-slate-800/50 text-[#8655f6] focus:ring-[#8655f6]/30 cursor-pointer"
+                                        />
+                                        <label htmlFor="hideScreen" className="text-sm text-slate-400 cursor-pointer">
+                                            Hide Screen (2D/3D)
+                                        </label>
+                                    </div>
+                                )}
 
                                 {selectedZone.type === 'seats' && (
                                     <>
@@ -528,6 +642,37 @@ export const LayoutEditorPage: React.FC = () => {
                                     </div>
                                 )}
 
+                                {/* Elevation/Height for 3D view */}
+                                {(selectedZone.type === 'seats' || selectedZone.type === 'stage') && (
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase mb-1.5 block">
+                                            {selectedZone.type === 'stage' ? 'Stage Height (3D)' : '3D Elevation (Height)'}
+                                        </label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                min="0"
+                                                max={selectedZone.type === 'stage' ? "10" : "20"}
+                                                step={selectedZone.type === 'stage' ? "0.5" : "1"}
+                                                value={selectedZone.elevation || 0}
+                                                onChange={(e) => updateZone(selectedZone.id, { elevation: parseInt(e.target.value) })}
+                                                className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                            />
+                                            <span className="text-sm font-bold text-[#8655f6] min-w-[40px] text-right">
+                                                {selectedZone.elevation || 0}m
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 mt-1">
+                                            {selectedZone.type === 'stage'
+                                                ? 'Height/Thickness of the stage platform'
+                                                : 'Height offset in 3D viewer (0 = ground level)'}
+                                        </p>
+                                    </div>
+                                )}
+
+
+
                                 <div>
                                     <label className="text-xs text-slate-500 uppercase mb-1.5 block">Color</label>
                                     <div className="flex gap-2 flex-wrap">
@@ -575,17 +720,33 @@ export const LayoutEditorPage: React.FC = () => {
             </aside>
 
             {/* Main Canvas Area */}
-            <main className="flex-1 flex flex-col overflow-hidden">
+            <main className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Header */}
-                <header className="h-14 flex items-center justify-between px-6 border-b border-slate-800 bg-[#0f1219]/80 backdrop-blur">
+                <header className="h-14 flex items-center justify-between px-6 border-b border-slate-800 bg-[#0f1219]/80 backdrop-blur z-20">
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 text-sm">
-                            <span className="text-slate-400">Madison Square Garden</span>
+                            <span className="text-slate-400">
+                                {selectedEventId
+                                    ? eventsData.find(e => e.id === selectedEventId)?.title
+                                    : 'No event selected'}
+                            </span>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isSaved ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
                                 }`}>
                                 {isSaved ? 'Saved' : 'Unsaved'}
                             </span>
                         </div>
+                        {/* Toast Message */}
+                        {saveMessage && (
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium animate-pulse ${saveMessage.type === 'success'
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : 'bg-rose-500/20 text-rose-400'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">
+                                    {saveMessage.type === 'success' ? 'check_circle' : 'error'}
+                                </span>
+                                {saveMessage.text}
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-3">
                         <label className="flex items-center gap-2 text-sm text-slate-400">
@@ -610,7 +771,7 @@ export const LayoutEditorPage: React.FC = () => {
                     </div>
                 </header>
 
-                {/* Canvas */}
+                {/* Canvas Scroll Area */}
                 <div
                     className="flex-1 p-6 bg-[#05060a] relative overflow-auto"
                     style={{ cursor: selectedTool !== 'select' ? 'crosshair' : 'default' }}
@@ -624,7 +785,7 @@ export const LayoutEditorPage: React.FC = () => {
                         }}
                     />
 
-                    {/* Canvas */}
+                    {/* Canvas Content */}
                     <div
                         ref={canvasRef}
                         className="relative mx-auto bg-[#0f1219] rounded-2xl border border-slate-800 shadow-2xl"
@@ -638,40 +799,48 @@ export const LayoutEditorPage: React.FC = () => {
                         onMouseUp={handleMouseUp}
                         onMouseLeave={handleMouseUp}
                     >
-                        {/* Render zones */}
+                        {/* Zones */}
                         <div style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top left' }}>
                             {zones.map(renderZone)}
                         </div>
                     </div>
+                </div>
 
-                    {/* Zoom Controls */}
-                    <div className="fixed bottom-24 right-6 flex items-center gap-2 bg-slate-800/90 backdrop-blur-xl p-2 rounded-xl shadow-xl border border-slate-700">
-                        <button
-                            onClick={() => setZoom(Math.max(50, zoom - 10))}
-                            className="p-2 hover:bg-white/10 rounded-lg"
-                        >
-                            <span className="material-symbols-outlined text-sm">zoom_out</span>
-                        </button>
-                        <span className="px-3 text-sm font-bold min-w-[50px] text-center">{zoom}%</span>
-                        <button
-                            onClick={() => setZoom(Math.min(150, zoom + 10))}
-                            className="p-2 hover:bg-white/10 rounded-lg"
-                        >
-                            <span className="material-symbols-outlined text-sm">zoom_in</span>
-                        </button>
-                        <div className="w-px h-6 bg-slate-700 mx-1" />
-                        <button
-                            onClick={() => setZoom(100)}
-                            className="p-2 hover:bg-white/10 rounded-lg text-sm font-medium"
-                        >
-                            Reset
-                        </button>
-                    </div>
+                {/* Bottom Left Controls (Zoom & Hints) */}
+                <div className="absolute bottom-6 left-6 flex flex-col-reverse gap-3 items-start pointer-events-none">
+                    {/* Controls Container - Pointer events auto to allow interaction */}
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                        {/* Zoom */}
+                        <div className="flex items-center gap-1 bg-slate-800/90 backdrop-blur-xl p-1.5 rounded-lg shadow-xl border border-slate-700">
+                            <button
+                                onClick={() => setZoom(Math.max(50, zoom - 10))}
+                                className="p-1.5 hover:bg-white/10 rounded-md text-slate-300"
+                            >
+                                <span className="material-symbols-outlined text-xs">zoom_out</span>
+                            </button>
+                            <span className="px-2 text-[10px] font-bold min-w-[32px] text-center text-slate-300">{zoom}%</span>
+                            <button
+                                onClick={() => setZoom(Math.min(150, zoom + 10))}
+                                className="p-1.5 hover:bg-white/10 rounded-md text-slate-300"
+                            >
+                                <span className="material-symbols-outlined text-xs">zoom_in</span>
+                            </button>
+                            <div className="w-px h-4 bg-slate-700 mx-0.5" />
+                            <button
+                                onClick={() => setZoom(100)}
+                                className="px-2 py-1 hover:bg-white/10 rounded-md text-[10px] font-medium text-slate-300"
+                            >
+                                Reset
+                            </button>
+                        </div>
 
-                    {/* Help Text */}
-                    <div className="fixed bottom-24 left-6 text-xs text-slate-500 bg-slate-800/80 backdrop-blur px-3 py-2 rounded-lg">
-                        <span className="material-symbols-outlined text-[10px] align-middle mr-1">lightbulb</span>
-                        Click canvas to add • Drag to move • Resize handles • Del to remove • Ctrl+Z/Y undo/redo
+                        {/* Help Text as Tooltip-ish pill */}
+                        <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/50">
+                            <span className="material-symbols-outlined text-[12px] text-[#8655f6]">lightbulb</span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                                Click to add • Drag • Resize • Del
+                            </span>
+                        </div>
                     </div>
                 </div>
             </main>

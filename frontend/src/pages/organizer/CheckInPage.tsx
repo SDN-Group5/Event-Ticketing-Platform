@@ -111,7 +111,7 @@ export const CheckInPage: React.FC = () => {
   const pendingCount = records.filter(r => r.status === 'pending').length;
 
   return (
-    <div className="container mx-auto px-4 py-8 mb-20">
+    <div className="pb-20">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Check-In Management</h1>
@@ -199,11 +199,10 @@ export const CheckInPage: React.FC = () => {
         {filteredRecords.map(record => (
           <div
             key={record.id}
-            className={`rounded-xl overflow-hidden transition-all ${
-              record.status === 'checked-in'
+            className={`rounded-xl overflow-hidden transition-all ${record.status === 'checked-in'
                 ? 'bg-green-500/10 border border-green-500/30'
                 : 'bg-[#2a2436]'
-            }`}
+              }`}
           >
             <div className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex-1">
@@ -244,11 +243,11 @@ export const CheckInPage: React.FC = () => {
                     const updatedRecords = records.map(r =>
                       r.id === record.id
                         ? {
-                            ...r,
-                            status: 'checked-in',
-                            checkInTime: new Date().toISOString(),
-                            checkInBy: 'Current Staff',
-                          }
+                          ...r,
+                          status: 'checked-in',
+                          checkInTime: new Date().toISOString(),
+                          checkInBy: 'Current Staff',
+                        }
                         : r
                     );
                     setRecords(updatedRecords);

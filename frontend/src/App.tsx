@@ -18,7 +18,7 @@ import { LoginPage, OTPPage, ResetPasswordPage } from './pages/auth';
 import { DashboardPage as OrganizerDashboard, CreateEventPage, AttendeesPage, AnalyticsPage, EventsPage, ManageVouchersPage, ManageStaffPage, NotificationsPage, CheckInPage } from './pages/organizer';
 
 // Admin Pages  
-import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage, EventApprovalsPage, RefundRequestsPage, AdminAnalyticsPage, AdminSettingsPage } from './pages/admin';
+import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage, EventApprovalsPage, OrganizerPayoutsPage, AdminAnalyticsPage, AdminSettingsPage } from './pages/admin';
 
 // Role Switcher Component (Demo purposes)
 const RoleSwitcher: React.FC = () => {
@@ -277,7 +277,7 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/admin/refund-requests" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminLayout title="Refund Requests"><RefundRequestsPage /></AdminLayout>
+                    <AdminLayout title="Organizer Payouts"><OrganizerPayoutsPage /></AdminLayout>
                 </ProtectedRoute>
             } />
             <Route path="/admin/analytics" element={

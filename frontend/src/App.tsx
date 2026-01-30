@@ -10,6 +10,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 
 // Client Pages
 import { HomePage, SearchPage, EventDetailsPage, ZoneSelectionPage, CheckoutPage, PaymentSuccessPage, ProfilePage, WishlistPage, MyTicketsPage, RefundRequestPage } from './pages/client';
+import Venue3DPage from './pages/client/Venue3DPage';
 
 // Auth Pages
 import { LoginPage, OTPPage, ResetPasswordPage } from './pages/auth';
@@ -48,7 +49,7 @@ const RoleSwitcher: React.FC = () => {
     };
 
     return (
-        <div className="fixed top-4 right-4 z-[200]">
+        <div className="fixed bottom-4 right-4 z-[200]">
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-2 bg-[#1e293b]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-2 text-white shadow-xl hover:bg-[#1e293b] transition-all"
@@ -74,7 +75,7 @@ const RoleSwitcher: React.FC = () => {
             </button>
 
             {isOpen && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-[#1e293b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="absolute bottom-full right-0 mb-2 w-64 bg-[#1e293b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
                     <div className="p-4 border-b border-white/10">
                         <p className="text-xs text-gray-400 uppercase font-bold mb-3">Switch Role (Demo)</p>
                         <div className="space-y-2">
@@ -209,6 +210,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/search" element={<ClientLayout><SearchPage /></ClientLayout>} />
             <Route path="/event/:id" element={<ClientLayout><EventDetailsPage /></ClientLayout>} />
             <Route path="/event/:id/zones" element={<ZoneSelectionPage />} />
+            <Route path="/venue-3d" element={<Venue3DPage />} />
 
             {/* Protected Client Routes */}
             <Route path="/checkout" element={
@@ -297,7 +299,7 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/organizer/stage-builder" element={
                 <ProtectedRoute allowedRoles={['organizer']}>
-                    <OrganizerLayout title="Stage Builder"><LayoutEditorPage /></OrganizerLayout>
+                    <OrganizerLayout title="Stage Builder" fullWidth><LayoutEditorPage /></OrganizerLayout>
                 </ProtectedRoute>
             } />
 
@@ -319,7 +321,7 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/admin/layout-editor" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminLayout title="Layout Editor"><LayoutEditorPage /></AdminLayout>
+                    <AdminLayout title="Layout Editor" fullWidth><LayoutEditorPage /></AdminLayout>
                 </ProtectedRoute>
             } />
             <Route path="/admin/event-approvals" element={

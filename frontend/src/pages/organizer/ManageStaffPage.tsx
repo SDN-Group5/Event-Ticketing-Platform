@@ -98,7 +98,7 @@ export const ManageStaffPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 mb-20">
+    <div className="pb-20">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Manage Staff</h1>
@@ -141,11 +141,10 @@ export const ManageStaffPage: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-white font-bold">{staffMember.name}</h3>
-                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold mt-1 ${
-                        staffMember.role === 'checker'
+                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold mt-1 ${staffMember.role === 'checker'
                           ? 'bg-purple-500/20 text-purple-400'
                           : 'bg-blue-500/20 text-blue-400'
-                      }`}>
+                        }`}>
                         <span className="material-symbols-outlined text-xs">
                           {staffMember.role === 'checker' ? 'verified' : 'person'}
                         </span>
@@ -183,9 +182,8 @@ export const ManageStaffPage: React.FC = () => {
                     <select
                       value={staffMember.status}
                       onChange={(e) => handleStatusChange(staffMember.id, e.target.value as 'active' | 'inactive')}
-                      className={`bg-transparent font-semibold text-sm focus:outline-none ${
-                        staffMember.status === 'active' ? 'text-green-400' : 'text-gray-400'
-                      }`}
+                      className={`bg-transparent font-semibold text-sm focus:outline-none ${staffMember.status === 'active' ? 'text-green-400' : 'text-gray-400'
+                        }`}
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>

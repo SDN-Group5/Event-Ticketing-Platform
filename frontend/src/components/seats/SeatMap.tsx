@@ -171,7 +171,7 @@ export const SeatMap: React.FC<SeatMapProps & {
 
                             {/* Seats */}
                             <div className="flex gap-1.5">
-                                {rowSeats.map(seat => (
+                                {(rowSeats as SeatType[]).map(seat => (
                                     <Seat
                                         key={seat.id}
                                         seat={seat}

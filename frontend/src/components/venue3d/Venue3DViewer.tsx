@@ -15,6 +15,7 @@ interface Zone {
     seatsPerRow: number;
     position?: { x: number; y: number };
     size?: { width: number; height: number };
+    rotation?: number;
 }
 
 interface Stage {
@@ -25,6 +26,10 @@ interface Stage {
     color: string;
     hideScreen?: boolean;
     elevation?: number;
+    videoUrl?: string;
+    screenHeight?: number;
+    screenWidthRatio?: number;
+    rotation?: number;
 }
 
 
@@ -57,11 +62,11 @@ const SCALE_FACTOR = 0.08;
 // Free look controls - WASD movement + mouse rotation (no orbit pivot)
 function FreeLookControls({ enabled }: { enabled: boolean }) {
     const { camera, gl } = useThree();
-    const keys = useRef({ w: false, a: false, s: false, d: false, q: false, e: false });
+    const keys = useRef({ w: false, a: false, s: false, d: false, space: false, shift: false });
     const isPointerDown = useRef(false);
     const previousPointer = useRef({ x: 0, y: 0 });
     const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'));
-    const moveSpeed = 0.8;
+    const moveSpeed = 0.3;
 
     useEffect(() => {
         if (!enabled) return;
@@ -71,15 +76,24 @@ function FreeLookControls({ enabled }: { enabled: boolean }) {
 
         const handleKeyDown = (e: KeyboardEvent) => {
             const key = e.key.toLowerCase();
-            if (key in keys.current) {
-                keys.current[key as keyof typeof keys.current] = true;
+            if (key === 'w' || key === 'a' || key === 's' || key === 'd') {
+                keys.current[key as 'w' | 'a' | 's' | 'd'] = true;
+            } else if (e.code === 'Space') {
+                e.preventDefault(); // Prevent page scroll
+                keys.current.space = true;
+            } else if (e.key === 'Shift') {
+                keys.current.shift = true;
             }
         };
 
         const handleKeyUp = (e: KeyboardEvent) => {
             const key = e.key.toLowerCase();
-            if (key in keys.current) {
-                keys.current[key as keyof typeof keys.current] = false;
+            if (key === 'w' || key === 'a' || key === 's' || key === 'd') {
+                keys.current[key as 'w' | 'a' | 's' | 'd'] = false;
+            } else if (e.code === 'Space') {
+                keys.current.space = false;
+            } else if (e.key === 'Shift') {
+                keys.current.shift = false;
             }
         };
 
@@ -150,36 +164,45 @@ function FreeLookControls({ enabled }: { enabled: boolean }) {
         camera.quaternion.setFromEuler(euler.current);
 
         // Get movement directions
-        const direction = new THREE.Vector3();
-        camera.getWorldDirection(direction);
-        direction.y = 0;
-        direction.normalize();
+        const forward = new THREE.Vector3();
+        camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
 
         const right = new THREE.Vector3();
-        right.crossVectors(direction, new THREE.Vector3(0, 1, 0)).normalize();
+        right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+        // Build movement vector (normalized to prevent faster diagonal movement)
+        const moveVector = new THREE.Vector3(0, 0, 0);
 
         // Forward/Backward (W/S)
         if (keys.current.w) {
-            camera.position.addScaledVector(direction, moveSpeed);
+            moveVector.add(forward);
         }
         if (keys.current.s) {
-            camera.position.addScaledVector(direction, -moveSpeed);
+            moveVector.sub(forward);
         }
 
         // Left/Right (A/D)
         if (keys.current.a) {
-            camera.position.addScaledVector(right, -moveSpeed);
+            moveVector.sub(right);
         }
         if (keys.current.d) {
-            camera.position.addScaledVector(right, moveSpeed);
+            moveVector.add(right);
         }
 
-        // Up/Down (Q/E)
-        if (keys.current.q) {
-            camera.position.y -= moveSpeed * 0.5;
+        // Normalize horizontal movement to prevent faster diagonal
+        if (moveVector.length() > 0) {
+            moveVector.normalize();
+            camera.position.addScaledVector(moveVector, moveSpeed);
         }
-        if (keys.current.e) {
+
+        // Up/Down (Space/Ctrl) - independent from horizontal movement
+        if (keys.current.space) {
             camera.position.y += moveSpeed * 0.5;
+        }
+        if (keys.current.shift) {
+            camera.position.y -= moveSpeed * 0.5;
         }
 
         // Clamp height
@@ -215,7 +238,7 @@ function CameraController({ targetPosition, isFirstPerson, stagePosition, onRead
                 camera.lookAt(new THREE.Vector3(...stagePosition));
 
                 // Check if animation is complete
-                if (camera.position.distanceTo(targetRef.current) < 0.1) {
+                if (camera.position.distanceTo(targetRef.current) < 0.05) {
                     animating.current = false;
                     animationComplete.current = true;
                     onReady?.();
@@ -248,20 +271,16 @@ function FirstPersonControls({
     const rotation = useRef({ yaw: 0, pitch: 0 });
     const initialized = useRef(false);
 
+    // Reset initialized flag when disabled
     useEffect(() => {
-        if (!enabled || !cameraPosition) {
+        if (!enabled) {
             initialized.current = false;
-            return;
         }
+    }, [enabled]);
 
-        // Initialize rotation based on looking at origin (stage area)
-        if (!initialized.current) {
-            const dx = 0 - cameraPosition[0]; // Look towards center
-            const dz = 0 - cameraPosition[2];
-            rotation.current.yaw = Math.atan2(dx, -dz);
-            rotation.current.pitch = -0.1; // Slight downward look
-            initialized.current = true;
-        }
+    // Setup event listeners
+    useEffect(() => {
+        if (!enabled || !cameraPosition) return;
 
         const canvas = gl.domElement;
 
@@ -307,9 +326,18 @@ function FirstPersonControls({
         };
     }, [enabled, cameraPosition, gl]);
 
-    // Apply rotation every frame
+    // Apply rotation every frame - initialize synchronously here to avoid delay
     useFrame(() => {
         if (!enabled || !cameraPosition) return;
+
+        // Initialize rotation on first frame (no delay from useEffect)
+        if (!initialized.current) {
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            rotation.current.pitch = Math.asin(Math.max(-1, Math.min(1, dir.y)));
+            rotation.current.yaw = Math.atan2(dir.x, -dir.z);
+            initialized.current = true;
+        }
 
         // Calculate look direction from yaw and pitch
         const lookX = Math.sin(rotation.current.yaw) * Math.cos(rotation.current.pitch);
@@ -327,6 +355,24 @@ function FirstPersonControls({
     return null;
 }
 
+// Imports removed (duplicates)
+
+// ... (interfaces remain same until Venue3DViewerProps)
+
+interface Venue3DViewerProps {
+    zones: Zone[];
+    stages?: Stage[];
+    isAdmin?: boolean;
+    bookedSeats?: string[];
+    selectedSeat?: string | null;
+    onSeatSelect?: (seatId: string, seatInfo: SeatInfo) => void;
+    canvasWidth?: number;
+    canvasHeight?: number;
+    canvasColor?: string;
+}
+
+// ... (FreeLookControls and other helpers)
+
 // Scene content
 function VenueScene({
     zones,
@@ -341,6 +387,9 @@ function VenueScene({
     onSeatClick,
     onFirstPersonReady,
     isDayMode,
+    canvasWidth = 800,
+    canvasHeight = 600,
+    canvasColor = '#1a1a1a',
 }: {
     zones: Zone[];
     stages: Stage[];
@@ -354,7 +403,30 @@ function VenueScene({
     onSeatClick: (seatId: string, position: [number, number, number]) => void;
     onFirstPersonReady: () => void;
     isDayMode: boolean;
+    canvasWidth?: number;
+    canvasHeight?: number;
+    canvasColor?: string;
 }) {
+    // Calculate ground plane dimensions based on canvas size
+    const groundWidth = canvasWidth * SCALE_FACTOR;
+    const groundDepth = canvasHeight * SCALE_FACTOR;
+
+    // Position ground to be centered relative to the content
+    // X: 0 (centered)
+    // Z: groundDepth / 2 (since 2D Y=0 maps to 3D Z=0, and 2D Y=max maps to 3D Z=max)
+    const groundZ = groundDepth / 2;
+
+    // We'll use the canvas color for the ground material
+    // And also set scene background if desired
+    const { scene } = useThree();
+    useEffect(() => {
+        if (!isDayMode) {
+            scene.background = new THREE.Color(canvasColor);
+        } else {
+            scene.background = new THREE.Color('#87CEEB'); // Sky blue for day
+        }
+    }, [canvasColor, isDayMode, scene]);
+
     return (
         <>
             {/* Lighting */}
@@ -363,24 +435,32 @@ function VenueScene({
                 position={[10, 20, 10]}
                 intensity={isDayMode ? 1.2 : 1}
                 castShadow
-                shadow-mapSize={[2048, 2048]}
+                shadow-mapSize={[1024, 1024]}
             />
             <pointLight position={[-10, 10, -10]} intensity={0.5} />
 
-            {/* Environment - Keep night for stability, use lighting for day/night feel */}
-            <Environment preset="night" />
+            {/* Environment - customized based on settings */}
+            <Environment preset={isDayMode ? "city" : "night"} />
 
             {/* Ground */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 30]} receiveShadow>
-                <planeGeometry args={[200, 200]} />
-                <meshStandardMaterial color={isDayMode ? "#e2e8f0" : "#1a1a1a"} />
+            <mesh
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[0, -0.5, groundZ]}
+                receiveShadow
+            >
+                <planeGeometry args={[groundWidth, groundDepth]} />
+                <meshStandardMaterial
+                    color={canvasColor}
+                    roughness={0.8}
+                    metalness={0.2}
+                />
             </mesh>
 
             {/* Grid helper (admin only) */}
             {isAdmin && (
                 <Grid
-                    position={[0, -0.49, 30]}
-                    args={[200, 200]}
+                    position={[0, -0.49, groundZ]}
+                    args={[groundWidth, groundDepth]}
                     cellSize={2}
                     cellThickness={0.5}
                     cellColor="#333333"
@@ -397,7 +477,8 @@ function VenueScene({
                 const stageDepth = (stage.size?.height || 80) * SCALE_FACTOR;
 
                 // Convert top-left (2D) to center (3D)
-                const stageX = (stage.position.x + (stage.size?.width || 200) / 2 - 500) * SCALE_FACTOR;
+                // X: (x + width/2 - canvasWidth/2)
+                const stageX = (stage.position.x + (stage.size?.width || 200) / 2 - canvasWidth / 2) * SCALE_FACTOR;
                 const stageZ = (stage.position.y + (stage.size?.height || 80) / 2) * SCALE_FACTOR;
 
                 return (
@@ -409,6 +490,10 @@ function VenueScene({
                         name={stage.name}
                         hideScreen={stage.hideScreen}
                         height={typeof stage.elevation === 'number' ? Math.max(0.1, stage.elevation) : 1.5}
+                        videoUrl={stage.videoUrl}
+                        screenHeight={stage.screenHeight}
+                        screenWidthRatio={stage.screenWidthRatio}
+                        rotation={stage.rotation}
                     />
                 );
             })}
@@ -426,6 +511,7 @@ function VenueScene({
                     bookedSeats={bookedSeats}
                     selectedSeat={selectedSeat}
                     onSeatClick={onSeatClick}
+                    canvasWidth={canvasWidth}
                 />
             ))}
 
@@ -451,18 +537,56 @@ function VenueScene({
     );
 }
 
+// Cinematic camera controls
+function CinematicControls({ enabled }: { enabled: boolean }) {
+    const { camera } = useThree();
+    const time = useRef(0);
+    const radius = 100;
+    const height = 40;
+
+    useFrame((state, delta) => {
+        if (!enabled) return;
+
+        time.current += delta * 0.2; // Speed control
+
+        // Circular orbit
+        const x = Math.sin(time.current) * radius;
+        const z = Math.cos(time.current) * radius;
+
+        // Sine wave elevation for "drone" feel
+        const y = height + Math.sin(time.current * 0.5) * 10;
+
+        // Smoothly interpolate current camera position to target
+        const targetPos = new THREE.Vector3(x, y, z);
+        camera.position.lerp(targetPos, 0.02);
+
+        // Look at center (slightly elevated)
+        camera.lookAt(0, 5, 0);
+    });
+
+    return null;
+}
+
 export function Venue3DViewer({
     zones,
     stages = [],
     isAdmin = false,
     bookedSeats = [],
+    selectedSeat: propSelectedSeat,
     onSeatSelect,
+    canvasWidth = 800,
+    canvasHeight = 600,
+    canvasColor = '#1a1a1a',
 }: Venue3DViewerProps) {
-    const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+    const [internalSelectedSeat, setInternalSelectedSeat] = useState<string | null>(null);
+    const selectedSeat = propSelectedSeat !== undefined ? propSelectedSeat : internalSelectedSeat;
+
     const [seatPosition, setSeatPosition] = useState<[number, number, number] | null>(null);
+    const [seatDisplayInfo, setSeatDisplayInfo] = useState<{ zoneName: string; row: number; seatNumber: number } | null>(null);
     const [firstPersonMode, setFirstPersonMode] = useState(false);
     const [firstPersonReady, setFirstPersonReady] = useState(false);
-    const [isDayMode, setIsDayMode] = useState(false);
+    const [isCinematic, setIsCinematic] = useState(false);
+    const [isDayMode, setIsDayMode] = useState(true);
 
     // Calculate stage position for camera to look at
     const stagePosition: [number, number, number] = stages.length > 0
@@ -475,23 +599,33 @@ export function Venue3DViewer({
 
     const handleSeatClick = useCallback(
         (seatId: string, position: [number, number, number]) => {
-            setSelectedSeat(seatId);
+            setInternalSelectedSeat(seatId);
             setSeatPosition(position);
 
             // Parse seat info from seatId (format: zoneId-R{row}-S{seat})
-            const parts = seatId.split('-');
-            const zoneId = parts[0];
-            const row = parseInt(parts[1].replace('R', ''));
-            const seatNumber = parseInt(parts[2].replace('S', ''));
-            const zone = zones.find((z) => z.id === zoneId);
+            // Zone ID can contain dashes, so we find -R{num}-S{num} pattern from the end
+            const match = seatId.match(/^(.+)-R(\d+)-S(\d+)$/);
+            if (match) {
+                const zoneId = match[1];
+                const row = parseInt(match[2]);
+                const seatNumber = parseInt(match[3]);
+                const zone = zones.find((z) => z.id === zoneId);
 
-            if (onSeatSelect) {
-                onSeatSelect(seatId, {
-                    seatId,
-                    position,
+                if (onSeatSelect) {
+                    onSeatSelect(seatId, {
+                        seatId,
+                        position,
+                        zoneName: zone?.name || 'Unknown',
+                        row,
+                        seatNumber,
+                    });
+                }
+
+                // Store seat display info for UI
+                setSeatDisplayInfo({
                     zoneName: zone?.name || 'Unknown',
                     row,
-                    seatNumber,
+                    seatNumber
                 });
             }
         },
@@ -500,6 +634,7 @@ export function Venue3DViewer({
 
     const handleViewFromSeat = () => {
         if (seatPosition) {
+            setIsCinematic(false);
             setFirstPersonMode(true);
             setFirstPersonReady(false);
         }
@@ -508,6 +643,14 @@ export function Venue3DViewer({
     const handleResetView = () => {
         setFirstPersonMode(false);
         setFirstPersonReady(false);
+    };
+
+    const toggleCinematic = () => {
+        setIsCinematic(!isCinematic);
+        if (!isCinematic) {
+            setFirstPersonMode(false);
+            setInternalSelectedSeat(null);
+        }
     };
 
     const handleFirstPersonReady = useCallback(() => {
@@ -520,7 +663,7 @@ export function Venue3DViewer({
                 <PerspectiveCamera
                     makeDefault
                     position={isAdmin ? [0, 60, 80] : [0, 30, 60]}
-                    fov={60}
+                    fov={45}
                 />
                 <VenueScene
                     zones={zones}
@@ -533,8 +676,25 @@ export function Venue3DViewer({
                     seatPosition={seatPosition}
                     stagePosition={stagePosition}
                     onSeatClick={handleSeatClick}
-                    onFirstPersonReady={handleFirstPersonReady}
+                    onFirstPersonReady={() => setFirstPersonReady(true)}
                     isDayMode={isDayMode}
+                    canvasWidth={canvasWidth}
+                    canvasHeight={canvasHeight}
+                    canvasColor={canvasColor}
+                />
+
+                {/* Controls */}
+                <CinematicControls enabled={isCinematic} />
+                <FreeLookControls enabled={!firstPersonMode && !isCinematic} />
+                <CameraController
+                    targetPosition={seatPosition}
+                    isFirstPerson={firstPersonMode}
+                    stagePosition={stagePosition}
+                    onReady={handleFirstPersonReady}
+                />
+                <FirstPersonControls
+                    enabled={firstPersonMode && firstPersonReady}
+                    cameraPosition={seatPosition}
                 />
             </Canvas>
 
@@ -551,27 +711,86 @@ export function Venue3DViewer({
                     pointerEvents: 'none',
                 }}
             >
-                {/* Selected seat info */}
-                {selectedSeat && (
+                {/* Left Controls Group */}
+                <div
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px',
+                        alignItems: 'flex-start',
+                        pointerEvents: 'auto'
+                    }}
+                >
+                    {/* Cinematic Toggle */}
+                    <button
+                        onClick={toggleCinematic}
+                        style={{
+                            background: isCinematic
+                                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                                : 'rgba(0, 0, 0, 0.6)',
+                            color: 'white',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            cursor: 'pointer',
+                            boxShadow: isCinematic ? '0 0 15px rgba(245, 158, 11, 0.5)' : 'none',
+                            transition: 'all 0.3s'
+                        }}
+                    >
+                        <span>{isCinematic ? '🎬 Cinematic ON' : '🍿 Cinematic Mode'}</span>
+                    </button>
+
+                    {/* WASD Controls hint */}
+                    {!isCinematic && (
+                        <div
+                            style={{
+                                background: 'rgba(0, 0, 0, 0.6)',
+                                color: '#a0a0a0',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                lineHeight: '1.4',
+                            }}
+                        >
+                            <div><b style={{ color: 'white' }}>WASD</b> - Move</div>
+                            <div><b style={{ color: 'white' }}>Space</b> - Up | <b style={{ color: 'white' }}>Shift</b> - Down</div>
+                            <div><b style={{ color: 'white' }}>Drag</b> - Look around</div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Selected seat info - Bottom Center */}
+                {selectedSeat && seatDisplayInfo && !isCinematic && (
                     <div
                         style={{
                             background: 'rgba(0, 0, 0, 0.8)',
                             color: 'white',
-                            padding: '12px 16px',
+                            padding: '12px 20px',
                             borderRadius: '8px',
+                            textAlign: 'center',
                             pointerEvents: 'auto',
                         }}
                     >
-                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                            Selected: {selectedSeat}
+                        <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
+                            {seatDisplayInfo.zoneName} - Hàng {seatDisplayInfo.row}, Ghế {seatDisplayInfo.seatNumber}
                         </div>
-                        <div style={{ fontSize: '14px', color: '#a0a0a0' }}>
-                            Click "View from Seat" to see first-person view
+                        <div style={{
+                            fontSize: '14px',
+                            marginTop: '4px',
+                            color: bookedSeats.includes(selectedSeat) ? '#ef4444' : '#22c55e',
+                            fontWeight: '500',
+                        }}>
+                            {bookedSeats.includes(selectedSeat) ? '🔴 Đã đặt' : '🟢 Còn trống'}
                         </div>
                     </div>
                 )}
 
-                {/* View controls */}
+                {/* View controls - Bottom Right */}
                 <div
                     style={{
                         display: 'flex',
@@ -579,7 +798,7 @@ export function Venue3DViewer({
                         pointerEvents: 'auto',
                     }}
                 >
-                    {selectedSeat && !firstPersonMode && (
+                    {selectedSeat && !firstPersonMode && !isCinematic && (
                         <button
                             onClick={handleViewFromSeat}
                             style={{
@@ -614,33 +833,6 @@ export function Venue3DViewer({
                         </button>
                     )}
                 </div>
-            </div>
-
-            {/* Mode indicator */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: 20,
-                    right: 20,
-                    background: firstPersonMode
-                        ? 'rgba(34, 197, 94, 0.9)'
-                        : isAdmin
-                            ? 'rgba(59, 130, 246, 0.9)'
-                            : 'rgba(0, 0, 0, 0.7)',
-                    color: 'white',
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                }}
-            >
-                {firstPersonMode
-                    ? firstPersonReady
-                        ? '👤 First Person View (Drag to look around)'
-                        : '👤 Moving to seat...'
-                    : isAdmin
-                        ? '🎮 Admin View (Drag to rotate)'
-                        : '🎫 Select a seat'}
             </div>
 
             {/* Day/Night Toggle */}

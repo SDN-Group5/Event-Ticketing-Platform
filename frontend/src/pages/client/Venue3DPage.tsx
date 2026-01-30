@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Venue3DViewer } from '../../components/venue3d';
 import { getAllEventLayouts } from '../../services/layoutService';
-import { LayoutZone } from '../../types/layout';
+import { LayoutZone, EventLayout } from '../../types/layout';
 
 // Sample venue data (fallback)
 const sampleZones = [
@@ -45,6 +45,7 @@ const sampleStages = [
         position: { x: 500, y: 50 },
         size: { width: 300, height: 80 },
         color: '#1a1a2e',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     },
 ];
 
@@ -80,6 +81,7 @@ function convertLayoutZoneTo3D(zone: LayoutZone) {
         position: zone.position,
         size: zone.size,
         elevation: zone.elevation || 0,
+        rotation: zone.rotation || 0,
     };
 }
 
@@ -93,6 +95,10 @@ function convertStageZoneTo3D(zone: LayoutZone) {
         color: zone.color,
         hideScreen: zone.hideScreen,
         elevation: zone.elevation,
+        videoUrl: zone.videoUrl,
+        screenHeight: zone.screenHeight,
+        screenWidthRatio: zone.screenWidthRatio,
+        rotation: zone.rotation || 0,
     };
 }
 
@@ -100,15 +106,15 @@ export default function Venue3DPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [selectedSeatInfo, setSelectedSeatInfo] = useState<SeatInfo | null>(null);
     const [selectedLayoutId, setSelectedLayoutId] = useState<string>('sample');
-    const [savedLayouts, setSavedLayouts] = useState<{ id: string; name: string; zones: LayoutZone[] }[]>([]);
+    const [savedLayouts, setSavedLayouts] = useState<(EventLayout & { id: string, name: string })[]>([]);
 
     // Load saved layouts from localStorage
     useEffect(() => {
         const layouts = getAllEventLayouts();
         const formattedLayouts = layouts.map(layout => ({
+            ...layout,
             id: layout.eventId,
             name: layout.eventName || `Event ${layout.eventId}`,
-            zones: layout.zones,
         }));
         setSavedLayouts(formattedLayouts);
 
@@ -153,131 +159,102 @@ export default function Venue3DPage() {
         console.log('Seat selected:', seatId, seatInfo);
     };
 
+    // Get canvas settings
+    const canvasSettings = useMemo(() => {
+        if (selectedLayoutId === 'sample') {
+            return { width: 800, height: 600, color: '#1a1a1a' };
+        }
+        const layout = savedLayouts.find(l => l.id === selectedLayoutId);
+        return {
+            width: layout?.canvasWidth || 800,
+            height: layout?.canvasHeight || 600,
+            color: layout?.canvasColor || '#1a1a1a',
+        };
+    }, [selectedLayoutId, savedLayouts]);
+
     return (
-        <div
-            style={{
-                width: '100vw',
-                height: '100vh',
-                background: '#0a0a0a',
-                display: 'flex',
-                flexDirection: 'column',
-            }}
-        >
-            {/* Header */}
-            <div
-                style={{
-                    padding: '16px 24px',
-                    background: 'rgba(0, 0, 0, 0.8)',
-                    borderBottom: '1px solid #333',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                }}
-            >
-                <div>
-                    <h1
-                        style={{
-                            margin: 0,
-                            color: 'white',
-                            fontSize: '24px',
-                            fontWeight: 'bold',
-                        }}
-                    >
-                        🎭 3D Venue Viewer
-                    </h1>
-                    <p style={{ margin: '4px 0 0', color: '#888', fontSize: '14px' }}>
-                        Interactive concert hall seat selection
-                    </p>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                    {/* Layout selector */}
-                    <select
-                        value={selectedLayoutId}
-                        onChange={(e) => setSelectedLayoutId(e.target.value)}
-                        style={{
-                            background: '#1a1a2e',
-                            color: 'white',
-                            border: '1px solid #333',
-                            borderRadius: '8px',
-                            padding: '8px 12px',
-                            fontSize: '14px',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <option value="sample">Sample Layout</option>
-                        {savedLayouts.map(layout => (
-                            <option key={layout.id} value={layout.id}>
-                                {layout.name}
-                            </option>
-                        ))}
-                    </select>
-
-                    {/* Selected seat info */}
-                    {selectedSeatInfo && (
-                        <div
-                            style={{
-                                background: 'rgba(34, 197, 94, 0.2)',
-                                border: '1px solid #22c55e',
-                                padding: '8px 16px',
-                                borderRadius: '8px',
-                                color: 'white',
-                            }}
-                        >
-                            <span style={{ fontWeight: 'bold' }}>
-                                {selectedSeatInfo.zoneName}
-                            </span>{' '}
-                            - Row {selectedSeatInfo.row}, Seat {selectedSeatInfo.seatNumber}
-                        </div>
-                    )}
-
-                    {/* Admin toggle */}
-                    <label
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            color: 'white',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <input
-                            type="checkbox"
-                            checked={isAdmin}
-                            onChange={(e) => setIsAdmin(e.target.checked)}
-                            style={{ width: '18px', height: '18px' }}
-                        />
-                        <span>Admin Mode</span>
-                    </label>
-                </div>
-            </div>
+        <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+            {/* Header removed to maximize 3D content space */}
 
             {/* 3D Viewer */}
             <div style={{ flex: 1, position: 'relative' }}>
-                {currentZones.length > 0 ? (
-                    <Venue3DViewer
-                        zones={currentZones}
-                        stages={currentStages}
-                        isAdmin={isAdmin}
-                        bookedSeats={bookedSeats}
-                        onSeatSelect={handleSeatSelect}
-                    />
-                ) : (
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            height: '100%',
-                            color: '#888',
-                            fontSize: '18px',
-                        }}
-                    >
-                        No seat zones found in this layout
+                {/* Event Selector Overlay */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 20,
+                        right: 20,
+                        zIndex: 10,
+                        background: 'rgba(0, 0, 0, 0.6)',
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        minWidth: '200px',
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '18px' }}>🏟️</span>
+                        <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}>Stage View</span>
                     </div>
-                )}
+
+                    <label style={{ color: '#a0a0a0', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Select Event Layout
+                    </label>
+
+                    <div style={{ position: 'relative' }}>
+                        <select
+                            value={selectedLayoutId}
+                            onChange={(e) => setSelectedLayoutId(e.target.value)}
+                            style={{
+                                width: '100%',
+                                background: 'rgba(255, 255, 255, 0.1)',
+                                color: 'white',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                padding: '8px 12px',
+                                borderRadius: '6px',
+                                outline: 'none',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                appearance: 'none',
+                                paddingRight: '30px',
+                            }}
+                        >
+                            <option value="sample" style={{ color: 'black' }}>Sample Layout</option>
+                            {savedLayouts.map(layout => (
+                                <option key={layout.id} value={layout.id} style={{ color: 'black' }}>
+                                    {layout.name}
+                                </option>
+                            ))}
+                        </select>
+                        <div style={{
+                            position: 'absolute',
+                            right: '12px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                            color: 'white',
+                            fontSize: '10px'
+                        }}>
+                            ▼
+                        </div>
+                    </div>
+                </div>
+
+                <Venue3DViewer
+                    zones={currentZones}
+                    stages={currentStages}
+                    isAdmin={isAdmin}
+                    bookedSeats={bookedSeats}
+                    selectedSeat={selectedSeatInfo?.seatId}
+                    onSeatSelect={(id, info) => setSelectedSeatInfo(info)}
+                    canvasWidth={canvasSettings.width}
+                    canvasHeight={canvasSettings.height}
+                    canvasColor={canvasSettings.color}
+                />
             </div>
 
             {/* Legend */}

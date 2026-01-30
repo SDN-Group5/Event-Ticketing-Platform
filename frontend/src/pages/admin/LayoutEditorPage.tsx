@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveEventLayout, getEventLayout } from '../../services/layoutService';
 import { LayoutZone } from '../../types/layout';
+import { SEAT_UNIT_2D } from '../../constants/layoutConstants';
 import eventsData from '../../data/events.json';
 
 // Types
@@ -24,11 +25,14 @@ interface Zone {
     position: Position;
     size: Size;
     color: string;
+    rotation?: number;
     rows?: number;
     seatsPerRow?: number;
     price?: number;
     elevation?: number; // Height in 3D view
     hideScreen?: boolean; // Hide screen in 2D/3D
+    screenHeight?: number; // Screen height
+    screenWidthRatio?: number; // Screen width ratio (0-1)
 }
 
 interface Seat {
@@ -86,12 +90,30 @@ export const LayoutEditorPage: React.FC = () => {
     const [showSeatGrid, setShowSeatGrid] = useState(false);
     const [isSaved, setIsSaved] = useState(true);
 
+    // Canvas settings
+    const [canvasSize, setCanvasSize] = useState<Size>({ width: 800, height: 600 });
+    const [canvasColor, setCanvasColor] = useState('#0f1219');
+
     // Load existing layout when event is selected
     useEffect(() => {
         if (selectedEventId) {
             const existingLayout = getEventLayout(selectedEventId);
             if (existingLayout) {
                 setZones(existingLayout.zones as Zone[]);
+
+                // Load canvas settings if available
+                if (existingLayout.canvasWidth && existingLayout.canvasHeight) {
+                    setCanvasSize({ width: existingLayout.canvasWidth, height: existingLayout.canvasHeight });
+                } else {
+                    setCanvasSize({ width: 800, height: 600 });
+                }
+
+                if (existingLayout.canvasColor) {
+                    setCanvasColor(existingLayout.canvasColor);
+                } else {
+                    setCanvasColor('#0f1219');
+                }
+
                 setHistory([existingLayout.zones as Zone[]]);
                 setHistoryIndex(0);
                 setIsSaved(true);
@@ -174,8 +196,8 @@ export const LayoutEditorPage: React.FC = () => {
 
         // Calculate exact size for seats to avoid padding
         if (selectedTool === 'seats') {
-            width = 8 * 18;
-            height = 4 * 18;
+            width = 8 * SEAT_UNIT_2D;
+            height = 4 * SEAT_UNIT_2D;
         }
 
         const newZone: Zone = {
@@ -311,11 +333,11 @@ export const LayoutEditorPage: React.FC = () => {
                 const newRows = updates.rows !== undefined ? updates.rows : (zone.rows || 4);
                 const newSeatsPerRow = updates.seatsPerRow !== undefined ? updates.seatsPerRow : (zone.seatsPerRow || 8);
 
-                // 16px seat + 2px gap = 18px per unit
-                // Remove extra padding as requested
+                // SEAT_UNIT_2D px per unit (seat + gap)
+                // This ensures exact sizing that maps correctly to 3D
                 finalUpdates.size = {
-                    width: newSeatsPerRow * 18,
-                    height: newRows * 18
+                    width: newSeatsPerRow * SEAT_UNIT_2D,
+                    height: newRows * SEAT_UNIT_2D
                 };
             }
         }
@@ -353,7 +375,12 @@ export const LayoutEditorPage: React.FC = () => {
 
         try {
             const event = eventsData.find(e => e.id === selectedEventId);
-            saveEventLayout(selectedEventId, zones as LayoutZone[], event?.title);
+            saveEventLayout(
+                selectedEventId,
+                zones as LayoutZone[],
+                event?.title,
+                { width: canvasSize.width, height: canvasSize.height, color: canvasColor }
+            );
             setIsSaved(true);
             setSaveMessage({ type: 'success', text: 'Layout saved successfully!' });
             setTimeout(() => setSaveMessage(null), 3000);
@@ -396,6 +423,7 @@ export const LayoutEditorPage: React.FC = () => {
                     top: zone.position.y,
                     width: zone.size.width,
                     height: zone.size.height,
+                    transform: `rotate(${zone.rotation || 0}deg)`,
                 }}
                 onMouseDown={(e) => handleZoneMouseDown(e, zone.id)}
             >
@@ -426,7 +454,7 @@ export const LayoutEditorPage: React.FC = () => {
                                         seat.status === 'reserved' ? 'bg-amber-500/80' :
                                             'bg-slate-600/80'
                                         }`}
-                                    title={`Row ${seat.row}, Seat ${seat.number}`}
+                                    title={`${zone.name}-R${seat.row}-S${seat.number}`}
                                 >
                                     {seat.number}
                                 </div>
@@ -564,6 +592,20 @@ export const LayoutEditorPage: React.FC = () => {
                     </button>
                 </div>
 
+                {/* Canvas Settings Button */}
+                <div className="mb-6">
+                    <button
+                        onClick={() => setSelectedZoneId(null)}
+                        className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${!selectedZone
+                            ? 'bg-[#8655f6] text-white shadow-lg shadow-[#8655f6]/25'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                            }`}
+                    >
+                        <span className="material-symbols-outlined text-lg">tune</span>
+                        Edit Canvas Settings
+                    </button>
+                </div>
+
                 {/* Zone Settings */}
                 {selectedZone && (
                     <div className="flex-1 overflow-y-auto">
@@ -578,6 +620,24 @@ export const LayoutEditorPage: React.FC = () => {
                                         onChange={(e) => updateZone(selectedZone.id, { name: e.target.value })}
                                         className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase mb-1.5 block">Rotation (Degrees)</label>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="360"
+                                            step="5"
+                                            value={selectedZone.rotation || 0}
+                                            onChange={(e) => updateZone(selectedZone.id, { rotation: parseInt(e.target.value) })}
+                                            className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <span className="text-sm font-bold text-[#8655f6] min-w-[30px] text-right">
+                                            {selectedZone.rotation || 0}°
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {selectedZone.type === 'stage' && (
@@ -652,7 +712,6 @@ export const LayoutEditorPage: React.FC = () => {
                                             <input
                                                 type="range"
                                                 min="0"
-                                                min="0"
                                                 max={selectedZone.type === 'stage' ? "10" : "20"}
                                                 step={selectedZone.type === 'stage' ? "0.5" : "1"}
                                                 value={selectedZone.elevation || 0}
@@ -669,6 +728,56 @@ export const LayoutEditorPage: React.FC = () => {
                                                 : 'Height offset in 3D viewer (0 = ground level)'}
                                         </p>
                                     </div>
+                                )}
+
+                                {(selectedZone.type === 'stage') && (
+                                    <>
+                                        <div className="border-t border-slate-800 pt-4 mt-2">
+                                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Screen Settings</h4>
+
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="text-xs text-slate-500 uppercase mb-1.5 block">
+                                                        Screen Height
+                                                    </label>
+                                                    <div className="flex items-center gap-3">
+                                                        <input
+                                                            type="range"
+                                                            min="2"
+                                                            max="15"
+                                                            step="0.5"
+                                                            value={selectedZone.screenHeight || 5}
+                                                            onChange={(e) => updateZone(selectedZone.id, { screenHeight: parseFloat(e.target.value) })}
+                                                            className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                                        />
+                                                        <span className="text-sm font-bold text-[#8655f6] min-w-[40px] text-right">
+                                                            {selectedZone.screenHeight || 5}m
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-xs text-slate-500 uppercase mb-1.5 block">
+                                                        Screen Width Ratio
+                                                    </label>
+                                                    <div className="flex items-center gap-3">
+                                                        <input
+                                                            type="range"
+                                                            min="0.3"
+                                                            max="1.0"
+                                                            step="0.05"
+                                                            value={selectedZone.screenWidthRatio || 0.9}
+                                                            onChange={(e) => updateZone(selectedZone.id, { screenWidthRatio: parseFloat(e.target.value) })}
+                                                            className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                                        />
+                                                        <span className="text-sm font-bold text-[#8655f6] min-w-[40px] text-right">
+                                                            {Math.round((selectedZone.screenWidthRatio || 0.9) * 100)}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
                                 )}
 
 
@@ -710,10 +819,63 @@ export const LayoutEditorPage: React.FC = () => {
                 )}
 
                 {!selectedZone && (
-                    <div className="flex-1 flex items-center justify-center text-center p-6">
-                        <div>
-                            <span className="material-symbols-outlined text-4xl text-slate-600 mb-2">touch_app</span>
-                            <p className="text-sm text-slate-500">Select a zone to edit its properties</p>
+                    <div className="flex-1 overflow-y-auto">
+                        <div className="border-t border-slate-800 pt-5 mt-auto">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Canvas Settings</h3>
+
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase mb-1.5 block">Width</label>
+                                        <input
+                                            type="number"
+                                            min="400"
+                                            max="2000"
+                                            value={canvasSize.width}
+                                            onChange={(e) => setCanvasSize(prev => ({ ...prev, width: parseInt(e.target.value) || 800 }))}
+                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase mb-1.5 block">Height</label>
+                                        <input
+                                            type="number"
+                                            min="300"
+                                            max="2000"
+                                            value={canvasSize.height}
+                                            onChange={(e) => setCanvasSize(prev => ({ ...prev, height: parseInt(e.target.value) || 600 }))}
+                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase mb-1.5 block">Background</label>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {['#0f1219', '#1a1a2e', '#0f172a', '#18181b', '#171717'].map(color => (
+                                            <button
+                                                key={color}
+                                                onClick={() => setCanvasColor(color)}
+                                                className={`w-8 h-8 rounded-lg border border-slate-700 transition-transform hover:scale-110 ${canvasColor === color ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0f1219]' : ''
+                                                    }`}
+                                                style={{ backgroundColor: color }}
+                                                title={color}
+                                            />
+                                        ))}
+                                        <input
+                                            type="color"
+                                            value={canvasColor}
+                                            onChange={(e) => setCanvasColor(e.target.value)}
+                                            className="w-8 h-8 rounded-lg overflow-hidden cursor-pointer border-0 p-0"
+                                            title="Custom Color"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 flex items-center justify-center text-center p-6 text-slate-600">
+                            <p className="text-sm">Select a zone to edit its properties</p>
                         </div>
                     </div>
                 )}
@@ -758,7 +920,10 @@ export const LayoutEditorPage: React.FC = () => {
                             />
                             Show Seats
                         </label>
-                        <button className="px-4 py-2 text-sm border border-slate-700 rounded-lg font-medium hover:bg-white/5">
+                        <button
+                            onClick={() => navigate('/venue-3d')}
+                            className="px-4 py-2 text-sm border border-slate-700 rounded-lg font-medium hover:bg-white/5"
+                        >
                             Preview
                         </button>
                         <button
@@ -788,10 +953,11 @@ export const LayoutEditorPage: React.FC = () => {
                     {/* Canvas Content */}
                     <div
                         ref={canvasRef}
-                        className="relative mx-auto bg-[#0f1219] rounded-2xl border border-slate-800 shadow-2xl"
+                        className="relative mx-auto rounded-2xl border border-slate-800 shadow-2xl transition-all duration-300"
                         style={{
-                            width: 800 * (zoom / 100),
-                            height: 500 * (zoom / 100),
+                            width: canvasSize.width * (zoom / 100),
+                            height: canvasSize.height * (zoom / 100),
+                            backgroundColor: canvasColor,
                             transformOrigin: 'top left',
                         }}
                         onClick={handleCanvasClick}

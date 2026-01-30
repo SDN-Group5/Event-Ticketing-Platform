@@ -6,9 +6,10 @@ import { useLocation } from 'react-router-dom';
 interface AdminLayoutProps {
     children: React.ReactNode;
     title: string;
+    fullWidth?: boolean;
 }
 
-export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
+export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, fullWidth = false }) => {
     const location = useLocation();
     const [activePath, setActivePath] = useState(location.pathname);
 
@@ -31,26 +32,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => 
                 }
             />
             <main className="flex-1 overflow-y-auto">
-                {/* Header */}
-                <header className="h-16 border-b border-slate-800 bg-[#0f1219]/50 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-20">
-                    <div className="relative w-64">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">search</span>
-                        <input
-                            className="w-full bg-slate-800/50 border-none rounded-lg pl-10 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-[#d946ef]"
-                            placeholder="Search..."
-                        />
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <button className="relative">
-                            <span className="material-symbols-outlined text-slate-400">notifications</span>
-                            <span className="absolute top-0 right-0 w-2 h-2 bg-[#d946ef] rounded-full" />
-                        </button>
-                        <div className="h-8 w-8 rounded-full bg-slate-700" />
-                    </div>
-                </header>
-
                 {/* Content */}
-                <div className="p-8 max-w-7xl mx-auto">
+                <div className={fullWidth ? "h-full" : "p-8 max-w-7xl mx-auto"}>
                     {children}
                 </div>
             </main>

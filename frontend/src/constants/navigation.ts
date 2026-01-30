@@ -36,6 +36,7 @@ export const adminSidebarItems = [
     { name: 'Event Approvals', icon: 'check_circle', path: '/admin/event-approvals' },
     { name: 'Refund Requests', icon: 'undo', path: '/admin/refund-requests' },
     { name: 'Analytics', icon: 'bar_chart', path: '/admin/analytics' },
+    { name: 'Layout Editor', icon: 'edit_square', path: '/admin/layout-editor' },
     { name: 'Settings', icon: 'settings', path: '/admin/settings' },
 ];
 

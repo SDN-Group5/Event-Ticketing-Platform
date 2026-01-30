@@ -6,11 +6,13 @@ import { useLocation } from 'react-router-dom';
 interface OrganizerLayoutProps {
     children: React.ReactNode;
     title?: string;
+    fullWidth?: boolean;
 }
 
 export const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({
     children,
     title,
+    fullWidth = false,
 }) => {
     const location = useLocation();
     const [activePath, setActivePath] = useState(location.pathname);
@@ -28,12 +30,7 @@ export const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({
                 variant="organizer"
                 subtitle="Organizer Portal"
             />
-            <main className="flex-1 p-8 overflow-y-auto">
-                {title && (
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-bold">{title}</h1>
-                    </div>
-                )}
+            <main className={`flex-1 overflow-y-auto ${fullWidth ? '' : 'p-8 max-w-7xl mx-auto'}`}>
                 {children}
             </main>
         </div>

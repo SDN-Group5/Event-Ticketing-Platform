@@ -22,6 +22,8 @@ export interface LayoutZone {
     rows?: number;
     seatsPerRow?: number;
     price?: number;
+    elevation?: number; // Height/elevation in 3D view (default: 0)
+    hideScreen?: boolean; // Whether to hide the screen in 3D/2D views
 }
 
 export interface EventLayout {

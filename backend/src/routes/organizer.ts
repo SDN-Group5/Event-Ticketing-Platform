@@ -1,6 +1,7 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import verifyToken from "../middleware/auth";
 import { roleCheck } from "../middleware/roleCheck";
+import { generateBannerWithBedrock } from "../services/bedrockImage.service";
 
 const router = express.Router();
 
@@ -113,6 +114,30 @@ router.get("/staff", (req, res) => {
 router.get("/analytics", (req, res) => {
   // TODO: Implement analytics controller
   res.status(200).json({ message: "Organizer: Get analytics (TODO)" });
+});
+
+/**
+ * POST /api/organizer/ai/generate-banner
+ * Body: { prompt: string, eventName?: string }
+ * Trả về: { imageDataUrl: string } (data URL base64)
+ */
+router.post("/ai/generate-banner", async (req: Request, res: Response) => {
+  try {
+    const { prompt, eventName } = req.body || {};
+    if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
+      return res.status(400).json({ error: "Thiếu prompt" });
+    }
+    const imageDataUrl = await generateBannerWithBedrock({
+      prompt: prompt.trim(),
+      eventName: eventName?.trim() || undefined,
+    });
+    return res.json({ imageDataUrl });
+  } catch (err: any) {
+    console.error("Bedrock generate-banner error:", err);
+    const message =
+      err?.message || "Lỗi khi tạo banner. Kiểm tra AWS credentials và Model access.";
+    return res.status(500).json({ error: message });
+  }
 });
 
 export default router;

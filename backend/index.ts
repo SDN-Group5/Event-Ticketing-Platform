@@ -9,6 +9,7 @@ import adminRoutes from "./src/routes/admin";
 import organizerRoutes from "./src/routes/organizer";
 import staffRoutes from "./src/routes/staff";
 import customerRoutes from "./src/routes/customer";
+import aiRoutes from "./src/routes/ai";
 import swaggerUi from "swagger-ui-express";
 import { specs } from "./src/shared/swagger";
 import helmet from "helmet";
@@ -54,7 +55,6 @@ cloudinary.config({
 //=======================================================================
 // -- KẾT NỐI CƠ SỞ DỮ LIỆU MONGODB --
 const connectDB = async () => {
-
     try {
         console.log("🔌 Kết nối đến MongoDB...");
         await mongoose.connect(process.env.MONGODB_CONNECTION_STRING);
@@ -63,7 +63,9 @@ const connectDB = async () => {
         console.log(`📦 Collections: ${mongoose.connection.collections.length}`);
     } catch (error) {
         console.error("❌ Lỗi kết nối MongoDB:", error);
-        process.exit(1); // dừng ứng dụng ngay lập tức
+        console.warn("⚠️  Backend vẫn chạy nhưng một số tính năng có thể không hoạt động.");
+        console.warn("💡 Kiểm tra MongoDB IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/");
+        // KHÔNG exit - cho phép backend chạy để các route không cần DB vẫn hoạt động (như /api/ai/*)
     }
 }
 
@@ -74,7 +76,8 @@ mongoose.connection.on("connected", () => {
 
 mongoose.connection.on("error", (error) => {
     console.error("❌ Lỗi kết nối MongoDB:", error);
-    process.exit(1); // dừng ứng dụng ngay lập tức
+    // KHÔNG exit - chỉ cảnh báo
+    console.warn("⚠️  MongoDB error - một số tính năng có thể không hoạt động.");
 });
 
 mongoose.connection.on("disconnected", () => {
@@ -120,6 +123,7 @@ const allowedOrigins = [
     process.env.FRONTEND_URL,
     "http://localhost:5174",
     "http://localhost:5173",
+    "http://localhost:3000",
     "https://mern-booking-hotel.netlify.app",
   ].filter((origin): origin is string => Boolean(origin));
 
@@ -172,6 +176,7 @@ app.use("/api/admin", adminRoutes);                                             
 app.use("/api/organizer", organizerRoutes);                                     // Organizer routes (RBAC: organizer only)
 app.use("/api/staff", staffRoutes);                                             // Staff routes (RBAC: staff only)
 app.use("/api/customer", customerRoutes);                                       // Customer routes (RBAC: customer only)
+app.use("/api/ai", aiRoutes);                                                   // AI routes (public, không cần auth)
 
 //=======================================================================
 // --- TÀI LIỆU API (SWAGGER) ---

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EventCard } from '../../components/common/Card';
+import type { EventFromJson } from '../../types/event';
 import eventsData from '../../data/events.json';
+
+const events = eventsData as EventFromJson[];
 
 const getEventDateParts = (dateString: string) => {
     const date = new Date(dateString);
@@ -62,13 +65,13 @@ export const SearchPage: React.FC = () => {
                                 All <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#a855f7] to-[#ec4899]">Events</span>
                             </h1>
                             <p className="text-gray-400 font-medium">
-                                {eventsData.filter(e => e.status === 'published').length} events found
+                                {events.filter(e => e.status === 'published').length} events found
                             </p>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {eventsData
+                            {events
                                 .filter(event =>
                                     event.status === 'published' &&
                                     (searchTerm === '' || event.title.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -79,10 +82,12 @@ export const SearchPage: React.FC = () => {
                                         <EventCard
                                             key={item.id}
                                             title={item.title}
+                                            artist={item.artist}
                                             imageUrl={item.image}
                                             date={date}
                                             month={month}
-                                            price={`From $${item.minPrice}`}
+                                            location={item.location}
+                                            price={item.priceDisplay || `${item.minPrice}k VND`}
                                             onBuyClick={() => navigate(`/event/${item.id}`)}
                                         />
                                     );

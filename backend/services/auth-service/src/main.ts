@@ -20,7 +20,8 @@ export { User } from './models/user.model';
 // ============================================
 const PORT = process.env.PORT || 4001;
 const SERVICE_NAME = 'auth-service';
-const MONGO_URI = process.env.MONGODB_URI || process.env.MONGODB_CONNECTION_STRING || 'mongodb://localhost:27017/auth_db';
+// Luôn ưu tiên MongoDB Atlas / connection string từ env, KHÔNG dùng localhost
+const MONGO_URI = process.env.MONGODB_CONNECTION_STRING || process.env.MONGODB_URI || '';
 
 // ============================================
 // CREATE EXPRESS APP
@@ -60,9 +61,15 @@ app.get('/', (req, res) => {
 // ============================================
 const connectDB = async () => {
   try {
+    if (!MONGO_URI) {
+      console.error(`❌ [${SERVICE_NAME}] MONGO_URI chưa được cấu hình. Vui lòng set MONGODB_CONNECTION_STRING trong auth-service/.env`);
+      process.exit(1);
+    }
     console.log(`🔌 [${SERVICE_NAME}] Kết nối MongoDB...`);
     await mongoose.connect(MONGO_URI);
     console.log(`✅ [${SERVICE_NAME}] MongoDB connected: ${mongoose.connection.name}`);
+    console.log(`   🔗 URI: ${MONGO_URI}`);
+    console.log(`   🗄  DB Name: ${mongoose.connection.name} | Host: ${mongoose.connection.host}`);
   } catch (error) {
     console.error(`❌ [${SERVICE_NAME}] MongoDB connection error:`, error);
     // Không exit, cho phép service chạy với mock data nếu cần

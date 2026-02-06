@@ -1,37 +1,34 @@
-import { NextFunction, Request, Response } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-    }
-  }
+const JWT_SECRET = process.env.JWT_SECRET_KEY || 'your-secret-key';
+
+export interface AuthRequest extends Request {
+    userId?: string;
+    userRole?: string;
 }
 
-export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
-  // Check for token in Authorization header first (for axios interceptor)
-  const authHeader = req.headers.authorization;
-  let token: string | undefined;
+const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        // Lấy token từ header Authorization hoặc cookie
+        const authHeader = req.headers.authorization;
+        const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : req.cookies?.jwt;
 
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    token = authHeader.substring(7);
-  } else {
-    // Fallback to session cookie
-    token = req.cookies?.jwt || req.cookies?.["session_id"];
-  }
+        if (!token) {
+            return res.status(401).json({ message: 'Không có token xác thực' });
+        }
 
-  if (!token) {
-    return res.status(401).json({ message: "unauthorized" });
-  }
+        // Verify token
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role?: string };
+        
+        req.userId = decoded.userId;
+        req.userRole = decoded.role;
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY as string);
-    req.userId = (decoded as JwtPayload).userId as string;
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: "unauthorized" });
-  }
+        next();
+    } catch (error) {
+        console.error('❌ [AUTH] Token verification failed:', error);
+        return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+    }
 };
 
 export default verifyToken;

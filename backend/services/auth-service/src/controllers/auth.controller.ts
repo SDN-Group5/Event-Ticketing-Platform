@@ -18,8 +18,17 @@ export const login = async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
 
+        console.log('🔐 [LOGIN] Incoming request', {
+            email,
+            hasPassword: !!password,
+            bodyKeys: Object.keys(req.body || {}),
+            path: req.path,
+            method: req.method,
+        });
+
         const user = await User.findOne({ email }).select('+password');
         if (!user) {
+            console.warn(`❌ [LOGIN] User not found for email: ${email}`);
             return res.status(404).json({ message: "Không tìm thấy User" });
         }
 
@@ -40,7 +49,7 @@ export const login = async (req: Request, res: Response) => {
         const isMatch = await user.comparePassword(password);
 
         if (!isMatch) {
-            console.error(`❌ Login failed: Password mismatch for user ${email}`);
+            console.error(`❌ [LOGIN] Password mismatch for user ${email}`);
             return res.status(401).json({ message: "Mật khẩu không khớp" });
         }
 
@@ -52,7 +61,9 @@ export const login = async (req: Request, res: Response) => {
             }
           );
       
-        res.status(200).json({
+        console.log(`✅ [LOGIN] Success for user ${email} (role=${user.role})`);
+
+        return res.status(200).json({
             userId: user._id,
             message: "Login successful",
             token: token,

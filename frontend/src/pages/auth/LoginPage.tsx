@@ -1,19 +1,37 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, UserRole } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/common/Button';
 
 export const LoginPage: React.FC = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, isLoading, error } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        login('customer');
-        navigate('/');
+        const user = await login(email, password);
+        if (!user) return;
+
+        // Redirect dựa trên role từ database (không thể tự chuyển đổi)
+        switch (user.role) {
+            case 'admin':
+                navigate('/admin/payouts');
+                break;
+            case 'organizer':
+                navigate('/organizer');
+                break;
+            case 'staff':
+                // Staff có thể làm việc với organizer hoặc có route riêng
+                navigate('/organizer');
+                break;
+            case 'customer':
+            default:
+                navigate('/');
+                break;
+        }
     };
 
     return (
@@ -89,7 +107,8 @@ export const LoginPage: React.FC = () => {
                     <div className="flex items-center justify-center size-10 rounded-lg bg-gradient-to-br from-[#8655f6] to-[#d946ef] text-white shadow-[0_0_15px_rgba(137,90,246,0.5)]">
                         <span className="material-symbols-outlined text-[24px]">confirmation_number</span>
                     </div>
-                    <h2 className="hidden md:block text-white text-xl font-bold tracking-tight">TicketVibe</h2>
+                    <h2 className="hidden md:block text-white text-xl font-bold tracking-tight"
+                        onClick={() => navigate('/')}>TicketVibe</h2>
                 </div>
 
                 {/* Top Right - Create Account Link */}
@@ -172,8 +191,20 @@ export const LoginPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <Button type="submit" fullWidth size="lg" className="bg-gradient-to-r from-[#a855f7] to-[#d946ef] hover:shadow-lg hover:shadow-[#a855f7]/30 font-semibold text-white">
-                                Login
+                            {error && (
+                                <div className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
+                                    {error}
+                                </div>
+                            )}
+
+                            <Button
+                                type="submit"
+                                fullWidth
+                                size="lg"
+                                className="bg-gradient-to-r from-[#a855f7] to-[#d946ef] hover:shadow-lg hover:shadow-[#a855f7]/30 font-semibold text-white"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Đang đăng nhập...' : 'Login'}
                             </Button>
                         </form>
 

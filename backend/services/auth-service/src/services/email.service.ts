@@ -1,312 +1,149 @@
-import * as nodemailer from "nodemailer";
+import nodemailer from 'nodemailer';
 
-/**
- * Email Service - Gửi email OTP verification
- * 
- * Setup Gmail SMTP:
- * 1. Vào Google Account → Security
- * 2. Bật "2-Step Verification"
- * 3. Tạo "App Password" (16 ký tự)
- * 4. Dùng App Password làm EMAIL_PASSWORD trong .env
- */
+// ============================================
+// EMAIL CONFIGURATION
+// ============================================
+const EMAIL_USER = process.env.EMAIL_USER || '';
+const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || '';
 
-interface SendVerificationEmailParams {
-  to: string;
-  firstName: string;
-  code: string;
+// Create transporter
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASSWORD,
+    },
+});
+
+// ============================================
+// SEND VERIFICATION EMAIL
+// ============================================
+interface VerificationEmailParams {
+    to: string;
+    firstName: string;
+    code: string;
 }
 
-const createTransporter = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-    console.log("⚠️  EMAIL_USER or EMAIL_PASSWORD not found in .env");
-    return null;
-  }
-
-  try {
-    console.log(`📧 Creating email transporter with EMAIL_USER: ${process.env.EMAIL_USER}`);
-    
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
-
-    transporter.verify((error, success) => {
-      if (error) {
-        console.error("❌ Email transporter verification failed:", error);
-      } else {
-        console.log("✅ Email transporter is ready to send emails");
-      }
-    });
-
-    return transporter;
-  } catch (error) {
-    console.error("❌ Error creating email transporter:", error);
-    return null;
-  }
-};
-
-export const sendVerificationEmail = async ({
-  to,
-  firstName,
-  code,
-}: SendVerificationEmailParams): Promise<boolean> => {
-  try {
-    console.log(`📧 Attempting to send verification email to: ${to}`);
-    
-    const transporter = createTransporter();
-
-    if (!transporter) {
-      const errorMsg = "Email service not configured. EMAIL_USER and EMAIL_PASSWORD are required in .env";
-      console.error(`❌ ${errorMsg}`);
-      throw new Error(errorMsg);
+export const sendVerificationEmail = async ({ to, firstName, code }: VerificationEmailParams): Promise<boolean> => {
+    if (!EMAIL_USER || !EMAIL_PASSWORD) {
+        console.warn('⚠️  [EMAIL] Email credentials not configured. OTP code:', code);
+        console.log(`📧 [EMAIL] Would send to ${to}: Verification code = ${code}`);
+        return false;
     }
-    
-    const mailOptions = {
-      from: `"TicketVibe" <${process.env.EMAIL_USER}>`,
-      to,
-      subject: "Verify Your Email - TicketVibe",
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <style>
-              body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 20px;
-                background-color: #f4f4f4;
-              }
-              .container {
-                background-color: #ffffff;
-                border-radius: 10px;
-                padding: 30px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-              }
-              .header {
-                text-align: center;
-                margin-bottom: 30px;
-              }
-              .logo {
-                font-size: 28px;
-                font-weight: bold;
-                color: #8655f6;
-                margin-bottom: 10px;
-              }
-              .code-box {
-                background: linear-gradient(135deg, #8655f6 0%, #d946ef 100%);
-                color: white;
-                font-size: 32px;
-                font-weight: bold;
-                text-align: center;
-                padding: 20px;
-                border-radius: 10px;
-                letter-spacing: 8px;
-                margin: 30px 0;
-              }
-              .footer {
-                margin-top: 30px;
-                padding-top: 20px;
-                border-top: 1px solid #eee;
-                font-size: 12px;
-                color: #999;
-                text-align: center;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <div class="logo">🎫 TicketVibe</div>
-                <h1 style="color: #333; margin: 0;">Verify Your Email</h1>
-              </div>
-              
-              <p>Hi <strong>${firstName}</strong>,</p>
-              
-              <p>Thank you for signing up for TicketVibe! To complete your registration, please verify your email address by entering the code below:</p>
-              
-              <div class="code-box">
-                ${code}
-              </div>
-              
-              <p style="color: #666; font-size: 14px;">
-                This code will expire in <strong>1 minute</strong>. If you didn't create an account, please ignore this email.
-              </p>
-              
-              <div class="footer">
-                <p>© ${new Date().getFullYear()} TicketVibe. All rights reserved.</p>
-                <p>This is an automated email, please do not reply.</p>
-              </div>
-            </div>
-          </body>
-        </html>
-      `,
-      text: `
-        Hi ${firstName},
-        
-        Thank you for signing up for TicketVibe!
-        
-        Your verification code is: ${code}
-        
-        This code will expire in 1 minute.
-        
-        If you didn't create an account, please ignore this email.
-      `,
-    };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Verification email sent to ${to}`);
-    console.log(`📧 Message ID: ${info.messageId}`);
-    return true;
-  } catch (error: any) {
-    console.error("❌ Error sending email:", error);
-    throw error;
-  }
+    try {
+        const mailOptions = {
+            from: `"TicketVibe" <${EMAIL_USER}>`,
+            to,
+            subject: '🔐 Xác thực email - TicketVibe',
+            html: `
+                <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #a855f7; margin: 0; font-size: 28px;">🎫 TicketVibe</h1>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; margin-bottom: 20px;">
+                        <h2 style="color: #ffffff; margin-top: 0;">Xin chào ${firstName}! 👋</h2>
+                        <p style="color: #d1d5db; font-size: 16px; line-height: 1.6;">
+                            Cảm ơn bạn đã đăng ký tài khoản TicketVibe. Để hoàn tất quá trình đăng ký, 
+                            vui lòng nhập mã xác thực bên dưới:
+                        </p>
+                        
+                        <div style="background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%); border-radius: 12px; padding: 25px; text-align: center; margin: 25px 0;">
+                            <p style="color: #ffffff; font-size: 14px; margin: 0 0 10px 0; opacity: 0.9;">Mã xác thực của bạn:</p>
+                            <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #ffffff;">
+                                ${code}
+                            </div>
+                        </div>
+                        
+                        <p style="color: #9ca3af; font-size: 14px;">
+                            ⏰ Mã này sẽ hết hạn sau <strong style="color: #f59e0b;">1 phút</strong>.
+                        </p>
+                        <p style="color: #9ca3af; font-size: 14px;">
+                            Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.
+                        </p>
+                    </div>
+                    
+                    <div style="text-align: center; color: #6b7280; font-size: 12px;">
+                        <p>© 2024 TicketVibe. All rights reserved.</p>
+                    </div>
+                </div>
+            `,
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ [EMAIL] Verification email sent to ${to}`);
+        return true;
+    } catch (error) {
+        console.error('❌ [EMAIL] Failed to send verification email:', error);
+        console.log(`📧 [EMAIL] Fallback - OTP code for ${to}: ${code}`);
+        return false;
+    }
 };
 
-interface SendResetPasswordEmailParams {
-  to: string;
-  firstName: string;
-  code: string;
+// ============================================
+// SEND RESET PASSWORD EMAIL
+// ============================================
+interface ResetPasswordEmailParams {
+    to: string;
+    firstName: string;
+    code: string;
 }
 
-export const sendResetPasswordEmail = async ({
-  to,
-  firstName,
-  code,
-}: SendResetPasswordEmailParams): Promise<boolean> => {
-  try {
-    console.log(`📧 Attempting to send reset password email to: ${to}`);
-    
-    const transporter = createTransporter();
-
-    if (!transporter) {
-      const errorMsg = "Email service not configured. EMAIL_USER and EMAIL_PASSWORD are required in .env";
-      console.error(`❌ ${errorMsg}`);
-      throw new Error(errorMsg);
+export const sendResetPasswordEmail = async ({ to, firstName, code }: ResetPasswordEmailParams): Promise<boolean> => {
+    if (!EMAIL_USER || !EMAIL_PASSWORD) {
+        console.warn('⚠️  [EMAIL] Email credentials not configured. Reset code:', code);
+        console.log(`📧 [EMAIL] Would send to ${to}: Reset code = ${code}`);
+        return false;
     }
-    
-    const mailOptions = {
-      from: `"TicketVibe" <${process.env.EMAIL_USER}>`,
-      to,
-      subject: "Reset Your Password - TicketVibe",
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <style>
-              body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 20px;
-                background-color: #f4f4f4;
-              }
-              .container {
-                background-color: #ffffff;
-                border-radius: 10px;
-                padding: 30px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-              }
-              .header {
-                text-align: center;
-                margin-bottom: 30px;
-              }
-              .logo {
-                font-size: 28px;
-                font-weight: bold;
-                color: #8655f6;
-                margin-bottom: 10px;
-              }
-              .code-box {
-                background: linear-gradient(135deg, #8655f6 0%, #d946ef 100%);
-                color: white;
-                font-size: 32px;
-                font-weight: bold;
-                text-align: center;
-                padding: 20px;
-                border-radius: 10px;
-                letter-spacing: 8px;
-                margin: 30px 0;
-              }
-              .warning {
-                background-color: #fff3cd;
-                border-left: 4px solid #ffc107;
-                padding: 15px;
-                margin: 20px 0;
-                border-radius: 5px;
-              }
-              .footer {
-                margin-top: 30px;
-                padding-top: 20px;
-                border-top: 1px solid #eee;
-                font-size: 12px;
-                color: #999;
-                text-align: center;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <div class="logo">🎫 TicketVibe</div>
-                <h1 style="color: #333; margin: 0;">Reset Your Password</h1>
-              </div>
-              
-              <p>Hi <strong>${firstName}</strong>,</p>
-              
-              <p>We received a request to reset your password. Use the code below to reset your password:</p>
-              
-              <div class="code-box">
-                ${code}
-              </div>
-              
-              <div class="warning">
-                <p style="margin: 0; color: #856404;">
-                  <strong>⚠️ Security Notice:</strong> This code will expire in <strong>1 minute</strong>. If you didn't request a password reset, please ignore this email and your password will remain unchanged.
-                </p>
-              </div>
-              
-              <p style="color: #666; font-size: 14px;">
-                Enter this code on the reset password page to create a new password.
-              </p>
-              
-              <div class="footer">
-                <p>© ${new Date().getFullYear()} TicketVibe. All rights reserved.</p>
-                <p>This is an automated email, please do not reply.</p>
-              </div>
-            </div>
-          </body>
-        </html>
-      `,
-      text: `
-        Hi ${firstName},
-        
-        We received a request to reset your password.
-        
-        Your reset code is: ${code}
-        
-        This code will expire in 1 minute.
-        
-        If you didn't request a password reset, please ignore this email.
-      `,
-    };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Reset password email sent to ${to}`);
-    console.log(`📧 Message ID: ${info.messageId}`);
-    return true;
-  } catch (error: any) {
-    console.error("❌ Error sending reset password email:", error);
-    throw error;
-  }
+    try {
+        const mailOptions = {
+            from: `"TicketVibe" <${EMAIL_USER}>`,
+            to,
+            subject: '🔑 Đặt lại mật khẩu - TicketVibe',
+            html: `
+                <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #a855f7; margin: 0; font-size: 28px;">🎫 TicketVibe</h1>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; margin-bottom: 20px;">
+                        <h2 style="color: #ffffff; margin-top: 0;">Xin chào ${firstName}! 👋</h2>
+                        <p style="color: #d1d5db; font-size: 16px; line-height: 1.6;">
+                            Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.
+                            Vui lòng sử dụng mã bên dưới để đặt lại mật khẩu:
+                        </p>
+                        
+                        <div style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); border-radius: 12px; padding: 25px; text-align: center; margin: 25px 0;">
+                            <p style="color: #ffffff; font-size: 14px; margin: 0 0 10px 0; opacity: 0.9;">Mã đặt lại mật khẩu:</p>
+                            <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #ffffff;">
+                                ${code}
+                            </div>
+                        </div>
+                        
+                        <p style="color: #9ca3af; font-size: 14px;">
+                            ⏰ Mã này sẽ hết hạn sau <strong style="color: #f59e0b;">1 phút</strong>.
+                        </p>
+                        <p style="color: #9ca3af; font-size: 14px;">
+                            Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.
+                            Tài khoản của bạn vẫn an toàn.
+                        </p>
+                    </div>
+                    
+                    <div style="text-align: center; color: #6b7280; font-size: 12px;">
+                        <p>© 2024 TicketVibe. All rights reserved.</p>
+                    </div>
+                </div>
+            `,
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ [EMAIL] Reset password email sent to ${to}`);
+        return true;
+    } catch (error) {
+        console.error('❌ [EMAIL] Failed to send reset password email:', error);
+        console.log(`📧 [EMAIL] Fallback - Reset code for ${to}: ${code}`);
+        return false;
+    }
 };

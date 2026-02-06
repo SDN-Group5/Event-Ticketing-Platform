@@ -1,37 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { Button } from '../../components/common/Button';
 
 export const LoginPage: React.FC = () => {
     const navigate = useNavigate();
-    const { login, isLoading, error } = useAuth();
+    const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        const user = await login(email, password);
-        if (!user) return;
-
-        // Redirect dựa trên role từ database (không thể tự chuyển đổi)
-        switch (user.role) {
-            case 'admin':
-                navigate('/admin/payouts');
-                break;
-            case 'organizer':
-                navigate('/organizer');
-                break;
-            case 'staff':
-                // Staff có thể làm việc với organizer hoặc có route riêng
-                navigate('/organizer');
-                break;
-            case 'customer':
-            default:
-                navigate('/');
-                break;
-        }
+        login('customer');
+        navigate('/');
     };
 
     return (
@@ -102,13 +84,11 @@ export const LoginPage: React.FC = () => {
             {/* Header */}
             <header className="relative z-20 flex items-center justify-between p-6 md:p-8">
                 {/* Logo - Top Left */}
-                {/* Logo */}
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center size-10 rounded-lg bg-gradient-to-br from-[#8655f6] to-[#d946ef] text-white shadow-[0_0_15px_rgba(137,90,246,0.5)]">
-                        <span className="material-symbols-outlined text-[24px]">confirmation_number</span>
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center size-10 rounded-lg bg-gradient-to-br from-[#a855f7] to-[#d946ef] text-white">
+                        <span className="text-xl font-bold">V</span>
                     </div>
-                    <h2 className="hidden md:block text-white text-xl font-bold tracking-tight"
-                        onClick={() => navigate('/')}>TicketVibe</h2>
+                    <h2 className="text-xl font-bold text-white">TicketVibe</h2>
                 </div>
 
                 {/* Top Right - Create Account Link */}
@@ -137,7 +117,7 @@ export const LoginPage: React.FC = () => {
                     <div className="absolute inset-0 rounded-3xl pointer-events-none" style={{
                         background: 'radial-gradient(ellipse at center, rgba(134, 85, 246, 0.05) 0%, transparent 70%)'
                     }}></div>
-
+                    
                     <div className="relative z-10">
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
@@ -191,20 +171,8 @@ export const LoginPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {error && (
-                                <div className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
-                                    {error}
-                                </div>
-                            )}
-
-                            <Button
-                                type="submit"
-                                fullWidth
-                                size="lg"
-                                className="bg-gradient-to-r from-[#a855f7] to-[#d946ef] hover:shadow-lg hover:shadow-[#a855f7]/30 font-semibold text-white"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? 'Đang đăng nhập...' : 'Login'}
+                            <Button type="submit" fullWidth size="lg" className="bg-gradient-to-r from-[#a855f7] to-[#d946ef] hover:shadow-lg hover:shadow-[#a855f7]/30 font-semibold text-white">
+                                Login
                             </Button>
                         </form>
 
@@ -225,10 +193,10 @@ export const LoginPage: React.FC = () => {
                                     className="flex items-center justify-center gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-all"
                                 >
                                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                                     </svg>
                                     <span className="text-sm font-medium">Google</span>
                                 </button>
@@ -237,7 +205,7 @@ export const LoginPage: React.FC = () => {
                                     className="flex items-center justify-center gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-all"
                                 >
                                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M17.05 13.5c0-1.3-.97-2.4-2.25-2.4-.6 0-1.17.23-1.6.65.02-1.8-.95-3.37-2.5-4.12C9.2 6.5 7.37 7.47 6.85 9.3c-.16.54-.24 1.1-.24 1.7 0 3.05 2.47 5.52 5.52 5.52 1.58 0 3-1.1 4.2-2.75 1.3-1.9 1.72-4.18 1.72-4.18zm-4.05 3.35c-1.08 0-1.95-.87-1.95-1.95s.87-1.95 1.95-1.95 1.95.87 1.95 1.95-.87 1.95-1.95 1.95z" />
+                                        <path d="M17.05 13.5c0-1.3-.97-2.4-2.25-2.4-.6 0-1.17.23-1.6.65.02-1.8-.95-3.37-2.5-4.12C9.2 6.5 7.37 7.47 6.85 9.3c-.16.54-.24 1.1-.24 1.7 0 3.05 2.47 5.52 5.52 5.52 1.58 0 3-1.1 4.2-2.75 1.3-1.9 1.72-4.18 1.72-4.18zm-4.05 3.35c-1.08 0-1.95-.87-1.95-1.95s.87-1.95 1.95-1.95 1.95.87 1.95 1.95-.87 1.95-1.95 1.95z"/>
                                     </svg>
                                     <span className="text-sm font-medium">Apple</span>
                                 </button>
@@ -248,7 +216,7 @@ export const LoginPage: React.FC = () => {
                         <div className="mt-6 text-center">
                             <p className="text-sm text-slate-300">
                                 Don't have an account?{' '}
-                                <button
+                                <button 
                                     type="button"
                                     onClick={() => navigate('/signup')}
                                     className="text-[#a855f7] hover:underline font-semibold"

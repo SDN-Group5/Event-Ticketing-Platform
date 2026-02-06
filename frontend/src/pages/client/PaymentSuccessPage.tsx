@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 
 export const PaymentSuccessPage: React.FC = () => {
@@ -29,8 +29,8 @@ export const PaymentSuccessPage: React.FC = () => {
                 <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-tr from-[#8655f6] to-[#ec4899] mb-6 shadow-[0_0_60px_rgba(134,85,246,0.5)] animate-pulse">
                     <span className="material-symbols-outlined text-5xl text-white font-bold">check</span>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-2">Thanh toán thành công!</h1>
-                <p className="text-slate-400 text-lg">Sẵn sàng cho đêm diễn đáng nhớ! 🎉</p>
+                <h1 className="text-4xl md:text-5xl font-bold mb-2">Payment Successful!</h1>
+                <p className="text-slate-400 text-lg">Get ready for an unforgettable night! 🎉</p>
             </div>
 
             {/* Ticket Card */}
@@ -58,28 +58,28 @@ export const PaymentSuccessPage: React.FC = () => {
                 <div className="p-6 pt-8 space-y-4">
                     <div className="flex justify-between">
                         <div>
-                            <p className="text-xs text-gray-400 uppercase">Ngày</p>
+                            <p className="text-xs text-gray-400 uppercase">Date</p>
                             <p className="font-semibold">{new Date(event.date).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-400 uppercase">Giờ</p>
+                            <p className="text-xs text-gray-400 uppercase">Time</p>
                             <p className="font-semibold">{new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                     </div>
                     <div className="flex justify-between">
                         <div>
-                            <p className="text-xs text-gray-400 uppercase">Vé</p>
+                            <p className="text-xs text-gray-400 uppercase">Tickets</p>
                             <p className="font-semibold">{ticketCount} × {zone.type}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-400 uppercase">Tổng thanh toán</p>
-                            <p className="font-semibold text-[#8655f6]">${orderData.totalPaid ?? (orderData.total + 20)}</p>
+                            <p className="text-xs text-gray-400 uppercase">Total Paid</p>
+                            <p className="font-semibold text-[#8655f6]">${orderData.total + 20}</p>
                         </div>
                     </div>
 
                     {seats.length > 0 && (
                         <div>
-                            <p className="text-xs text-gray-400 uppercase mb-1">Ghế đã chọn</p>
+                            <p className="text-xs text-gray-400 uppercase mb-1">Selected Seats</p>
                             <div className="flex flex-wrap gap-1">
                                 {seats.map((s: any) => (
                                     <span key={s.id} className="text-xs bg-white/5 border border-white/10 px-2 py-0.5 rounded">R{s.row}-{s.number}</span>
@@ -101,14 +101,14 @@ export const PaymentSuccessPage: React.FC = () => {
             <div className="flex gap-4 mt-8 w-full max-w-md">
                 <button className="flex-1 py-3 border border-gray-600 rounded-xl font-semibold hover:bg-white/5 transition-colors flex items-center justify-center gap-2">
                     <span className="material-symbols-outlined text-sm">download</span>
-                    Tải PDF
+                    Download PDF
                 </button>
                 <button
                     onClick={() => navigate('/profile')}
                     className="flex-1 py-3 bg-gradient-to-r from-[#8655f6] to-[#d946ef] rounded-xl font-bold hover:shadow-lg hover:shadow-[#8655f6]/30 transition-all flex items-center justify-center gap-2"
                 >
                     <span className="material-symbols-outlined text-sm">confirmation_number</span>
-                    Vé của tôi
+                    My Tickets
                 </button>
             </div>
 
@@ -117,7 +117,7 @@ export const PaymentSuccessPage: React.FC = () => {
                 className="mt-6 text-gray-400 hover:text-white transition-colors flex items-center gap-2"
             >
                 <span className="material-symbols-outlined text-sm">arrow_back</span>
-                Về trang chủ
+                Back to Home
             </button>
         </div>
     );

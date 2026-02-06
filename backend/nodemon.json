@@ -1,0 +1,10 @@
+{
+  "//": "Dev mode: chạy TypeScript trực tiếp",
+  "watch": ["index.ts", "src", "../shared"],
+  "ext": "ts,json",
+  "ignore": ["node_modules", "dist", "*.test.ts", "*.spec.ts"],
+  "exec": "ts-node index.ts",
+  "verbose": true,
+  "delay": 1000
+}
+

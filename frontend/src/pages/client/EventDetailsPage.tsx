@@ -1,17 +1,14 @@
 import React, { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import type { EventFromJson } from '../../types/event';
 import eventsData from '../../data/events.json';
-
-const events = eventsData as EventFromJson[];
 
 export const EventDetailsPage: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const { isAuthenticated } = useAuth();
 
-    const event = useMemo(() => events.find(e => e.id === id), [id]);
+    const event = useMemo(() => eventsData.find(e => e.id === id), [id]);
 
     if (!event) {
         return (
@@ -32,7 +29,6 @@ export const EventDetailsPage: React.FC = () => {
     const eventDate = new Date(event.date);
     const dateStr = eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     const timeStr = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    const formatPriceVnd = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}m VND` : `${v}k VND`);
 
     const handleBuyTicket = () => {
         if (!isAuthenticated) {
@@ -60,9 +56,6 @@ export const EventDetailsPage: React.FC = () => {
                 </button>
                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-10 max-w-[1280px] mx-auto">
                     <h1 className="text-4xl md:text-6xl font-bold mb-2">{event.title}</h1>
-                    {event.artist && (
-                        <p className="text-lg text-gray-300 mb-1">{event.artist}</p>
-                    )}
                     <p className="text-xl font-medium flex items-center gap-2">
                         <span className="material-symbols-outlined text-[#8655f6]">calendar_month</span> {dateStr} • {timeStr}
                     </p>
@@ -123,7 +116,7 @@ export const EventDetailsPage: React.FC = () => {
                             <div key={ticket.type} className={`mb-4 p-4 rounded-xl border ${ticket.available ? 'border-[#2d2839] bg-[#1e1a29]/50 hover:border-[#8655f6]/50 cursor-pointer' : 'border-[#2d2839] bg-[#1e1a29]/30 opacity-50'} transition-all`}>
                                 <div className="flex justify-between mb-2">
                                     <span className="font-bold">{ticket.type}</span>
-                                    <span className="font-bold">{formatPriceVnd(ticket.price)}</span>
+                                    <span className="font-bold">${ticket.price}</span>
                                 </div>
                                 <div className="flex justify-between items-center mt-2">
                                     <span className={`text-xs flex items-center gap-1 ${ticket.available ? 'text-green-400' : 'text-red-400'}`}>

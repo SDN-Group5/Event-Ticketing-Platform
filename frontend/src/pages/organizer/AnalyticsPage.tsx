@@ -1,17 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
+import {
+    AreaChart,
+    Area,
+    PieChart,
+    Pie,
+    Cell,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from 'recharts';
 
 export const AnalyticsPage: React.FC = () => {
+    const [chartType, setChartType] = useState<'revenue' | 'tickets'>('revenue');
 
     const revenueData = [
-        { month: 'Jan', value: 4500 },
-        { month: 'Feb', value: 6200 },
-        { month: 'Mar', value: 8100 },
-        { month: 'Apr', value: 5800 },
-        { month: 'May', value: 9500 },
-        { month: 'Jun', value: 12400 },
+        { month: 'Jan', revenue: 4500, tickets: 320 },
+        { month: 'Feb', revenue: 6200, tickets: 445 },
+        { month: 'Mar', revenue: 8100, tickets: 580 },
+        { month: 'Apr', revenue: 5800, tickets: 410 },
+        { month: 'May', revenue: 9500, tickets: 680 },
+        { month: 'Jun', revenue: 12400, tickets: 890 },
     ];
 
-    const maxRevenue = Math.max(...revenueData.map(d => d.value));
+    const ticketDistributionData = [
+        { name: 'General', value: 1523, color: '#3b82f6' },
+        { name: 'VIP', value: 987, color: '#8655f6' },
+        { name: 'Backstage', value: 337, color: '#ec4899' },
+    ];
 
     return (
         <div className="space-y-8">
@@ -66,61 +83,145 @@ export const AnalyticsPage: React.FC = () => {
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-white">Revenue Overview</h2>
                             <div className="flex gap-2">
-                                <button className="px-3 py-1 bg-[#8655f6]/20 text-[#8655f6] rounded-lg text-sm font-medium">Revenue</button>
-                                <button className="px-3 py-1 text-slate-400 hover:bg-white/5 rounded-lg text-sm font-medium">Tickets</button>
+                                <button
+                                    onClick={() => setChartType('revenue')}
+                                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                                        chartType === 'revenue'
+                                            ? 'bg-[#8655f6]/20 text-[#8655f6]'
+                                            : 'text-slate-400 hover:bg-white/5'
+                                    }`}
+                                >
+                                    Revenue
+                                </button>
+                                <button
+                                    onClick={() => setChartType('tickets')}
+                                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                                        chartType === 'tickets'
+                                            ? 'bg-[#8655f6]/20 text-[#8655f6]'
+                                            : 'text-slate-400 hover:bg-white/5'
+                                    }`}
+                                >
+                                    Tickets
+                                </button>
                             </div>
                         </div>
-                        <div className="flex items-end gap-4 h-64">
-                            {revenueData.map((data) => (
-                                <div key={data.month} className="flex-1 flex flex-col items-center gap-2">
-                                    <div
-                                        className="w-full bg-gradient-to-t from-[#8655f6] to-[#d946ef] rounded-t-lg transition-all hover:opacity-80"
-                                        style={{ height: `${(data.value / maxRevenue) * 100}%` }}
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={revenueData}>
+                                    <defs>
+                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#8655f6" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#d946ef" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                    <XAxis
+                                        dataKey="month"
+                                        stroke="#94a3b8"
+                                        style={{ fontSize: '12px' }}
                                     />
-                                    <span className="text-xs text-slate-400">{data.month}</span>
-                                </div>
-                            ))}
+                                    <YAxis
+                                        stroke="#94a3b8"
+                                        style={{ fontSize: '12px' }}
+                                        tickFormatter={(value) => {
+                                            if (chartType === 'revenue') {
+                                                return `$${(value / 1000).toFixed(1)}k`;
+                                            }
+                                            return value.toString();
+                                        }}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#1e293b',
+                                            border: '1px solid #334155',
+                                            borderRadius: '8px',
+                                            color: '#fff',
+                                        }}
+                                        formatter={(value: number) => {
+                                            if (chartType === 'revenue') {
+                                                return [`$${value.toLocaleString()}`, chartType === 'revenue' ? 'Revenue' : 'Tickets'];
+                                            }
+                                            return [value, 'Tickets'];
+                                        }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey={chartType === 'revenue' ? 'revenue' : 'tickets'}
+                                        stroke={chartType === 'revenue' ? '#8655f6' : '#3b82f6'}
+                                        strokeWidth={2}
+                                        fillOpacity={1}
+                                        fill={chartType === 'revenue' ? 'url(#colorRevenue)' : 'url(#colorTickets)'}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* Ticket Types */}
                     <div className="col-span-4 bg-[#1e293b]/40 border border-white/5 rounded-2xl p-6">
                         <h2 className="text-xl font-bold text-white mb-6">Ticket Distribution</h2>
-                        <div className="space-y-4">
-                            {[
-                                { type: 'General', count: 1523, percentage: 54, color: '#3b82f6' },
-                                { type: 'VIP', count: 987, percentage: 35, color: '#8655f6' },
-                                { type: 'Backstage', count: 337, percentage: 11, color: '#ec4899' },
-                            ].map((ticket) => (
-                                <div key={ticket.type}>
-                                    <div className="flex justify-between mb-2">
-                                        <span className="text-sm text-slate-300">{ticket.type}</span>
-                                        <span className="text-sm font-bold text-white">{ticket.count}</span>
-                                    </div>
-                                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full rounded-full"
-                                            style={{ width: `${ticket.percentage}%`, backgroundColor: ticket.color }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="h-48 mb-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={ticketDistributionData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={90}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {ticketDistributionData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#1e293b',
+                                            border: '1px solid #334155',
+                                            borderRadius: '8px',
+                                            color: '#fff',
+                                        }}
+                                        formatter={(value: number) => [value, 'Tickets']}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
                         </div>
 
-                        {/* Donut Legend */}
-                        <div className="mt-6 pt-6 border-t border-white/5">
-                            <div className="flex justify-center gap-6">
-                                {[
-                                    { label: 'General', color: '#3b82f6' },
-                                    { label: 'VIP', color: '#8655f6' },
-                                    { label: 'Backstage', color: '#ec4899' },
-                                ].map((item) => (
-                                    <div key={item.label} className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                                        <span className="text-xs text-slate-400">{item.label}</span>
+                        {/* Legend */}
+                        <div className="space-y-3">
+                            {ticketDistributionData.map((ticket) => {
+                                const total = ticketDistributionData.reduce((sum, t) => sum + t.value, 0);
+                                const percentage = Math.round((ticket.value / total) * 100);
+                                return (
+                                    <div key={ticket.name}>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <div
+                                                    className="w-3 h-3 rounded-full"
+                                                    style={{ backgroundColor: ticket.color }}
+                                                />
+                                                <span className="text-sm text-slate-300">{ticket.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-white">{ticket.value}</span>
+                                                <span className="text-xs text-slate-400">({percentage}%)</span>
+                                            </div>
+                                        </div>
+                                        <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full transition-all"
+                                                style={{ width: `${percentage}%`, backgroundColor: ticket.color }}
+                                            />
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

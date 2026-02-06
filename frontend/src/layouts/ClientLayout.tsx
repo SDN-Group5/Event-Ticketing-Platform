@@ -17,7 +17,6 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({
             {showNavbar && (
                 <Navbar
                     showSearch={showSearch}
-                    onLoginClick={() => console.log('Login clicked')}
                 />
             )}
             <main className="flex-1">

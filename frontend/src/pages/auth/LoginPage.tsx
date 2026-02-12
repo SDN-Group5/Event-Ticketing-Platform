@@ -51,8 +51,8 @@ export const LoginPage: React.FC = () => {
                             type="button"
                             onClick={() => setSelectedRole(role)}
                             className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${selectedRole === role
-                                    ? 'bg-[#8655f6]/20 border-[#8655f6] text-white'
-                                    : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                                ? 'bg-[#8655f6]/20 border-[#8655f6] text-white'
+                                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                                 }`}
                         >
                             <span className={`material-symbols-outlined text-2xl ${selectedRole === role ? 'text-[#8655f6]' : ''}`}>

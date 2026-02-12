@@ -19,7 +19,7 @@ import { LoginPage, OTPPage, ResetPasswordPage } from './pages/auth';
 import { DashboardPage as OrganizerDashboard, CreateEventPage, AttendeesPage, AnalyticsPage, EventsPage, ManageVouchersPage, ManageStaffPage, NotificationsPage, CheckInPage } from './pages/organizer';
 
 // Admin Pages  
-import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage, EventApprovalsPage, RefundRequestsPage, AdminAnalyticsPage, AdminSettingsPage } from './pages/admin';
+import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage, LayoutApiTestPage, EventApprovalsPage, RefundRequestsPage, AdminAnalyticsPage, AdminSettingsPage } from './pages/admin';
 
 // Role Switcher Component (Demo purposes)
 const RoleSwitcher: React.FC = () => {
@@ -49,34 +49,38 @@ const RoleSwitcher: React.FC = () => {
     };
 
     return (
-        <div className="fixed bottom-4 right-4 z-[200]">
+        <div className="fixed top-4 right-4 z-[200]">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 bg-[#1e293b]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-2 text-white shadow-xl hover:bg-[#1e293b] transition-all"
+                className="w-10 h-10 flex items-center justify-center bg-[#1e293b]/90 backdrop-blur-xl border border-white/10 rounded-full text-white shadow-xl hover:bg-[#1e293b] transition-all"
+                title={isAuthenticated && user ? `Signed in as ${user.name} (${user.role})` : "Sign In"}
             >
                 {isAuthenticated && user ? (
-                    <>
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8655f6] to-[#d946ef] flex items-center justify-center text-sm font-bold">
-                            {user.name.charAt(0)}
-                        </div>
-                        <span className="text-sm font-medium hidden sm:block">{user.name}</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${user.role === 'admin' ? 'bg-orange-500/20 text-orange-400' :
-                            user.role === 'organizer' ? 'bg-purple-500/20 text-purple-400' :
-                                'bg-blue-500/20 text-blue-400'
-                            }`}>{user.role}</span>
-                    </>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8655f6] to-[#d946ef] flex items-center justify-center text-xs font-bold">
+                        {user.name.charAt(0)}
+                    </div>
                 ) : (
-                    <>
-                        <span className="material-symbols-outlined">login</span>
-                        <span className="text-sm font-medium">Sign In</span>
-                    </>
+                    <span className="material-symbols-outlined text-xl">login</span>
                 )}
-                <span className="material-symbols-outlined text-sm">{isOpen ? 'expand_less' : 'expand_more'}</span>
             </button>
 
             {isOpen && (
-                <div className="absolute bottom-full right-0 mb-2 w-64 bg-[#1e293b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="absolute top-full right-0 mt-2 w-64 bg-[#1e293b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
                     <div className="p-4 border-b border-white/10">
+                        {isAuthenticated && user && (
+                            <div className="mb-3 pb-3 border-b border-white/10 flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#8655f6] to-[#d946ef] flex items-center justify-center text-sm font-bold">
+                                    {user.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <p className="font-bold text-white">{user.name}</p>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${user.role === 'admin' ? 'bg-orange-500/20 text-orange-400' :
+                                        user.role === 'organizer' ? 'bg-purple-500/20 text-purple-400' :
+                                            'bg-blue-500/20 text-blue-400'
+                                        }`}>{user.role}</span>
+                                </div>
+                            </div>
+                        )}
                         <p className="text-xs text-gray-400 uppercase font-bold mb-3">Switch Role (Demo)</p>
                         <div className="space-y-2">
                             {roles.map(({ role, label, icon, color }) => (
@@ -210,7 +214,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/search" element={<ClientLayout><SearchPage /></ClientLayout>} />
             <Route path="/event/:id" element={<ClientLayout><EventDetailsPage /></ClientLayout>} />
             <Route path="/event/:id/zones" element={<ZoneSelectionPage />} />
-            <Route path="/venue-3d" element={<Venue3DPage />} />
+            <Route path="/event/:id/venue-3d" element={<Venue3DPage />} />
 
             {/* Protected Client Routes */}
             <Route path="/checkout" element={
@@ -324,6 +328,7 @@ const AppRoutes: React.FC = () => {
                     <AdminLayout title="Layout Editor" fullWidth><LayoutEditorPage /></AdminLayout>
                 </ProtectedRoute>
             } />
+            <Route path="/admin/layout-api-test" element={<LayoutApiTestPage />} />
             <Route path="/admin/event-approvals" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                     <AdminLayout title="Event Approvals"><EventApprovalsPage /></AdminLayout>

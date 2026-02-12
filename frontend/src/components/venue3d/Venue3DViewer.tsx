@@ -38,7 +38,14 @@ interface Venue3DViewerProps {
     stages?: Stage[];
     isAdmin?: boolean;
     bookedSeats?: string[];
+    showPeople?: boolean;
+    daylight?: boolean;
+    cinematicMode?: boolean;
+    selectedSeat?: string | null;
     onSeatSelect?: (seatId: string, seatInfo: SeatInfo) => void;
+    canvasWidth?: number;
+    canvasHeight?: number;
+    canvasColor?: string;
 }
 
 interface SeatInfo {
@@ -107,7 +114,7 @@ function FreeLookControls({ enabled }: { enabled: boolean }) {
 
         const onPointerUp = () => {
             isPointerDown.current = false;
-            canvas.style.cursor = 'grab';
+            canvas.style.cursor = 'auto';
         };
 
         const onPointerMove = (e: PointerEvent) => {
@@ -385,8 +392,10 @@ function VenueScene({
     seatPosition,
     stagePosition,
     onSeatClick,
+    onSeatHover,
     onFirstPersonReady,
     isDayMode,
+    showPeople = false,
     canvasWidth = 800,
     canvasHeight = 600,
     canvasColor = '#1a1a1a',
@@ -402,7 +411,9 @@ function VenueScene({
     stagePosition: [number, number, number];
     onSeatClick: (seatId: string, position: [number, number, number]) => void;
     onFirstPersonReady: () => void;
+    onSeatHover?: (seatInfo: SeatInfo | null) => void;
     isDayMode: boolean;
+    showPeople?: boolean;
     canvasWidth?: number;
     canvasHeight?: number;
     canvasColor?: string;
@@ -429,18 +440,19 @@ function VenueScene({
 
     return (
         <>
-            {/* Lighting */}
-            <ambientLight intensity={isDayMode ? 0.8 : 0.4} />
+            {/* Lighting - Constant for consistent object appearance */}
+            <ambientLight intensity={0.8} />
             <directionalLight
                 position={[10, 20, 10]}
-                intensity={isDayMode ? 1.2 : 1}
+                intensity={1.0}
                 castShadow
                 shadow-mapSize={[1024, 1024]}
             />
             <pointLight position={[-10, 10, -10]} intensity={0.5} />
 
-            {/* Environment - customized based on settings */}
-            <Environment preset={isDayMode ? "city" : "night"} />
+            {/* Environment - Use a neutral preset or remove if it tints too much */}
+            {/* Keeping 'city' as it provides good reflections without too much color tinting */}
+            <Environment preset="city" />
 
             {/* Ground */}
             <mesh
@@ -511,7 +523,9 @@ function VenueScene({
                     bookedSeats={bookedSeats}
                     selectedSeat={selectedSeat}
                     onSeatClick={onSeatClick}
+                    onSeatHover={onSeatHover}
                     canvasWidth={canvasWidth}
+                    showPeople={showPeople}
                 />
             ))}
 
@@ -572,6 +586,9 @@ export function Venue3DViewer({
     stages = [],
     isAdmin = false,
     bookedSeats = [],
+    showPeople: showPeopleFromProps,
+    daylight: daylightFromProps,
+    cinematicMode: cinematicModeFromProps,
     selectedSeat: propSelectedSeat,
     onSeatSelect,
     canvasWidth = 800,
@@ -583,17 +600,41 @@ export function Venue3DViewer({
 
     const [seatPosition, setSeatPosition] = useState<[number, number, number] | null>(null);
     const [seatDisplayInfo, setSeatDisplayInfo] = useState<{ zoneName: string; row: number; seatNumber: number } | null>(null);
+    const [hoveredSeatInfo, setHoveredSeatInfo] = useState<SeatInfo | null>(null);
     const [firstPersonMode, setFirstPersonMode] = useState(false);
     const [firstPersonReady, setFirstPersonReady] = useState(false);
-    const [isCinematic, setIsCinematic] = useState(false);
-    const [isDayMode, setIsDayMode] = useState(true);
 
+    // Use props if provided, otherwise use local state
+    const [isCinematic, setIsCinematic] = useState(cinematicModeFromProps ?? false);
+    const [isDayMode, setIsDayMode] = useState(daylightFromProps ?? false);
+    const [showPeople, setShowPeople] = useState(showPeopleFromProps ?? false);
+
+    // Sync with props when they change
+    useEffect(() => {
+        if (cinematicModeFromProps !== undefined) {
+            setIsCinematic(cinematicModeFromProps);
+        }
+    }, [cinematicModeFromProps]);
+
+    useEffect(() => {
+        if (daylightFromProps !== undefined) {
+            setIsDayMode(daylightFromProps);
+        }
+    }, [daylightFromProps]);
+
+    useEffect(() => {
+        if (showPeopleFromProps !== undefined) {
+            setShowPeople(showPeopleFromProps);
+        }
+    }, [showPeopleFromProps]);
+
+    // Calculate stage position for camera to look at
     // Calculate stage position for camera to look at
     const stagePosition: [number, number, number] = stages.length > 0
         ? [
-            (stages[0].position.x - 500) * SCALE_FACTOR,
+            (stages[0].position.x + (stages[0].size?.width || 200) / 2 - canvasWidth / 2) * SCALE_FACTOR,
             2,
-            stages[0].position.y * SCALE_FACTOR
+            (stages[0].position.y + (stages[0].size?.height || 80) / 2) * SCALE_FACTOR
         ]
         : [0, 2, 0];
 
@@ -657,6 +698,10 @@ export function Venue3DViewer({
         setFirstPersonReady(true);
     }, []);
 
+    const handleSeatHover = useCallback((info: SeatInfo | null) => {
+        setHoveredSeatInfo(info);
+    }, []);
+
     return (
         <div style={{ width: '100%', height: '100%', position: 'relative' }}>
             <Canvas shadows>
@@ -676,8 +721,10 @@ export function Venue3DViewer({
                     seatPosition={seatPosition}
                     stagePosition={stagePosition}
                     onSeatClick={handleSeatClick}
+                    onSeatHover={handleSeatHover}
                     onFirstPersonReady={() => setFirstPersonReady(true)}
                     isDayMode={isDayMode}
+                    showPeople={showPeople}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
                     canvasColor={canvasColor}
@@ -711,7 +758,7 @@ export function Venue3DViewer({
                     pointerEvents: 'none',
                 }}
             >
-                {/* Left Controls Group */}
+                {/* Left Controls Group - WASD hint only */}
                 <div
                     style={{
                         display: 'flex',
@@ -721,30 +768,6 @@ export function Venue3DViewer({
                         pointerEvents: 'auto'
                     }}
                 >
-                    {/* Cinematic Toggle */}
-                    <button
-                        onClick={toggleCinematic}
-                        style={{
-                            background: isCinematic
-                                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                                : 'rgba(0, 0, 0, 0.6)',
-                            color: 'white',
-                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            cursor: 'pointer',
-                            boxShadow: isCinematic ? '0 0 15px rgba(245, 158, 11, 0.5)' : 'none',
-                            transition: 'all 0.3s'
-                        }}
-                    >
-                        <span>{isCinematic ? '🎬 Cinematic ON' : '🍿 Cinematic Mode'}</span>
-                    </button>
-
                     {/* WASD Controls hint */}
                     {!isCinematic && (
                         <div
@@ -764,32 +787,9 @@ export function Venue3DViewer({
                     )}
                 </div>
 
-                {/* Selected seat info - Bottom Center */}
-                {selectedSeat && seatDisplayInfo && !isCinematic && (
-                    <div
-                        style={{
-                            background: 'rgba(0, 0, 0, 0.8)',
-                            color: 'white',
-                            padding: '12px 20px',
-                            borderRadius: '8px',
-                            textAlign: 'center',
-                            pointerEvents: 'auto',
-                        }}
-                    >
-                        <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
-                            {seatDisplayInfo.zoneName} - Hàng {seatDisplayInfo.row}, Ghế {seatDisplayInfo.seatNumber}
-                        </div>
-                        <div style={{
-                            fontSize: '14px',
-                            marginTop: '4px',
-                            color: bookedSeats.includes(selectedSeat) ? '#ef4444' : '#22c55e',
-                            fontWeight: '500',
-                        }}>
-                            {bookedSeats.includes(selectedSeat) ? '🔴 Đã đặt' : '🟢 Còn trống'}
-                        </div>
-                    </div>
-                )}
-
+                {/* Hover seat info - Bottom Center (Replaces Selected Info) */}
+                {/* Hover seat info - Hidden per user request */}
+                {/* {hoveredSeatInfo && !isCinematic && ( ... )} */}
                 {/* View controls - Bottom Right */}
                 <div
                     style={{
@@ -834,32 +834,6 @@ export function Venue3DViewer({
                     )}
                 </div>
             </div>
-
-            {/* Day/Night Toggle */}
-            <button
-                onClick={() => setIsDayMode(!isDayMode)}
-                style={{
-                    position: 'absolute',
-                    top: 20,
-                    left: 20,
-                    background: 'rgba(0, 0, 0, 0.5)',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    borderRadius: '50%',
-                    width: '40px',
-                    height: '40px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    color: 'white',
-                    fontSize: '20px',
-                    transition: 'all 0.2s',
-                    zIndex: 10,
-                }}
-                title={isDayMode ? "Switch to Night Mode" : "Switch to Day Mode"}
-            >
-                {isDayMode ? '☀️' : '🌙'}
-            </button>
         </div>
     );
 }

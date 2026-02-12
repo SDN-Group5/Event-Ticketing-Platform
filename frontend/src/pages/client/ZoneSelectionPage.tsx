@@ -1,48 +1,80 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EventLayoutViewer, PanoramaViewer } from '../../components/seats';
 import { Seat as SeatType, SelectedSeat } from '../../types/seat';
-import { getEventLayout } from '../../services/layoutService';
+import { LayoutAPI } from '../../services/layoutApiService';
+import { SeatAPI, SeatData } from '../../services/seatApiService';
 
 import eventsData from '../../data/events.json';
-import seatMapsData from '../../data/seatMaps.json';
 import { Zone360Viewer } from '../../components/Zone360Viewer';
 
 export const ZoneSelectionPage: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams();
-    const [ticketCount, setTicketCount] = useState(2); // Keep for potential future use or max validation
+    const [ticketCount, setTicketCount] = useState(2);
     const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
     const [previewSeat, setPreviewSeat] = useState<SeatType | null>(null);
     const [is360ViewerOpen, setIs360ViewerOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [layoutData, setLayoutData] = useState<any>(null);
+    const [seatsData, setSeatsData] = useState<SeatData[]>([]);
+
     // Load event data
     const event = useMemo(() => eventsData.find(e => e.id === id), [id]);
 
-    // Check for saved event layout first, fallback to seatMaps.json
+    // Fetch layout and seats from MongoDB
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!id) return;
+
+            try {
+                setLoading(true);
+                setError(null);
+
+                // Fetch layout from MongoDB
+                const layout = await LayoutAPI.getLayout(id);
+                setLayoutData(layout);
+
+                // Fetch seats for all zones
+                const zoneIds = layout.zones
+                    .filter((z: any) => z.type === 'seats' || z.type === 'standing')
+                    .map((z: any) => z.id);
+
+                if (zoneIds.length > 0) {
+                    const seats = await SeatAPI.getAllSeatsForEvent(id, zoneIds);
+                    setSeatsData(seats);
+                }
+            } catch (err) {
+                console.error('Error fetching layout/seats:', err);
+                setError('Failed to load event layout. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [id]);
+
+    // Transform layout zones for the viewer
     const zones = useMemo(() => {
-        if (!id) return [];
+        if (!layoutData) return [];
 
-        const savedLayout = getEventLayout(id);
-        if (savedLayout && savedLayout.zones.length > 0) {
-            return savedLayout.zones
-                .filter(zone => zone.type === 'seats' || zone.type === 'standing' || zone.type === 'stage')
-                .map(zone => ({
-                    id: zone.id,
-                    name: zone.name,
-                    type: zone.type,
-                    price: zone.price || 0,
-                    color: zone.color,
-                    rows: zone.rows || 1,
-                    seatsPerRow: zone.seatsPerRow || 1,
-                    position: zone.position,
-                    size: zone.size,
-                    view360Url: 'https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg' // Mock 360 image
-                }));
-        }
-
-        const seatMap = seatMapsData.find(sm => sm.id === event?.seatMapId);
-        return seatMap?.zones.map(z => ({ ...z, view360Url: 'https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg' })) || [];
-    }, [id, event]);
+        return layoutData.zones
+            .filter((zone: any) => zone.type === 'seats' || zone.type === 'standing' || zone.type === 'stage')
+            .map((zone: any) => ({
+                id: zone.id,
+                name: zone.name,
+                type: zone.type,
+                price: zone.price || 0,
+                color: zone.color,
+                rows: zone.rows || 1,
+                seatsPerRow: zone.seatsPerRow || 1,
+                position: zone.position,
+                size: zone.size,
+                view360Url: 'https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg'
+            }));
+    }, [layoutData]);
 
     const total = useMemo(() => {
         return selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
@@ -77,17 +109,15 @@ export const ZoneSelectionPage: React.FC = () => {
                 price: selectedZoneData.price,
             },
             seats: selectedSeats,
-            ticketCount: selectedSeats.length,
             total,
+            zone: selectedZoneData,
+            ticketCount: selectedSeats.length
         };
         navigate('/checkout', { state: checkoutData });
     };
 
     const handleOpen360 = () => {
-        // Mở tab phụ để user kiểm tra WebGL (spinning cube)
-        window.open('https://get.webgl.org/', '_blank', 'noopener,noreferrer');
-        // Đồng thời mở modal 360 trong app
-        setIs360ViewerOpen(true);
+        navigate(`/event/${id}/venue-3d`);
     };
 
     return (
@@ -110,14 +140,43 @@ export const ZoneSelectionPage: React.FC = () => {
                 </div>
             </header>
 
+            {/* Loading State */}
+            {loading && (
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+                        <p className="text-xl">Loading seat map...</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Error State */}
+            {error && !loading && (
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="bg-red-500/20 border border-red-500 rounded-xl p-6 max-w-md">
+                        <p className="text-xl font-bold mb-2">⚠️ Error</p>
+                        <p>{error}</p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="mt-4 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-colors"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Main Content: Unified Layout Viewer */}
-            <div className="flex-1 bg-[#1e1a29] rounded-3xl border border-white/5 relative overflow-hidden flex items-center justify-center mb-36">
-                <EventLayoutViewer
-                    zones={zones}
-                    selectedSeats={selectedSeats}
-                    onSeatToggle={handleSeatToggle}
-                />
-            </div>
+            {!loading && !error && (
+                <div className="flex-1 bg-[#1e1a29] rounded-3xl border border-white/5 relative overflow-hidden flex items-center justify-center mb-36">
+                    <EventLayoutViewer
+                        zones={zones}
+                        seats={seatsData}
+                        selectedSeats={selectedSeats}
+                        onSeatToggle={handleSeatToggle}
+                    />
+                </div>
+            )}
 
             {/* Bottom Bar */}
             <div className="fixed bottom-0 left-0 w-full bg-[#151022]/90 backdrop-blur border-t border-white/10 p-6 z-[150]">

@@ -4,7 +4,7 @@
 # TỐI ƯU CHO MÁY 8GB RAM:
 # - Đã tắt MongoDB local (dùng MongoDB Atlas)
 # - Đã tắt Redis (bật lại khi cần seat locking)
-# - Chỉ chạy: API Gateway + Auth Service (~500-800MB RAM)
+# - Chỉ chạy: API Gateway + Auth Service + Layout Service (~500-800MB RAM)
 
 services:
   # ============================================
@@ -26,6 +26,22 @@ services:
       - FRONTEND_URL=http://localhost:3000
     depends_on:
       - auth-service
+    networks:
+      - ticketing-network
+    restart: unless-stopped
+
+  # ============================================
+  # LAYOUT SERVICE (Port 4002)
+  # ============================================
+  layout-service:
+    build:
+      context: ../services/layout-service
+      dockerfile: Dockerfile
+    ports:
+      - "4002:4002"
+    environment:
+      - PORT=4002
+      - MONGODB_URI=${MONGODB_ATLAS_URI:-mongodb://host.docker.internal:27017/Ticket}
     networks:
       - ticketing-network
     restart: unless-stopped

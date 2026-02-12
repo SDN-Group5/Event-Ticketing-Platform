@@ -19,8 +19,113 @@ import { LoginPage, SignupPage, OTPPage, ResetPasswordPage } from './pages/auth'
 import { DashboardPage as OrganizerDashboard, CreateEventPage, AttendeesPage, AnalyticsPage, EventsPage, ManageVouchersPage, ManageStaffPage, NotificationsPage, CheckInPage } from './pages/organizer';
 
 // Admin Pages  
-import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage, EventApprovalsPage, OrganizerPayoutsPage, AdminAnalyticsPage, AdminSettingsPage } from './pages/admin';
+import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage, LayoutApiTestPage, EventApprovalsPage, RefundRequestsPage, AdminAnalyticsPage, AdminSettingsPage } from './pages/admin';
 
+// Role Switcher Component (Demo purposes)
+const RoleSwitcher: React.FC = () => {
+    const { user, switchRole, logout, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+    const [isOpen, setIsOpen] = useState(false);
+
+    const roles: { role: UserRole; label: string; icon: string; color: string }[] = [
+        { role: 'customer', label: 'Customer', icon: 'person', color: 'from-blue-500 to-cyan-500' },
+        { role: 'organizer', label: 'Organizer', icon: 'event', color: 'from-purple-500 to-pink-500' },
+        { role: 'admin', label: 'Admin', icon: 'admin_panel_settings', color: 'from-orange-500 to-red-500' },
+    ];
+
+    const handleRoleSwitch = (role: UserRole) => {
+        switchRole(role);
+        setIsOpen(false);
+        // Navigate to appropriate dashboard
+        if (role === 'customer') navigate('/');
+        else if (role === 'organizer') navigate('/organizer');
+        else if (role === 'admin') navigate('/admin/payouts');
+    };
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+        setIsOpen(false);
+    };
+
+    return (
+        <div className="fixed top-4 right-4 z-[200]">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-10 h-10 flex items-center justify-center bg-[#1e293b]/90 backdrop-blur-xl border border-white/10 rounded-full text-white shadow-xl hover:bg-[#1e293b] transition-all"
+                title={isAuthenticated && user ? `Signed in as ${user.name} (${user.role})` : "Sign In"}
+            >
+                {isAuthenticated && user ? (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8655f6] to-[#d946ef] flex items-center justify-center text-xs font-bold">
+                        {user.name.charAt(0)}
+                    </div>
+                ) : (
+                    <span className="material-symbols-outlined text-xl">login</span>
+                )}
+            </button>
+
+            {isOpen && (
+                <div className="absolute top-full right-0 mt-2 w-64 bg-[#1e293b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                    <div className="p-4 border-b border-white/10">
+                        {isAuthenticated && user && (
+                            <div className="mb-3 pb-3 border-b border-white/10 flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#8655f6] to-[#d946ef] flex items-center justify-center text-sm font-bold">
+                                    {user.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <p className="font-bold text-white">{user.name}</p>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${user.role === 'admin' ? 'bg-orange-500/20 text-orange-400' :
+                                        user.role === 'organizer' ? 'bg-purple-500/20 text-purple-400' :
+                                            'bg-blue-500/20 text-blue-400'
+                                        }`}>{user.role}</span>
+                                </div>
+                            </div>
+                        )}
+                        <p className="text-xs text-gray-400 uppercase font-bold mb-3">Switch Role (Demo)</p>
+                        <div className="space-y-2">
+                            {roles.map(({ role, label, icon, color }) => (
+                                <button
+                                    key={role}
+                                    onClick={() => handleRoleSwitch(role)}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${user?.role === role
+                                        ? 'bg-white/10 ring-1 ring-white/20'
+                                        : 'hover:bg-white/5'
+                                        }`}
+                                >
+                                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center`}>
+                                        <span className="material-symbols-outlined text-white">{icon}</span>
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-medium text-white">{label}</p>
+                                        <p className="text-[11px] text-gray-400">
+                                            {role === 'customer' ? 'Browse & buy tickets' :
+                                                role === 'organizer' ? 'Manage events' :
+                                                    'System administration'}
+                                        </p>
+                                    </div>
+                                    {user?.role === role && (
+                                        <span className="material-symbols-outlined text-emerald-400 ml-auto">check_circle</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    {isAuthenticated && (
+                        <div className="p-3">
+                            <button
+                                onClick={handleLogout}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-sm">logout</span>
+                                <span className="text-sm font-medium">Sign Out</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 // Quick Navigation Bar
 const QuickNav: React.FC = () => {
@@ -109,7 +214,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/search" element={<ClientLayout><SearchPage /></ClientLayout>} />
             <Route path="/event/:id" element={<ClientLayout><EventDetailsPage /></ClientLayout>} />
             <Route path="/event/:id/zones" element={<ZoneSelectionPage />} />
-            <Route path="/venue-3d" element={<Venue3DPage />} />
+            <Route path="/event/:id/venue-3d" element={<Venue3DPage />} />
 
             {/* Protected Client Routes */}
             <Route path="/checkout" element={
@@ -226,6 +331,7 @@ const AppRoutes: React.FC = () => {
                     <AdminLayout title="Layout Editor" fullWidth><LayoutEditorPage /></AdminLayout>
                 </ProtectedRoute>
             } />
+            <Route path="/admin/layout-api-test" element={<LayoutApiTestPage />} />
             <Route path="/admin/event-approvals" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                     <AdminLayout title="Event Approvals"><EventApprovalsPage /></AdminLayout>

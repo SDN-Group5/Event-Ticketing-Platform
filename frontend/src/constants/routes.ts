@@ -11,12 +11,12 @@ export const ROUTES = {
   WISHLIST: '/wishlist',
   MY_TICKETS: '/my-tickets',
   REFUND_REQUESTS: '/refund-requests',
-  
+
   // Auth routes
   LOGIN: '/login',
   OTP: '/otp',
   RESET_PASSWORD: '/reset-password',
-  
+
   // Organizer routes
   ORGANIZER_HUB: '/organizer',
   ORGANIZER_ADMIN: '/organizer/admin',
@@ -29,12 +29,13 @@ export const ROUTES = {
   NOTIFICATIONS: '/organizer/notifications',
   CHECK_IN: '/organizer/check-in',
   STAGE_BUILDER: '/organizer/stage-builder',
-  
+
   // Admin routes
   ADMIN_PAYOUTS: '/admin/payouts',
   ADMIN_EVENT_QUEUE: '/admin/events',
   ADMIN_USERS: '/admin/users',
   LAYOUT_EDITOR: '/admin/layout-editor',
+  LAYOUT_API_TEST: '/admin/layout-api-test',
   ADMIN_EVENT_APPROVALS: '/admin/event-approvals',
   ADMIN_REFUND_REQUESTS: '/admin/refund-requests',
   ADMIN_ANALYTICS: '/admin/analytics',

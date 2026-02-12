@@ -21,10 +21,7 @@ export const CheckoutPage: React.FC = () => {
         return <Navigate to={`/event/${checkoutData.eventId}/zones`} replace />;
     }
 
-    const { zone, seats = [], ticketCount, total } = checkoutData;
-    const serviceFee = 15;
-    const processingFee = 5;
-    const totalWithFees = total + serviceFee + processingFee;
+    const { zone, seats, ticketCount = seats?.length || 0, total } = checkoutData;
 
     const handlePayment = () => {
         setIsProcessing(true);

@@ -11,6 +11,7 @@ import {
     SEAT_HEIGHT_3D,
     SEAT_BACK_HEIGHT_3D,
 } from '../../constants/layoutConstants';
+import { Person3D } from './Person3D';
 
 interface Zone {
     id: string;
@@ -31,7 +32,9 @@ interface Zone3DProps {
     bookedSeats?: string[];
     selectedSeat?: string | null;
     canvasWidth?: number;
+    showPeople?: boolean;
     onSeatClick?: (seatId: string, position: [number, number, number]) => void;
+    onSeatHover?: (seatInfo: any | null) => void;
 }
 
 // Use shared constants for consistent 2D-3D mapping
@@ -49,7 +52,9 @@ export function Zone3D({
     bookedSeats = [],
     selectedSeat,
     onSeatClick,
+    onSeatHover,
     canvasWidth = 1000,
+    showPeople = false,
 }: Zone3DProps) {
     // Refs for instanced meshes
     const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -106,14 +111,16 @@ export function Zone3D({
         const baseColor = new THREE.Color(zone.color);
 
         seatData.forEach((seat, i) => {
-            // Set position
+            // Set position - Seat Cushion (Height 0.2 -> Center Y +0.1)
             tempObject.position.set(seat.position[0], seat.position[1] + 0.1, seat.position[2]);
             tempObject.rotation.set(0, 0, 0); // Reset rotation
             tempObject.updateMatrix();
             meshRef.current!.setMatrixAt(i, tempObject.matrix);
 
-            // Set position for back rest
-            tempObject.position.set(seat.position[0], seat.position[1] + 0.4, seat.position[2] + 0.28);
+            // Set position for back rest (Height 0.6 -> Center Y +0.2(seat) + 0.3(half back) = +0.5)
+            // Z offset: Depth 1.1 -> Half 0.55. Backrest thickness 0.1 -> Half 0.05.
+            // Align back edge: 0.55 - 0.05 = 0.5. Let's use 0.48 for slight overlap.
+            tempObject.position.set(seat.position[0], seat.position[1] + 0.5, seat.position[2] + 0.48);
             tempObject.updateMatrix();
             backMeshRef.current!.setMatrixAt(i, tempObject.matrix);
 
@@ -166,6 +173,18 @@ export function Zone3D({
         if (hoveredInstance !== e.instanceId) {
             setHoveredInstance(e.instanceId);
             document.body.style.cursor = bookedSeats.includes(seatData[e.instanceId].id) ? 'not-allowed' : 'pointer';
+
+            // Notify parent of hover
+            if (onSeatHover) {
+                const seat = seatData[e.instanceId];
+                onSeatHover({
+                    seatId: seat.id,
+                    position: [baseX + seat.position[0], seat.position[1], baseZ + seat.position[2]],
+                    zoneName: zone.name,
+                    row: seat.row,
+                    seatNumber: seat.seatNumber
+                });
+            }
         }
     };
 
@@ -173,6 +192,11 @@ export function Zone3D({
         if (isStanding) return;
         setHoveredInstance(null);
         document.body.style.cursor = 'auto';
+
+        // Notify parent of hover end
+        if (onSeatHover) {
+            onSeatHover(null);
+        }
     };
 
     // Helper to convert deg to rad
@@ -210,6 +234,7 @@ export function Zone3D({
                         />
                     </mesh>
 
+
                     {/* Zone label */}
                     <Text
                         position={[0, baseElevation + 0.15, 0]}
@@ -233,66 +258,95 @@ export function Zone3D({
                     >
                         ${zone.price}
                     </Text>
+
+                    {/* Render Random People in Standing Zone */}
+                    {showPeople && (
+                        <group>
+                            {/* Limit to 7-8 people per standing zone */}
+                            {Array.from({ length: 7 + (zone.name.length % 2) }).map((_, i) => {
+                                // Deterministic random based on index and zone id
+                                const seed = i * 123.45 + (zone.id.charCodeAt(0) || 0);
+                                const randX = (Math.sin(seed) * 0.5 + 0.5) * (zoneWidth - 2) - (zoneWidth - 2) / 2;
+                                const randZ = (Math.cos(seed * 1.5) * 0.5 + 0.5) * (zoneDepth - 2) - (zoneDepth - 2) / 2;
+                                const randRot = (Math.sin(seed * 3) * Math.PI);
+
+                                // Random shirt colors
+                                const shirtColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                                const color = shirtColors[i % shirtColors.length];
+
+                                return (
+                                    <group key={`standing-person-${i}`} position={[randX, baseElevation, randZ]} rotation={[0, randRot, 0]}>
+                                        <Person3D
+                                            position={[0, 0, 0]}
+                                            color={color}
+                                            pose="standing"
+                                        />
+                                    </group>
+                                );
+                            })}
+                        </group>
+                    )}
                 </>
             )}
 
             {/* Seat Zones */}
             {!isStanding && (
                 <>
-                    {baseElevation === 0 && (
+                    {/* --- SOLID STRUCTURE (Steps & Base) --- */}
+                    <group>
+                        {/* Base Foundation (Common floor at baseElevation) */}
                         <mesh
-                            position={[0, -0.1, 0]}
-                            rotation={[-Math.PI / 2, 0, 0]}
+                            position={[0, baseElevation - 0.05, 0]}
                             receiveShadow
+                            castShadow
                         >
-                            <planeGeometry args={[zoneWidth + 0.3, zoneDepth + 0.2]} />
-                            <meshStandardMaterial
-                                color={zone.color}
-                                transparent
-                                opacity={0.2}
-                            />
+                            <boxGeometry args={[zoneWidth + 0.2, 0.1, zoneDepth + 0.2]} />
+                            <meshStandardMaterial color={zone.color} transparent opacity={0.9} />
                         </mesh>
-                    )}
 
-                    {baseElevation > 0 && (
-                        <>
-                            {/* Main solid platform/floor */}
+                        {/* Pillar Support (Only if elevated) */}
+                        {baseElevation > 0 && (
                             <mesh
-                                position={[0, baseElevation - 0.15, 0]}
-                                castShadow
-                                receiveShadow
-                            >
-                                <boxGeometry args={[zoneWidth + 0.3, 0.3, zoneDepth + 0.2]} />
-                                <meshStandardMaterial color="#2a2a3a" />
-                            </mesh>
-
-                            {/* Solid support block underneath */}
-                            <mesh
-                                position={[0, baseElevation / 2 - 0.15, 0]}
+                                position={[0, baseElevation / 2 - 0.1, 0]}
                                 castShadow
                             >
-                                <boxGeometry args={[zoneWidth + 0.3, baseElevation, zoneDepth + 0.2]} />
+                                <boxGeometry args={[zoneWidth + 0.1, baseElevation, zoneDepth + 0.1]} />
                                 <meshStandardMaterial color="#1a1a2e" />
                             </mesh>
+                        )}
 
-                            {/* Front face - darker for depth */}
-                            <mesh
-                                position={[0, baseElevation / 2 - 0.15, -zoneDepth / 2]}
-                                castShadow
-                            >
-                                <boxGeometry args={[zoneWidth + 0.3, baseElevation, 0.1]} />
-                                <meshStandardMaterial color="#0f0f1a" />
-                            </mesh>
+                        {/* Steps for each row */}
+                        {Array.from({ length: zone.rows }).map((_, rowIndex) => {
+                            // Row 0 is at baseElevation, so it sits on the base foundation.
+                            // Rows > 0 need extra blocks to bridge the gap from baseElevation to their height.
+                            if (rowIndex === 0) return null;
 
-                            {/* Color accent strip at top edge */}
-                            <mesh
-                                position={[0, baseElevation - 0.05, -zoneDepth / 2]}
-                            >
-                                <boxGeometry args={[zoneWidth + 0.3, 0.15, 0.15]} />
-                                <meshStandardMaterial color={zone.color} emissive={zone.color} emissiveIntensity={0.3} />
-                            </mesh>
-                        </>
-                    )}
+                            const stepHeight = rowIndex * 0.2;
+                            const z = rowIndex * ROW_SPACING - (zone.rows * ROW_SPACING) / 2 + ROW_SPACING / 2;
+
+                            // Position Y: Sits on top of baseElevation.
+                            // Center of box is baseElevation + height/2
+                            const y = baseElevation + stepHeight / 2;
+
+                            return (
+                                <mesh
+                                    key={`step-${rowIndex}`}
+                                    position={[0, y, z]}
+                                    receiveShadow
+                                    castShadow
+                                >
+                                    <boxGeometry args={[zoneWidth + 0.2, stepHeight, ROW_SPACING]} />
+                                    <meshStandardMaterial color="#2a2a3a" />
+
+                                    {/* Accent strip on the front of the step */}
+                                    <mesh position={[0, 0, -ROW_SPACING / 2 + 0.02]}>
+                                        <boxGeometry args={[zoneWidth + 0.2, stepHeight, 0.05]} />
+                                        <meshStandardMaterial color={new THREE.Color(zone.color).multiplyScalar(0.6)} />
+                                    </mesh>
+                                </mesh>
+                            );
+                        })}
+                    </group>
 
                     {/* INSTANCED MESHES FOR SEATS */}
                     <instancedMesh
@@ -325,7 +379,6 @@ export function Zone3D({
                                 seatData[hoveredInstance].position[2]
                             ]}
                             center
-                            distanceFactor={10}
                         >
                             <div className="bg-black/80 text-white px-2 py-1 rounded text-xs whitespace-nowrap backdrop-blur-sm border border-white/20">
                                 {`Row ${seatData[hoveredInstance].row} Seat ${seatData[hoveredInstance].seatNumber}`}
@@ -333,6 +386,27 @@ export function Zone3D({
                             </div>
                         </Html>
                     )}
+
+                    {/* 3D People on Booked Seats */}
+                    {showPeople && seatData.map((seat, index) => {
+                        if (!bookedSeats.includes(seat.id)) return null;
+
+                        // Random shirt colors for variety
+                        const shirtColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                        const randomColor = shirtColors[index % shirtColors.length];
+
+                        return (
+                            <Person3D
+                                key={seat.id}
+                                position={[
+                                    seat.position[0],
+                                    seat.position[1] + 0.2, // Sit on the seat
+                                    seat.position[2]
+                                ]}
+                                color={randomColor}
+                            />
+                        );
+                    })}
                 </>
             )}
         </group>

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { saveEventLayout, getEventLayout } from '../../services/layoutService';
+import { LayoutAPI } from '../../services/layoutApiService';
 import { LayoutZone } from '../../types/layout';
 import { SEAT_UNIT_2D } from '../../constants/layoutConstants';
 import eventsData from '../../data/events.json';
@@ -75,6 +75,9 @@ export const LayoutEditorPage: React.FC = () => {
     // Event selection state
     const [selectedEventId, setSelectedEventId] = useState<string>('');
     const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [availableLayouts, setAvailableLayouts] = useState<Array<{ eventId: string; eventName: string }>>([]);
+    const [isLoadingLayouts, setIsLoadingLayouts] = useState(false);
 
     // State
     const [zones, setZones] = useState<Zone[]>(initialZones);
@@ -97,35 +100,82 @@ export const LayoutEditorPage: React.FC = () => {
     // Load existing layout when event is selected
     useEffect(() => {
         if (selectedEventId) {
-            const existingLayout = getEventLayout(selectedEventId);
-            if (existingLayout) {
-                setZones(existingLayout.zones as Zone[]);
+            loadLayoutFromBackend(selectedEventId);
+        }
+    }, [selectedEventId]);
 
-                // Load canvas settings if available
-                if (existingLayout.canvasWidth && existingLayout.canvasHeight) {
-                    setCanvasSize({ width: existingLayout.canvasWidth, height: existingLayout.canvasHeight });
-                } else {
-                    setCanvasSize({ width: 800, height: 600 });
-                }
+    // Load layout from backend API
+    const loadLayoutFromBackend = async (eventId: string) => {
+        setIsLoading(true);
+        try {
+            const layout = await LayoutAPI.getLayout(eventId);
 
-                if (existingLayout.canvasColor) {
-                    setCanvasColor(existingLayout.canvasColor);
-                } else {
-                    setCanvasColor('#0f1219');
-                }
+            // Convert backend zones to local Zone type
+            setZones(layout.zones as Zone[]);
 
-                setHistory([existingLayout.zones as Zone[]]);
-                setHistoryIndex(0);
-                setIsSaved(true);
+            // Load canvas settings
+            if (layout.canvasWidth && layout.canvasHeight) {
+                setCanvasSize({ width: layout.canvasWidth, height: layout.canvasHeight });
             } else {
-                // Reset to initial zones for new event
+                setCanvasSize({ width: 800, height: 600 });
+            }
+
+            if (layout.canvasColor) {
+                setCanvasColor(layout.canvasColor);
+            } else {
+                setCanvasColor('#0f1219');
+            }
+
+            setHistory([layout.zones as Zone[]]);
+            setHistoryIndex(0);
+            setIsSaved(true);
+            setSaveMessage({ type: 'success', text: 'Layout loaded from backend' });
+            setTimeout(() => setSaveMessage(null), 2000);
+        } catch (error: any) {
+            // Layout doesn't exist yet - use initial zones
+            if (error.response?.status === 404) {
                 setZones(initialZones);
                 setHistory([initialZones]);
                 setHistoryIndex(0);
                 setIsSaved(false);
+                setSaveMessage({ type: 'error', text: 'No layout found - creating new' });
+                setTimeout(() => setSaveMessage(null), 2000);
+            } else {
+                console.error('Error loading layout:', error);
+                setSaveMessage({ type: 'error', text: 'Failed to load layout from backend' });
+                setTimeout(() => setSaveMessage(null), 3000);
             }
+        } finally {
+            setIsLoading(false);
         }
-    }, [selectedEventId]);
+    };
+
+    // Load all available layouts from backend
+    const loadAvailableLayouts = async () => {
+        setIsLoadingLayouts(true);
+        try {
+            const layouts = await LayoutAPI.getAllLayouts();
+            const layoutList = layouts.map(layout => ({
+                eventId: layout.eventId,
+                eventName: layout.eventName || layout.eventId
+            }));
+            setAvailableLayouts(layoutList);
+            setSaveMessage({ type: 'success', text: `Loaded ${layoutList.length} layouts from backend` });
+            setTimeout(() => setSaveMessage(null), 2000);
+        } catch (error: any) {
+            console.error('Error loading layouts:', error);
+            setSaveMessage({ type: 'error', text: 'Failed to load layouts from backend' });
+            setTimeout(() => setSaveMessage(null), 3000);
+            setAvailableLayouts([]);
+        } finally {
+            setIsLoadingLayouts(false);
+        }
+    };
+
+    // Load available layouts on mount
+    useEffect(() => {
+        loadAvailableLayouts();
+    }, []);
 
     // Selected zone
     const selectedZone = zones.find(z => z.id === selectedZoneId);
@@ -365,28 +415,104 @@ export const LayoutEditorPage: React.FC = () => {
         setSelectedZoneId(newZone.id);
     };
 
-    // Save layout
-    const saveLayout = () => {
+    // Save layout to backend
+    const saveLayout = async () => {
         if (!selectedEventId) {
             setSaveMessage({ type: 'error', text: 'Please select an event first' });
             setTimeout(() => setSaveMessage(null), 3000);
             return;
         }
 
+        setIsLoading(true);
         try {
-            const event = eventsData.find(e => e.id === selectedEventId);
-            saveEventLayout(
-                selectedEventId,
-                zones as LayoutZone[],
-                event?.title,
-                { width: canvasSize.width, height: canvasSize.height, color: canvasColor }
-            );
+            // Find event name from either backend layouts or mock data
+            const backendLayout = availableLayouts.find(l => l.eventId === selectedEventId);
+            const mockEvent = eventsData.find(e => e.id === selectedEventId);
+            const eventName = backendLayout?.eventName || mockEvent?.title || selectedEventId;
+
+            // Clean zones data - remove optional fields that might cause backend issues
+            const cleanZones = zones.map(zone => {
+                const cleanZone: any = {
+                    id: zone.id,
+                    name: zone.name,
+                    type: zone.type,
+                    position: zone.position,
+                    size: zone.size,
+                    color: zone.color,
+                };
+
+                // Only add optional fields if they have values
+                if (zone.rotation !== undefined) cleanZone.rotation = zone.rotation;
+                if (zone.price !== undefined) cleanZone.price = zone.price;
+                if (zone.rows !== undefined) cleanZone.rows = zone.rows;
+                if (zone.seatsPerRow !== undefined) cleanZone.seatsPerRow = zone.seatsPerRow;
+                if (zone.elevation !== undefined) cleanZone.elevation = zone.elevation;
+
+                return cleanZone;
+            });
+
+            const layoutData = {
+                eventId: selectedEventId,
+                eventName: eventName,
+                zones: cleanZones,
+                canvasWidth: canvasSize.width,
+                canvasHeight: canvasSize.height,
+                canvasColor: canvasColor,
+            };
+
+            console.log('💾 Saving layout:', layoutData);
+
+            // Try to update first, if fails then create
+            try {
+                const result = await LayoutAPI.updateLayout(selectedEventId, layoutData);
+                console.log('✅ Layout updated:', result);
+                setSaveMessage({ type: 'success', text: 'Layout updated successfully!' });
+                // Reload layouts list to show updated data
+                await loadAvailableLayouts();
+            } catch (updateError: any) {
+                console.log('Update error:', updateError.response?.status, updateError.response?.data);
+
+                if (updateError.response?.status === 404) {
+                    // Layout doesn't exist, create new one
+                    console.log('📝 Creating new layout...');
+                    const result = await LayoutAPI.createLayout(layoutData);
+                    console.log('✅ Layout created:', result);
+                    setSaveMessage({ type: 'success', text: 'Layout created successfully!' });
+                    // Reload layouts list to show new layout
+                    await loadAvailableLayouts();
+                } else {
+                    throw updateError;
+                }
+            }
+
             setIsSaved(true);
-            setSaveMessage({ type: 'success', text: 'Layout saved successfully!' });
             setTimeout(() => setSaveMessage(null), 3000);
-        } catch (error) {
-            setSaveMessage({ type: 'error', text: 'Failed to save layout' });
-            setTimeout(() => setSaveMessage(null), 3000);
+        } catch (error: any) {
+            console.error('❌ Error saving layout:', error);
+            console.error('Error details:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message
+            });
+
+            let errorMessage = 'Failed to save layout';
+
+            // Extract detailed error message
+            if (error.response?.data?.error?.message) {
+                errorMessage = error.response.data.error.message;
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            setSaveMessage({
+                type: 'error',
+                text: `Server error: ${errorMessage}`
+            });
+            setTimeout(() => setSaveMessage(null), 5000);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -428,7 +554,7 @@ export const LayoutEditorPage: React.FC = () => {
                 onMouseDown={(e) => handleZoneMouseDown(e, zone.id)}
             >
                 <div
-                    className={`w-full h-full rounded-xl border-2 transition-all flex flex-col items-center justify-center ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0f1219]' : ''}`}
+                    className={`w-full h-full border-2 transition-all flex flex-col items-center justify-center ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0f1219]' : ''}`}
                     style={{
                         borderColor: zone.color,
                         backgroundColor: `${zone.color}15`,
@@ -442,7 +568,7 @@ export const LayoutEditorPage: React.FC = () => {
                     {/* Seat grid */}
                     {showSeatGrid && zone.type === 'seats' && seats.length > 0 ? (
                         <div
-                            className="grid gap-0.5"
+                            className="grid"
                             style={{
                                 gridTemplateColumns: `repeat(${zone.seatsPerRow}, 1fr)`,
                             }}
@@ -450,7 +576,7 @@ export const LayoutEditorPage: React.FC = () => {
                             {seats.map(seat => (
                                 <div
                                     key={seat.id}
-                                    className={`w-4 h-4 rounded-sm text-[6px] flex items-center justify-center font-bold transition-colors hover:scale-110 cursor-pointer ${seat.status === 'available' ? 'bg-emerald-500/80 hover:bg-emerald-400' :
+                                    className={`w-5 h-5 text-[6px] flex items-center justify-center font-bold transition-colors hover:scale-110 cursor-pointer ${seat.status === 'available' ? 'bg-emerald-500/80 hover:bg-emerald-400' :
                                         seat.status === 'reserved' ? 'bg-amber-500/80' :
                                             'bg-slate-600/80'
                                         }`}
@@ -536,20 +662,44 @@ export const LayoutEditorPage: React.FC = () => {
 
                 {/* Event Selector */}
                 <div className="mb-6">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Select Event</h3>
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Select Event</h3>
+                        <button
+                            onClick={loadAvailableLayouts}
+                            disabled={isLoadingLayouts}
+                            className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded-md transition-colors disabled:opacity-50"
+                            title="Reload layouts from backend"
+                        >
+                            <span className={`material-symbols-outlined text-xs ${isLoadingLayouts ? 'animate-spin' : ''}`}>
+                                {isLoadingLayouts ? 'progress_activity' : 'refresh'}
+                            </span>
+                            Reload
+                        </button>
+                    </div>
                     <select
                         value={selectedEventId}
                         onChange={(e) => setSelectedEventId(e.target.value)}
                         className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30 transition-all"
                     >
                         <option value="">-- Select an event --</option>
-                        {eventsData.map(event => (
-                            <option key={event.id} value={event.id}>{event.title}</option>
-                        ))}
+                        <optgroup label="From Backend">
+                            {availableLayouts.map(layout => (
+                                <option key={layout.eventId} value={layout.eventId}>{layout.eventName}</option>
+                            ))}
+                        </optgroup>
+                        <optgroup label="Mock Data (Local)">
+                            {eventsData.map(event => (
+                                <option key={event.id} value={event.id}>{event.title}</option>
+                            ))}
+                        </optgroup>
                     </select>
                     {selectedEventId && (
                         <p className="text-xs text-slate-400 mt-2">
-                            Editing layout for: <span className="text-[#8655f6] font-medium">{eventsData.find(e => e.id === selectedEventId)?.title}</span>
+                            Editing layout for: <span className="text-[#8655f6] font-medium">
+                                {availableLayouts.find(l => l.eventId === selectedEventId)?.eventName ||
+                                    eventsData.find(e => e.id === selectedEventId)?.title ||
+                                    selectedEventId}
+                            </span>
                         </p>
                     )}
                 </div>
@@ -928,10 +1078,11 @@ export const LayoutEditorPage: React.FC = () => {
                         </button>
                         <button
                             onClick={saveLayout}
-                            className="px-4 py-2 text-sm bg-[#8655f6] rounded-lg font-bold flex items-center gap-2 hover:bg-[#7644e5] transition-colors"
+                            disabled={isLoading}
+                            className="px-4 py-2 text-sm bg-[#8655f6] rounded-lg font-bold flex items-center gap-2 hover:bg-[#7644e5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <span className="material-symbols-outlined text-sm">save</span>
-                            Save Layout
+                            <span className="material-symbols-outlined text-sm">{isLoading ? 'progress_activity' : 'save'}</span>
+                            {isLoading ? 'Saving...' : 'Save Layout'}
                         </button>
                     </div>
                 </header>
@@ -1010,6 +1161,16 @@ export const LayoutEditorPage: React.FC = () => {
                     </div>
                 </div>
             </main>
+
+            {/* Loading Overlay */}
+            {isLoading && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-[#0f1219] border border-slate-700 rounded-2xl p-8 flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 border-4 border-[#8655f6] border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-white font-medium">Loading layout from backend...</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

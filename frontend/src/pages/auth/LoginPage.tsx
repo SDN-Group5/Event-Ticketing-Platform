@@ -111,16 +111,26 @@ export const LoginPage: React.FC = () => {
                         onClick={() => navigate('/')}>TicketVibe</h2>
                 </div>
 
-                {/* Top Right - Create Account Link */}
-                <div className="text-sm text-white">
-                    New here?{' '}
-                    <button
-                        type="button"
-                        onClick={() => navigate('/signup')}
-                        className="text-[#a855f7] hover:underline font-semibold"
-                    >
-                        Create an account
-                    </button>
+            {/* Role Selection */}
+            <div className="mb-8">
+                <label className="block text-sm font-medium text-slate-300 mb-3">Select Your Role</label>
+                <div className="grid grid-cols-3 gap-3">
+                    {roles.map(({ role, label, icon }) => (
+                        <button
+                            key={role}
+                            type="button"
+                            onClick={() => setSelectedRole(role)}
+                            className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${selectedRole === role
+                                ? 'bg-[#8655f6]/20 border-[#8655f6] text-white'
+                                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                                }`}
+                        >
+                            <span className={`material-symbols-outlined text-2xl ${selectedRole === role ? 'text-[#8655f6]' : ''}`}>
+                                {icon}
+                            </span>
+                            <span className="text-xs font-medium">{label}</span>
+                        </button>
+                    ))}
                 </div>
             </header>
 

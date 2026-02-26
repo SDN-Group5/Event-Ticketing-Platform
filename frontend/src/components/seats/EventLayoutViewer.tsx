@@ -1,44 +1,58 @@
 import React, { useMemo } from 'react';
 import { Seat, SeatZone, SelectedSeat } from '../../types/seat';
+import { SeatData } from '../../services/seatApiService';
 
 interface EventLayoutViewerProps {
     zones: SeatZone[];
+    seats?: SeatData[]; // Real seats from MongoDB
     selectedSeats: SelectedSeat[];
     onSeatToggle: (seat: SelectedSeat) => void;
 }
 
 export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
     zones,
+    seats = [],
     selectedSeats,
     onSeatToggle,
 }) => {
-    // Generate seats for a zone with mock status
-    const generateSeats = (zone: any): Seat[] => {
+    // Map real seats data from MongoDB to UI format
+    const getSeatsForZone = (zone: any): Seat[] => {
         if (zone.type !== 'seats' || !zone.rows || !zone.seatsPerRow) return [];
 
-        const seats: Seat[] = [];
+        // If we have real seats data, use it
+        if (seats.length > 0) {
+            const zoneSeats = seats.filter(s => s.zoneId === zone.id);
+
+            return zoneSeats.map(seatData => ({
+                id: `${seatData.zoneId}-${seatData.row}-${seatData.seatNumber}`,
+                row: String(seatData.row),
+                number: seatData.seatNumber,
+                zone: zone.name,
+                // Map MongoDB status to UI status
+                status: seatData.status === 'sold' || seatData.status === 'reserved'
+                    ? 'occupied'
+                    : seatData.status === 'blocked'
+                        ? 'blocked'
+                        : 'available',
+                price: seatData.price
+            }));
+        }
+
+        // Fallback: Generate empty seats if no data from backend
+        const fallbackSeats: Seat[] = [];
         for (let row = 0; row < zone.rows; row++) {
             for (let num = 0; num < zone.seatsPerRow; num++) {
-                // Mock random status for demonstration
-                // 15% chance of being occupied (booked)
-                // 5% chance of being blocked (locked)
-                const rand = Math.random();
-                let status: Seat['status'] = 'available';
-
-                if (rand < 0.15) status = 'occupied';
-                else if (rand < 0.20) status = 'blocked';
-
-                seats.push({
+                fallbackSeats.push({
                     id: `${zone.id}-${row}-${num}`,
                     row: String(row + 1),
                     number: num + 1,
                     zone: zone.name,
-                    status: status,
+                    status: 'available',
                     price: zone.price
                 });
             }
         }
-        return seats;
+        return fallbackSeats;
     };
 
     // Calculate dimensions to ensure all zones fit
@@ -81,9 +95,8 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                     const w = zone.size?.width ?? 150;
                     const h = zone.size?.height ?? 150;
 
-                    // Memoize seat generation to prevent randomization on every render
-                    // In a real app, this would come from props/state
-                    const zoneSeats = useMemo(() => generateSeats(zone), [zone.id, zone.rows, zone.seatsPerRow]);
+                    // Memoize seat data to prevent re-mapping on every render
+                    const zoneSeats = useMemo(() => getSeatsForZone(zone), [zone.id, zone.rows, zone.seatsPerRow, seats]);
 
                     return (
                         <div

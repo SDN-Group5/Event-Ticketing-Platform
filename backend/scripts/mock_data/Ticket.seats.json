@@ -1,0 +1,3237 @@
+[{
+  "_id": {
+    "$oid": "42d3e829c5c4262a342d6ec8"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 1,
+  "seatNumber": 1,
+  "seatLabel": "A1",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "a0b788588a693e82823109da"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 1,
+  "seatNumber": 2,
+  "seatLabel": "A2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "8d8115513eabe233dfde3702"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 1,
+  "seatNumber": 3,
+  "seatLabel": "A3",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "ff4d0aa3ff8305934aeec049"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 1,
+  "seatNumber": 4,
+  "seatLabel": "A4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "aad0896dd996ed86674eda43"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 1,
+  "seatNumber": 5,
+  "seatLabel": "A5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "219892a05898e7d41253004e"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 1,
+  "seatNumber": 6,
+  "seatLabel": "A6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "ceb53037946556476bdf9a9a"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 1,
+  "seatNumber": 7,
+  "seatLabel": "A7",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "1cd6c5a4afe4a60b65b839bc"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 1,
+  "seatNumber": 8,
+  "seatLabel": "A8",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "soldBy": {
+    "$oid": "8151d852a9d9b4a65e1a4b5d"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "27a1d99ced26b13f11306189"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 2,
+  "seatNumber": 1,
+  "seatLabel": "B1",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "3b9c82e0f402dbbc62e28979"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 2,
+  "seatNumber": 2,
+  "seatLabel": "B2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "836e62f78994a67bd1017f42"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 2,
+  "seatNumber": 3,
+  "seatLabel": "B3",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "fed87ea1096f31127c55df26"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 2,
+  "seatNumber": 4,
+  "seatLabel": "B4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "f47ceaefc5732d32b87aa283"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 2,
+  "seatNumber": 5,
+  "seatLabel": "B5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "7a2b784acf02c37bcbfdc88e"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 2,
+  "seatNumber": 6,
+  "seatLabel": "B6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "2ca09775e097a8d18455575f"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 2,
+  "seatNumber": 7,
+  "seatLabel": "B7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "0da8b8c9be4ff232da4ee79f"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 2,
+  "seatNumber": 8,
+  "seatLabel": "B8",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "9ab22d796197c340616ff36e"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 3,
+  "seatNumber": 1,
+  "seatLabel": "C1",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "soldBy": {
+    "$oid": "fbb9217e992a6552fd300ff2"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "19a8174a29f80dd2548a8691"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 3,
+  "seatNumber": 2,
+  "seatLabel": "C2",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "soldBy": {
+    "$oid": "b80512de7ba9b7b38ed5b832"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "449b81c0a897648cf6f73ade"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 3,
+  "seatNumber": 3,
+  "seatLabel": "C3",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "4c74632331e32c49996683a5"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 3,
+  "seatNumber": 4,
+  "seatLabel": "C4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "fa458c7e99b603656540ad73"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 3,
+  "seatNumber": 5,
+  "seatLabel": "C5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "8e4ce2816357aad68e16fe1e"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 3,
+  "seatNumber": 6,
+  "seatLabel": "C6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a472ea52ffd1cec97028e9d"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 3,
+  "seatNumber": 7,
+  "seatLabel": "C7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "26c7df0cd93d2641f9529436"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 3,
+  "seatNumber": 8,
+  "seatLabel": "C8",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "soldBy": {
+    "$oid": "8151d852a9d9b4a65e1a4b5d"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "85b7abd28450ef678a575f48"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 4,
+  "seatNumber": 1,
+  "seatLabel": "D1",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "72a95891990bc81420727825"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 4,
+  "seatNumber": 2,
+  "seatLabel": "D2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "54798aacbec6567b35b73a0c"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 4,
+  "seatNumber": 3,
+  "seatLabel": "D3",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "41bb710d13f7e8ed65da5f12"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 4,
+  "seatNumber": 4,
+  "seatLabel": "D4",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "soldBy": {
+    "$oid": "8151d852a9d9b4a65e1a4b5d"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "1e2bbf26b873d2e0cee0a541"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 4,
+  "seatNumber": 5,
+  "seatLabel": "D5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "14c03f67a445547005563359"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 4,
+  "seatNumber": 6,
+  "seatLabel": "D6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "5513ed8a3d83241748441ea0"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 4,
+  "seatNumber": 7,
+  "seatLabel": "D7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "dc37ad2d856e087410a0e147"
+  },
+  "eventId": {
+    "$oid": "65c4d6f8e7b1a2b3c4d5e6f7"
+  },
+  "layoutId": {
+    "$oid": "6988d5bb0fd486b5e33f6e5b"
+  },
+  "zoneId": "zone-1770744600524-ga8qkap2g",
+  "row": 4,
+  "seatNumber": 8,
+  "seatLabel": "D8",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "7970dad5f7d9df437a1fc546"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 1,
+  "seatNumber": 1,
+  "seatLabel": "A1",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "4144dec9faf96d82370beb2a"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 1,
+  "seatNumber": 2,
+  "seatLabel": "A2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "71b998db2b8aefb8c2e0200f"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 1,
+  "seatNumber": 3,
+  "seatLabel": "A3",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "1123e8040a057662261b8568"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 1,
+  "seatNumber": 4,
+  "seatLabel": "A4",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "3476e8e28e4d52a3543b420f"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 1,
+  "seatNumber": 5,
+  "seatLabel": "A5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "9cc06b2f7c29dc79299f41d3"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 1,
+  "seatNumber": 6,
+  "seatLabel": "A6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "809418f93166be041211aab6"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 1,
+  "seatNumber": 7,
+  "seatLabel": "A7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "c670fc8352018c5d151fb8b1"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 1,
+  "seatNumber": 8,
+  "seatLabel": "A8",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "soldBy": {
+    "$oid": "7446575fa3c1e3cbd4e3afed"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "a23ac70dd0f531aef490b050"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 2,
+  "seatNumber": 1,
+  "seatLabel": "B1",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "ef6c4161c05bf4bb2c14b875"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 2,
+  "seatNumber": 2,
+  "seatLabel": "B2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "557aaf0d6dd40352abe9ca78"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 2,
+  "seatNumber": 3,
+  "seatLabel": "B3",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "02ea59101083725775450581"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 2,
+  "seatNumber": 4,
+  "seatLabel": "B4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "edf089851437b0ba70554103"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 2,
+  "seatNumber": 5,
+  "seatLabel": "B5",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "soldBy": {
+    "$oid": "b80512de7ba9b7b38ed5b832"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "662729f564396ba4eb046d5e"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 2,
+  "seatNumber": 6,
+  "seatLabel": "B6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "7f26e3b320c56f8ead8d962c"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 2,
+  "seatNumber": 7,
+  "seatLabel": "B7",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "28a3f63552b4fd993f3bea68"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 2,
+  "seatNumber": 8,
+  "seatLabel": "B8",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "23954ee4450b89307314f2e7"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 3,
+  "seatNumber": 1,
+  "seatLabel": "C1",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "f5662c8939c46a2a38ec1af1"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 3,
+  "seatNumber": 2,
+  "seatLabel": "C2",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "46172025196debb5d6b7c4ec"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 3,
+  "seatNumber": 3,
+  "seatLabel": "C3",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "357bd48c26434f200d0f7946"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 3,
+  "seatNumber": 4,
+  "seatLabel": "C4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "02412f0329fd96ae41a827a2"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 3,
+  "seatNumber": 5,
+  "seatLabel": "C5",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "soldBy": {
+    "$oid": "8151d852a9d9b4a65e1a4b5d"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "e69b8d5e7c17c6ecf04db373"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 3,
+  "seatNumber": 6,
+  "seatLabel": "C6",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "soldBy": {
+    "$oid": "2b42f5608770a0ec4346a363"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "3548670bf33ee8fa401808c9"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 3,
+  "seatNumber": 7,
+  "seatLabel": "C7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "44d0786cc6d72d07d5bec026"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 3,
+  "seatNumber": 8,
+  "seatLabel": "C8",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "e75698ff9d85369b2756a4d8"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 4,
+  "seatNumber": 1,
+  "seatLabel": "D1",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6c79a013783ac5380c962e4f"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 4,
+  "seatNumber": 2,
+  "seatLabel": "D2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "308e5f3b435c3cda42669a1f"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 4,
+  "seatNumber": 3,
+  "seatLabel": "D3",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "soldBy": {
+    "$oid": "fbb9217e992a6552fd300ff2"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "b429dd5d97eec90be18b4612"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 4,
+  "seatNumber": 4,
+  "seatLabel": "D4",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "dc4503b1fb5d1436e9e253c7"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 4,
+  "seatNumber": 5,
+  "seatLabel": "D5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67baff9086d36eec561b4cac"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 4,
+  "seatNumber": 6,
+  "seatLabel": "D6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "1a3d7a548bd70d6a81e01e9b"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 4,
+  "seatNumber": 7,
+  "seatLabel": "D7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "2d93c0f44bff4a86d8fe8eb2"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744550709-ammg7ydb7",
+  "row": 4,
+  "seatNumber": 8,
+  "seatLabel": "D8",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "66cdc5aecd5372d199bb03df"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 1,
+  "seatNumber": 1,
+  "seatLabel": "A1",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6432bfcf344900ef48bafe18"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 1,
+  "seatNumber": 2,
+  "seatLabel": "A2",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "soldBy": {
+    "$oid": "2b42f5608770a0ec4346a363"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "913fffaf27059addf46b7c81"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 1,
+  "seatNumber": 3,
+  "seatLabel": "A3",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "ad2bd9c1fea9499a93eddc83"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 1,
+  "seatNumber": 4,
+  "seatLabel": "A4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "48d20d2fbc97f3503303f209"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 1,
+  "seatNumber": 5,
+  "seatLabel": "A5",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "soldBy": {
+    "$oid": "8151d852a9d9b4a65e1a4b5d"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "71d4cac41c1f5cc0562f0106"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 1,
+  "seatNumber": 6,
+  "seatLabel": "A6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "ec12a902902d5ce42b0d524c"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 1,
+  "seatNumber": 7,
+  "seatLabel": "A7",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "509fa6af7a148d114069e299"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 1,
+  "seatNumber": 8,
+  "seatLabel": "A8",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "4a04e19aa077e567f7d8cefe"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 2,
+  "seatNumber": 1,
+  "seatLabel": "B1",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "eb84a0420e1197bd7504350e"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 2,
+  "seatNumber": 2,
+  "seatLabel": "B2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "bf007f64acd848999d4c04bd"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 2,
+  "seatNumber": 3,
+  "seatLabel": "B3",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "558b4b9362acb162f65c9d12"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 2,
+  "seatNumber": 4,
+  "seatLabel": "B4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "d7519bd634182db1a8e109e5"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 2,
+  "seatNumber": 5,
+  "seatLabel": "B5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "b5e6c159915c5c238a079e16"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 2,
+  "seatNumber": 6,
+  "seatLabel": "B6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "d30972a7100695b5f824071c"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 2,
+  "seatNumber": 7,
+  "seatLabel": "B7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "ff2985b88f89d1feb8a10a07"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 2,
+  "seatNumber": 8,
+  "seatLabel": "B8",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "1ab3c4ae2790ea1f29b0aeb7"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 3,
+  "seatNumber": 1,
+  "seatLabel": "C1",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "4cfca996fa51cbac916aae3b"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 3,
+  "seatNumber": 2,
+  "seatLabel": "C2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "347b09a03adcfc235f2d5d68"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 3,
+  "seatNumber": 3,
+  "seatLabel": "C3",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "e4f9a6085c0f5ead552c25d9"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 3,
+  "seatNumber": 4,
+  "seatLabel": "C4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "a619d3e8c4fa2fa579979db2"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 3,
+  "seatNumber": 5,
+  "seatLabel": "C5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "643231633e4576d81b5a59cd"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 3,
+  "seatNumber": 6,
+  "seatLabel": "C6",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "8fc91512bc294a059fcd403a"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 3,
+  "seatNumber": 7,
+  "seatLabel": "C7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "c36c7f5b9447e28394ad3ef1"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 3,
+  "seatNumber": 8,
+  "seatLabel": "C8",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "93204b6cd43da3339e92ff6c"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 4,
+  "seatNumber": 1,
+  "seatLabel": "D1",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "soldBy": {
+    "$oid": "8151d852a9d9b4a65e1a4b5d"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "ce2000d836f4bf5e8fb8036d"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 4,
+  "seatNumber": 2,
+  "seatLabel": "D2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "9c7f130ba340a20777a897b4"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 4,
+  "seatNumber": 3,
+  "seatLabel": "D3",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "4c2538149739be544151c54a"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 4,
+  "seatNumber": 4,
+  "seatLabel": "D4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "e40adbcd1050a677730a30ef"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 4,
+  "seatNumber": 5,
+  "seatLabel": "D5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "89ee82f3ba3c963e08d55528"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 4,
+  "seatNumber": 6,
+  "seatLabel": "D6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "91d325859cdfd13026348625"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 4,
+  "seatNumber": 7,
+  "seatLabel": "D7",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "544c6dff6c8dbce499097547"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744552427-91evvb6y1",
+  "row": 4,
+  "seatNumber": 8,
+  "seatLabel": "D8",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "4d12b2baef511c27dde6944b"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 1,
+  "seatNumber": 1,
+  "seatLabel": "A1",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "fbaccb04b5b96a1c3b1fd125"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 1,
+  "seatNumber": 2,
+  "seatLabel": "A2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "4568d35c777c69bffb7892b8"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 1,
+  "seatNumber": 3,
+  "seatLabel": "A3",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "1e2958c50f94e1854e498717"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 1,
+  "seatNumber": 4,
+  "seatLabel": "A4",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "soldBy": {
+    "$oid": "8151d852a9d9b4a65e1a4b5d"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "2b44fccfc8be0a8e1d8f2401"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 1,
+  "seatNumber": 5,
+  "seatLabel": "A5",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "d4f117360343e87ed8595d13"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 1,
+  "seatNumber": 6,
+  "seatLabel": "A6",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "3d2471fd50b51daf3de57672"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 1,
+  "seatNumber": 7,
+  "seatLabel": "A7",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "b05d2f0949b35cb43c3ad4ce"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 1,
+  "seatNumber": 8,
+  "seatLabel": "A8",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "1bfd5c77a3df9e10bbeadf54"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 2,
+  "seatNumber": 1,
+  "seatLabel": "B1",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "soldBy": {
+    "$oid": "8151d852a9d9b4a65e1a4b5d"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "3bde3a72d29ab0fd76d4f59e"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 2,
+  "seatNumber": 2,
+  "seatLabel": "B2",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "eedfcfe43df32b7973558752"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 2,
+  "seatNumber": 3,
+  "seatLabel": "B3",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "cd8456f45fd905f64f4d2d9b"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 2,
+  "seatNumber": 4,
+  "seatLabel": "B4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "a50ce7559e0bd8a88f954b9d"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 2,
+  "seatNumber": 5,
+  "seatLabel": "B5",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "c6fff594e90b05660a5a0794"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 2,
+  "seatNumber": 6,
+  "seatLabel": "B6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "779b9c9d4160842c2a3e9775"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 2,
+  "seatNumber": 7,
+  "seatLabel": "B7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "17e8bf0c9f8cfe1dde560980"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 2,
+  "seatNumber": 8,
+  "seatLabel": "B8",
+  "status": "sold",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "soldBy": {
+    "$oid": "5aea5fc1a9b93ae093dcf631"
+  },
+  "soldAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "597a21a0e36ec2494152376b"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 3,
+  "seatNumber": 1,
+  "seatLabel": "C1",
+  "status": "available",
+  "price": 50,
+  "version": 1,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T14:13:00.490Z"
+  },
+  "reservedBy": null,
+  "reservedAt": null,
+  "reservationExpiry": null
+},
+{
+  "_id": {
+    "$oid": "cc415ee7af7a2d3cd202bdcf"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 3,
+  "seatNumber": 2,
+  "seatLabel": "C2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "596f062af3a6111765d582c0"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 3,
+  "seatNumber": 3,
+  "seatLabel": "C3",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "0f0759a9747d995ad8d1dfd9"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 3,
+  "seatNumber": 4,
+  "seatLabel": "C4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "3931d1c113b4216510678f95"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 3,
+  "seatNumber": 5,
+  "seatLabel": "C5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6254c154f7b7a0689ed27b35"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 3,
+  "seatNumber": 6,
+  "seatLabel": "C6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "a764c8a015092bbbebb4ba8b"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 3,
+  "seatNumber": 7,
+  "seatLabel": "C7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "1552662bcd370626649a9a61"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 3,
+  "seatNumber": 8,
+  "seatLabel": "C8",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "95e16762e522dc137f793d4e"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 4,
+  "seatNumber": 1,
+  "seatLabel": "D1",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69a4ca4b859f65f4afaea9db"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 4,
+  "seatNumber": 2,
+  "seatLabel": "D2",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "7f6ebe24b0d7b9d3be32973e"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 4,
+  "seatNumber": 3,
+  "seatLabel": "D3",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "f32b86cfad5ccfb0c68b876f"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 4,
+  "seatNumber": 4,
+  "seatLabel": "D4",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "419d117eb51ff73e0969b477"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 4,
+  "seatNumber": 5,
+  "seatLabel": "D5",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "ad63ce773d9e557da3d96c96"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 4,
+  "seatNumber": 6,
+  "seatLabel": "D6",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "72938b1dca5a6acdd826c0e9"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 4,
+  "seatNumber": 7,
+  "seatLabel": "D7",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "b78e5b3a5ee73f232ab78dbc"
+  },
+  "eventId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "layoutId": {
+    "$oid": "698a3069aa6b464d9eada92f"
+  },
+  "zoneId": "zone-1770744554063-lbglqzjbe",
+  "row": 4,
+  "seatNumber": 8,
+  "seatLabel": "D8",
+  "status": "available",
+  "price": 50,
+  "version": 0,
+  "createdAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-11T13:57:57.932Z"
+  }
+}]

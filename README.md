@@ -67,8 +67,6 @@ Hệ thống bán vé sự kiện toàn diện được xây dựng với MERN S
 - **Đăng nhập nhân viên**: Truy cập hệ thống soát vé (chỉ quyền Check-in)
 - **Quét mã QR**: Sử dụng Camera điện thoại để quét vé khách
 - **Xác thực & Check-in**: Kiểm tra thật/giả và cập nhật trạng thái vé
-- **Đăng ký khuôn mặt**: Upload ảnh FaceID để chuẩn bị check-in nhanh
-- **Check-in khuôn mặt**: Nhận diện khách bằng Camera (FaceID)
 
 #### 👨‍💼 Quản Lý Sàn (Admin)
 - **Phê duyệt sự kiện**: Kiểm duyệt nội dung trước khi hiển thị
@@ -318,7 +316,7 @@ API documentation có sẵn tại `/api-docs` khi chạy backend server.
 |---------|-----------|
 | **Customer** | Tìm kiếm sự kiện, đặt vé, thanh toán, xem lịch sử mua vé, hủy vé, quản lý ví, đăng ký waitlist, thêm vào yêu thích |
 | **Organizer** | Tạo/quản lý sự kiện, thiết lập sơ đồ ghế, quản lý Voucher, CRUD nhân viên, gửi thông báo, quản lý đơn hàng, xuất danh sách, xem Analytics, nhận gợi ý giá vé AI |
-| **Staff (Check-in)** | Đăng nhập hệ thống soát vé, quét mã QR, check-in bằng FaceID, xác thực vé |
+| **Staff (Check-in)** | Đăng nhập hệ thống soát vé, quét mã QR, xác thực vé |
 | **Admin (Sàn)** | Phê duyệt sự kiện, quản lý người dùng, đối soát tài chính, quản lý khiếu nại, quản lý Banner |
 
 ---
@@ -382,13 +380,285 @@ API documentation có sẵn tại `/api-docs` khi chạy backend server.
 36. **UC-32**: Quét mã QR (Scan)
 37. **UC-33**: Xác thực & Check-in
 
-### Module: Check-in
-38. **UC-34**: Đăng ký khuôn mặt
-39. **UC-35**: Check-in khuôn mặt
-
 ### Module: System
-40. **UC-42**: Gửi thông báo tự động (Cronjob)
-41. **UC-43**: Thanh toán ký quỹ
+38. **UC-42**: Gửi thông báo tự động (Cronjob)
+39. **UC-43**: Thanh toán ký quỹ
+
+---
+
+## 🧱 Hướng dẫn thiết kế Microservice cho từng nhóm Use Case
+
+> Mục tiêu: giúp team code theo kiến trúc microservice (Node.js + Express + MongoDB/Mongoose), hiểu **service nào chịu trách nhiệm**, cần **API/collection gì**, và **flow cơ bản** cho từng nhóm UC.
+
+### 1. Phân chia service (logical)
+
+- **API Gateway (4000)**: Route, auth JWT, RBAC, logging, rate limit.
+- **Auth-Service (4001)**: UC-01, UC-02, UC-03, UC-04, UC-05, UC-21, UC-31  
+  - Collections: `users`, `staffs`, `organizers`, `refreshTokens`, `otpTokens`.
+- **Event-Service (4002)**: UC-06, UC-07, UC-08, UC-22, UC-23, UC-24, UC-27, UC-28, UC-29, UC-30, UC-36, UC-41  
+  - Collections: `events`, `seatingPlans`, `vouchers`, `banners`, `analyticsSnapshots`, `priceSuggestions`.
+- **Booking-Service (4003)**: UC-09, UC-11, UC-12, UC-15, UC-16, UC-18 (tạo ticket record), UC-19, UC-31–33, UC-36 (map ghế với ticket)  
+  - Collections: `bookings`, `seatHolds`, `tickets`, `favorites`, `waitlists`, `refundRequests`.
+- **Payment-Service (4004)**: UC-17, UC-39, UC-40 (liên quan tiền), UC-42, UC-43, UC-44 (ví)
+  - Collections: `wallets`, `transactions`, `payouts`, `escrows`, `paymentIntents`.
+- (Tùy chọn) **Notification-Service**: Gửi email/SMS (UC-18, UC-26, UC-42, UC-37/40).
+
+---
+
+### 2. Auth & User (UC-01 → UC-05, UC-21, UC-31, UC-44)
+
+- **Service**: `auth-service`
+- **API chính** (đã list ở phần API):
+  - `POST /auth/register` (UC-01), `POST /auth/login` (UC-02), `POST /auth/logout`, `POST /auth/forgot-password` (UC-03),
+    `PATCH /users/me` (UC-04), `PATCH /users/me/password` (UC-05), `GET /users/wallet` (UC-44), `POST /users/wallet/withdraw`.
+- **Flow cơ bản UC-01 (Đăng ký)**:
+  1. API Gateway nhận request → check rate limit → forward `POST /auth/register` sang `auth-service`.
+  2. `auth-service`:
+     - Validate email/password.
+     - Hash password với bcrypt.
+     - Tạo `user` với trạng thái `PENDING`.
+     - Tạo `otpToken` (code + expiredAt) và gửi email (gọi Notification-Service).
+  3. API `POST /auth/verify-otp` → set user `ACTIVE`.
+- **Flow ví (UC-44)**:
+  - `wallets` trong `payment-service`:
+    - Schema đơn giản: `userId`, `balance`, `transactions[]`.
+    - `GET /wallet` đọc từ `payment-service`.
+    - `POST /wallet/withdraw` tạo record `transactions` + enqueue job chuyển tiền thực tế (manual/PayOS).
+
+---
+
+### 3. Discovery & Search (UC-06, UC-07, UC-08, UC-36)
+
+- **Service**: `event-service`
+- **Collections**: `events`, `seatingPlans`, `recommendations`.
+
+#### UC-06 – Tìm kiếm & Lọc (có hỗ trợ không dấu)
+
+- **Ý tưởng**:
+  - Trong collection `events`, lưu thêm field đã chuẩn hóa không dấu:
+    - `name`: "Đêm nhạc Trịnh Công Sơn"
+    - `nameNormalized`: "dem nhac trinh cong son"
+  - Khi user search `"dem nhac"` hoặc `"dem nhạc"` đều match.
+- **Cách code (Node + Mongoose – ý tưởng)**:
+
+```ts
+// utils/removeVietnameseTones.ts
+export function removeVietnameseTones(str: string) {
+  // Có thể dùng thư viện hoặc tự viết map unicode → không dấu
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+}
+
+// models/Event.ts
+const EventSchema = new Schema({
+  name: String,
+  nameNormalized: { type: String, index: true },
+  // ... các field khác: date, location, category...
+});
+
+EventSchema.pre("save", function (next) {
+  if (this.isModified("name")) {
+    this.nameNormalized = removeVietnameseTones(this.name);
+  }
+  next();
+});
+
+// controller search
+export const searchEvents = async (req, res) => {
+  const { q, date, location, category } = req.query;
+  const filter: any = {};
+  if (q) filter.nameNormalized = { $regex: removeVietnameseTones(q as string), $options: "i" };
+  if (date) filter.date = { $gte: startOfDay(date), $lte: endOfDay(date) };
+  if (location) filter.location = location;
+  if (category) filter.category = category;
+
+  const events = await EventModel.find(filter).limit(50);
+  res.json(events);
+};
+```
+
+#### UC-07 – Xem chi tiết & sơ đồ ghế
+
+- `GET /events/:id` → trả event + thông tin cơ bản.
+- `GET /events/:id/seats` → trả `seatingPlan` (rows, cols, zone, price, seatId).
+
+#### UC-08 – Gợi ý cá nhân hóa
+
+- **Service**: `event-service` + đọc dữ liệu `bookings` từ `booking-service`.
+- Ý tưởng đơn giản:
+  - Lấy top 3 category user hay mua.
+  - Recommend các event sắp diễn ra trong category đó, chưa hết vé.
+
+#### UC-36 – Xem chỗ ngồi 360°
+
+- Lưu trong `events`:
+  - `view360Config`: `{ seatId, cameraPosition, cameraTarget, assetUrl }`.
+- Frontend dùng Three.js hoặc thư viện 3D để render từ data này.
+
+---
+
+### 4. Booking – Giữ ghế, Wishlist, Voucher, Waitlist (UC-09, UC-11, UC-12, UC-15, UC-16)
+
+- **Service**: `booking-service`
+- **Collections chính**: `bookings`, `seatHolds`, `favorites`, `vouchers` (share với event-service hoặc riêng), `waitlists`, `refundRequests`.
+
+#### UC-09 – Chọn & Giữ ghế (Race Condition, 5–10 phút)
+
+- **Mục tiêu**:
+  - Ghế chỉ có thể được giữ bởi **1 booking** tại 1 thời điểm.
+  - Ghế được **tự động nhả** sau 5–10 phút nếu chưa thanh toán.
+- **Thiết kế DB**:
+  - Collection `seatHolds`:
+    - `eventId`, `seatId`, `userId`, `status: "HELD" | "CONFIRMED"`, `expiresAt`.
+    - **TTL index** trên `expiresAt` để Mongo tự xóa document hết hạn.
+    - **Unique index** trên `eventId + seatId + status in ["HELD", "CONFIRMED"]` để chống double-book.
+- **Flow API**:
+  1. User chọn ghế → `POST /bookings/reserve-seats`.
+  2. `booking-service` mở transaction:
+     - Với mỗi seat: `insertOne` vào `seatHolds` với `status = "HELD"`, `expiresAt = now + 10 phút`.
+     - Nếu duplicate key error → ghế đã bị giữ/bán → trả lỗi.
+  3. Trả về `holdId` + thời gian hết hạn.
+  4. Khi user bấm thanh toán:
+     - Tạo `booking` với trạng thái `PENDING_PAYMENT`, tham chiếu các `seatHolds`.
+     - Gọi `payment-service` tạo `paymentIntent`.
+  5. Callback thanh toán thành công → set `seatHolds.status = "CONFIRMED"` và `booking.status = "PAID"`.
+  6. Nếu user hủy thanh toán / hết thời gian:
+     - Không cập nhật gì, `seatHolds` sẽ tự bị TTL xóa → coi như ghế được nhả.
+
+#### UC-11 – Áp dụng mã giảm giá
+
+- `booking-service` gọi sang `event-service`/`voucher-service`:
+  - `GET /vouchers/validate?code=...&eventId=...&userId=...&amount=...`
+  - Logic: check hiệu lực, số lần dùng, min-order, loại voucher (%, số tiền).
+  - Trả về `discountAmount` để `booking` tính total.
+
+#### UC-12 – Thêm vào yêu thích (Wishlist)
+
+- Collection `favorites`:
+  - `userId`, `eventId`, `createdAt`.
+- API:
+  - `POST /favorites` (add), `DELETE /favorites/:eventId`, `GET /favorites`.
+
+#### UC-15 – Hủy vé & Hoàn tiền (36h, hoàn 60%)
+
+- **Tính phí**:
+  - Nếu vé 10k → hoàn 6k → sàn giữ 4k (40%).
+- **Flow**:
+  1. Customer gọi `POST /bookings/:bookingId/cancel`.
+  2. `booking-service`:
+     - Check `booking.status === "PAID"` và `createdAt <= now - 36h` (không cho hủy sau 36h).
+     - Tạo `refundRequest` với trạng thái `PENDING_ADMIN`.
+  3. Admin dùng panel (UC-40) gọi `POST /admin/complaints/:id/resolve`:
+     - Nếu `APPROVE`: gửi request sang `payment-service`:
+       - Tính `refundAmount = ticketPrice * 0.6`.
+       - Ghi `transaction` hoàn tiền (về ví hoặc trả qua PayOS).
+       - Update `booking.status = "REFUNDED"`.
+     - Nếu `REJECT`: update `refundRequest.status = "REJECTED"`.
+
+#### UC-16 – Danh sách chờ (Waitlist)
+
+- Collection `waitlists`:
+  - `eventId`, `userId`, `createdAt`, `status: "WAITING" | "NOTIFIED"`, `maxNotifyCount`.
+- **2 trường hợp**:
+  1. Event chưa mở bán: user đăng ký waitlist → đến thời điểm mở bán (cron job) → gửi email cho X người đầu tiên.
+  2. Event đã sold-out: khi có vé trống lại (do refund/hủy) → trigger job gửi mail cho 1 batch user từ `waitlists`.
+
+---
+
+### 5. Payment – Thanh toán, Ví, Đối soát, Ký quỹ (UC-17, UC-18, UC-39, UC-40, UC-42, UC-43, UC-44)
+
+- **Service**: `payment-service`
+
+#### UC-17 – Thanh toán PayOS
+
+- Flow:
+  1. `booking-service` tạo booking (PENDING_PAYMENT) → gọi `POST /payments/create-payment-create`.
+  2. `payment-service`:
+     - Gọi PayOS API tạo link thanh toán.
+     - Lưu `paymentStatus` với `status = "PENDING"`.
+  3. User thanh toán xong → PayOS gọi webhook `POST /payments/webhook`.
+  4. `payment-service`:
+     - Xác minh checksum.
+     - Update `paymentStatus.status = "SUCCEEDED"`.
+     - Gửi event (REST/kafka/nats) sang `booking-service` để set `booking.status = "PAID"` và `seatHolds` thành `CONFIRMED`.
+
+#### UC-18 – Xuất vé & Gửi QR
+
+- Có thể để trong `booking-service` (tạo ticket) + `notification-service` (gửi email).
+- Flow:
+  - Khi `booking` chuyển sang `PAID`:
+    - Tạo `tickets` (mỗi ghế 1 ticket, có `ticketId`, `qrCodePayload`).
+    - Dùng lib QR tạo ảnh → upload Cloudinary → gửi email với link/ảnh QR.
+
+#### UC-39 – Đối soát tài chính (phí sàn 10%)
+
+- Công thức:
+  - Với mỗi booking `PAID`:  
+    - `gross = totalAmount`  
+    - `platformFee = gross * 0.10`  
+    - `organizerShare = gross - platformFee`
+- Thiết kế:
+  - Mỗi `transaction` trong `payment-service` lưu:
+    - `bookingId`, `eventId`, `organizerId`, `gross`, `platformFee`, `organizerShare`, `type: "SALE" | "REFUND"`, `status`.
+  - API cho Admin:
+    - `GET /admin/financial/reconciliation?from=&to=&organizerId=`
+      - Group by `organizerId`: sum `gross`, `platformFee`, `organizerShare`, `paidOut`.
+  - Khi payout cho Organizer:
+    - Tạo record `payouts` + giảm `wallet` của hệ thống (hoặc đánh dấu `PAID_OUT`).
+
+#### UC-40 – Quản lý khiếu nại (liên quan refund)
+
+- Đã mô tả ở UC-15: `refundRequests` nằm trong `booking-service`, nhưng khi duyệt cần gọi `payment-service` để refund tiền.
+
+#### UC-42 – Gửi thông báo tự động
+
+- Cronjob (dùng `node-cron` hoặc service riêng):
+  - Mỗi ngày 1 lần:
+    - Tìm event sẽ diễn ra trong 24h.
+    - Query `bookings` `PAID` cho event đó.
+    - Gửi email "Nhắc lịch sự kiện" cho khách.
+
+#### UC-43 – Thanh toán ký quỹ (Escrow)
+
+- Áp dụng cho vé resell hoặc các case cần giữ tiền đến sau check-in.
+- Flow:
+  1. Trong thanh toán: thay vì chuyển toàn bộ cho Organizer, tiền được đưa vào `escrow`:
+     - `escrows`: `bookingId`, `amount`, `status: "HELD" | "RELEASED" | "REFUNDED"`.
+  2. Khi check-in thành công (UC-33/35):
+     - `booking-service` gửi event sang `payment-service` → `escrow.status = "RELEASED"` → tạo `payout` cho Organizer.
+  3. Nếu vé không dùng / bị report:
+     - Có thể refund 1 phần/whole tùy rule.
+
+---
+
+### 6. Organizer & Admin (UC-22–30, UC-37–41)
+
+- **Organizer**:
+  - Tất cả API `/organizer/...` nên route qua API Gateway → check role `ORGANIZER`.
+  - CRUD sự kiện, sơ đồ ghế, voucher, nhân viên, đơn hàng, export Excel, analytics, gợi ý giá vé.
+- **Admin**:
+  - Phần lớn API ở `admin-service` hoặc tách trong `event-service` + `payment-service`:
+    - Approve event (UC-37): set `event.status = "APPROVED"` → mới cho hiển thị ở search.
+    - Quản lý user (UC-38): đọc từ `auth-service` + filter role.
+    - Đối soát (UC-39): xem từ `payment-service`.
+    - Khiếu nại (UC-40): đọc `refundRequests` từ `booking-service`, gọi `payment-service` khi duyệt.
+    - Banner (UC-41): CRUD `banners` trong `event-service`.
+
+---
+
+### 7. Gợi ý giá vé (AI) – UC-30
+
+- **Ý tưởng MVP** (chưa cần ML phức tạp):
+  - Dựa vào:
+    - Loại sự kiện, venue, lịch sử giá vé cũ, tỷ lệ lấp đầy ghế, thời gian còn lại đến ngày diễn.
+  - Simple rule:
+    - Nếu event cùng loại, cùng venue trước đây có `occupancy > 90%` → gợi ý tăng giá X%.
+    - Nếu `occupancy < 50%` ở các lần trước → gợi ý giảm.
+- Lưu kết quả vào `priceSuggestions` trong `event-service` để Organizer xem.
 
 ---
 
@@ -442,7 +712,6 @@ npm run lint     # Lint code
 - Rate limiting
 - Environment variables cho sensitive data
 - QR Code encryption cho vé
-- FaceID verification cho check-in
 - Race Condition handling cho đặt ghế
 
 ---

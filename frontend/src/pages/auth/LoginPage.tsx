@@ -10,7 +10,16 @@ export const LoginPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    // Role selection state (for UI only, backend vẫn quyết định role thật)
+    const [selectedRole, setSelectedRole] = useState<'customer' | 'organizer' | 'admin'>('customer');
+
+    const roles = [
+        { role: 'customer', label: 'Customer', icon: 'person' },
+        { role: 'organizer', label: 'Organizer', icon: 'event' },
+        { role: 'admin', label: 'Admin', icon: 'admin_panel_settings' },
+    ] as const;
+
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         login('customer');
         navigate('/');
@@ -84,23 +93,42 @@ export const LoginPage: React.FC = () => {
             {/* Header */}
             <header className="relative z-20 flex items-center justify-between p-6 md:p-8">
                 {/* Logo - Top Left */}
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center justify-center size-10 rounded-lg bg-gradient-to-br from-[#a855f7] to-[#d946ef] text-white">
-                        <span className="text-xl font-bold">V</span>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center size-10 rounded-lg bg-gradient-to-br from-[#8655f6] to-[#d946ef] text-white shadow-[0_0_15px_rgba(137,90,246,0.5)]">
+                        <span className="material-symbols-outlined text-[24px]">confirmation_number</span>
                     </div>
-                    <h2 className="text-xl font-bold text-white">TicketVibe</h2>
+                    <h2
+                        className="hidden md:block text-white text-xl font-bold tracking-tight"
+                        onClick={() => navigate('/')}
+                    >
+                        TicketVibe
+                    </h2>
                 </div>
 
-                {/* Top Right - Create Account Link */}
-                <div className="text-sm text-white">
-                    New here?{' '}
-                    <button
-                        type="button"
-                        onClick={() => navigate('/signup')}
-                        className="text-[#a855f7] hover:underline font-semibold"
-                    >
-                        Create an account
-                    </button>
+                {/* Role Selection */}
+                <div className="mb-8">
+                    <label className="block text-sm font-medium text-slate-300 mb-3">Select Your Role</label>
+                    <div className="grid grid-cols-3 gap-3">
+                        {roles.map(({ role, label, icon }) => (
+                            <button
+                                key={role}
+                                type="button"
+                                onClick={() => setSelectedRole(role)}
+                                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${selectedRole === role
+                                        ? 'bg-[#8655f6]/20 border-[#8655f6] text-white'
+                                        : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                                    }`}
+                            >
+                                <span
+                                    className={`material-symbols-outlined text-2xl ${selectedRole === role ? 'text-[#8655f6]' : ''
+                                        }`}
+                                >
+                                    {icon}
+                                </span>
+                                <span className="text-xs font-medium">{label}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </header>
 

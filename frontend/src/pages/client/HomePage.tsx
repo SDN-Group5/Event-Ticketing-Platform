@@ -1,19 +1,42 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EventCard } from '../../components/common/Card';
-
-import eventsData from '../../data/events.json';
+import { LayoutAPI } from '../../services/layoutApiService';
+import { EventLayout } from '../../types/layout';
 
 const getEventDateParts = (dateString: string) => {
-    const date = new Date(dateString);
-    return {
-        date: date.getDate().toString().padStart(2, '0'),
-        month: date.toLocaleString('default', { month: 'short' })
-    };
+    try {
+        const date = new Date(dateString);
+        return {
+            date: date.getDate().toString().padStart(2, '0'),
+            month: date.toLocaleString('default', { month: 'short' })
+        };
+    } catch (e) {
+        return { date: '01', month: 'JAN' };
+    }
 };
 
 export const HomePage: React.FC = () => {
     const navigate = useNavigate();
+    const [events, setEvents] = useState<EventLayout[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                const layouts = await LayoutAPI.getAllLayouts();
+                setEvents(layouts);
+            } catch (err) {
+                console.error('Failed to fetch events:', err);
+                setError('Failed to load events. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEvents();
+    }, []);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -104,24 +127,44 @@ export const HomePage: React.FC = () => {
             {/* Cards Grid */}
             <div className="w-full px-4 md:px-10 pb-20 max-w-[1440px] mx-auto">
                 <h2 className="text-3xl font-bold text-white mb-8">Trending Now</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {eventsData
-                        .filter(event => event.status === 'published')
-                        .map((item) => {
-                            const { date, month } = getEventDateParts(item.date);
+
+                {loading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8655f6]"></div>
+                    </div>
+                ) : error ? (
+                    <div className="text-center text-red-400 py-10 bg-white/5 rounded-xl border border-red-500/20">
+                        <p>{error}</p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                ) : events.length === 0 ? (
+                    <div className="text-center text-gray-400 py-10 bg-white/5 rounded-xl border border-white/10">
+                        <span className="material-symbols-outlined text-4xl mb-2 text-gray-500">event_busy</span>
+                        <p>No events found at the moment.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {events.map((item) => {
+                            const { date, month } = getEventDateParts(item.eventDate || new Date().toISOString());
                             return (
                                 <EventCard
-                                    key={item.id}
-                                    title={item.title}
-                                    imageUrl={item.image}
+                                    key={item.eventId}
+                                    title={item.eventName || 'Untitled Event'}
+                                    imageUrl={item.eventImage || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'}
                                     date={date}
                                     month={month}
-                                    price={`From $${item.minPrice}`}
-                                    onBuyClick={() => navigate(`/event/${item.id}`)}
+                                    price={`From $${item.minPrice || 0}`}
+                                    onBuyClick={() => navigate(`/event/${item.eventId}`)}
                                 />
                             );
                         })}
-                </div>
+                    </div>
+                )}
             </div>
         </>
     );

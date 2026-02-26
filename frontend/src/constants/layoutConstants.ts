@@ -6,7 +6,7 @@
 // ============================================
 
 /** Size of each seat unit in pixels (includes seat + gap) for the 2D editor */
-export const SEAT_UNIT_2D = 18; // 16px seat + 2px gap
+export const SEAT_UNIT_2D = 20; // 18px seat + 2px gap
 
 // ============================================
 // 3D CONVERSION
@@ -30,13 +30,13 @@ export const ROW_SPACING_3D = SEAT_UNIT_2D * SCALE_FACTOR_3D; // 1.44 units
 // ============================================
 
 /** Width of seat mesh in 3D */
-export const SEAT_WIDTH_3D = 0.9;
+export const SEAT_WIDTH_3D = 1.3;
 
 /** Depth of seat mesh in 3D */
-export const SEAT_DEPTH_3D = 0.8;
+export const SEAT_DEPTH_3D = 1.1;
 
 /** Height of seat cushion in 3D */
-export const SEAT_HEIGHT_3D = 0.15;
+export const SEAT_HEIGHT_3D = 0.2;
 
 /** Height of seat backrest in 3D */
-export const SEAT_BACK_HEIGHT_3D = 0.5;
+export const SEAT_BACK_HEIGHT_3D = 0.6;

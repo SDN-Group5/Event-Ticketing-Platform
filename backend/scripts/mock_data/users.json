@@ -1,0 +1,107 @@
+[
+  {
+    "_id": {
+      "$oid": "7446575fa3c1e3cbd4e3afed"
+    },
+    "username": "user1",
+    "email": "user1@example.com",
+    "password": "$2b$10$YourHashedPasswordHere",
+    "role": "client",
+    "createdAt": {
+      "$date": "2026-02-11T13:57:57.929Z"
+    },
+    "updatedAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "fbb9217e992a6552fd300ff2"
+    },
+    "username": "user2",
+    "email": "user2@example.com",
+    "password": "$2b$10$YourHashedPasswordHere",
+    "role": "client",
+    "createdAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    },
+    "updatedAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "2b42f5608770a0ec4346a363"
+    },
+    "username": "user3",
+    "email": "user3@example.com",
+    "password": "$2b$10$YourHashedPasswordHere",
+    "role": "client",
+    "createdAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    },
+    "updatedAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "b80512de7ba9b7b38ed5b832"
+    },
+    "username": "user4",
+    "email": "user4@example.com",
+    "password": "$2b$10$YourHashedPasswordHere",
+    "role": "client",
+    "createdAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    },
+    "updatedAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "aa5e9fac910ac3d3fbc8ae28"
+    },
+    "username": "user5",
+    "email": "user5@example.com",
+    "password": "$2b$10$YourHashedPasswordHere",
+    "role": "client",
+    "createdAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    },
+    "updatedAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "5aea5fc1a9b93ae093dcf631"
+    },
+    "username": "user6",
+    "email": "user6@example.com",
+    "password": "$2b$10$YourHashedPasswordHere",
+    "role": "client",
+    "createdAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    },
+    "updatedAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "8151d852a9d9b4a65e1a4b5d"
+    },
+    "username": "user7",
+    "email": "user7@example.com",
+    "password": "$2b$10$YourHashedPasswordHere",
+    "role": "client",
+    "createdAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    },
+    "updatedAt": {
+      "$date": "2026-02-11T13:57:57.930Z"
+    }
+  }
+]

@@ -56,9 +56,247 @@ interface AuthProviderProps {
 // Auth provider component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const login = useCallback((role: UserRole) => {
-        setUser(DEMO_USERS[role]);
+    const clearError = useCallback(() => {
+        setError(null);
+    }, []);
+
+    // ============================================
+    // LOGIN
+    // ============================================
+    const login = useCallback(async (email: string, password: string): Promise<User | null> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data?.message || 'Đăng nhập thất bại');
+                return null;
+            }
+
+            const token = data?.token;
+            const userInfo = data?.user;
+
+            if (!token || !userInfo) {
+                setError('Phản hồi không hợp lệ từ server');
+                return null;
+            }
+
+            localStorage.setItem(AUTH_TOKEN_KEY, token);
+
+            const loggedInUser: User = {
+                id: userInfo.id || userInfo._id || '',
+                name: `${userInfo.firstName ?? ''} ${userInfo.lastName ?? ''}`.trim() || userInfo.email,
+                email: userInfo.email,
+                role: userInfo.role,
+                avatar: userInfo.avatar,
+            };
+
+            setUser(loggedInUser);
+            return loggedInUser;
+        } catch (err) {
+            console.error(err);
+            setError('Không thể kết nối server');
+            return null;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // ============================================
+    // REGISTER
+    // ============================================
+    const register = useCallback(async (payload: { firstName: string; lastName: string; email: string; password: string }): Promise<boolean> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data?.message || 'Đăng ký thất bại');
+                return false;
+            }
+
+            return true;
+        } catch (err) {
+            console.error(err);
+            setError('Không thể kết nối server');
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // ============================================
+    // VERIFY EMAIL (OTP)
+    // ============================================
+    const verifyEmail = useCallback(async (email: string, code: string): Promise<boolean> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data?.message || 'Xác thực email thất bại');
+                return false;
+            }
+
+            return true;
+        } catch (err) {
+            console.error(err);
+            setError('Không thể kết nối server');
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // ============================================
+    // RESEND VERIFICATION CODE
+    // ============================================
+    const resendVerification = useCallback(async (email: string): Promise<boolean> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data?.message || 'Gửi lại mã thất bại');
+                return false;
+            }
+
+            return true;
+        } catch (err) {
+            console.error(err);
+            setError('Không thể kết nối server');
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // ============================================
+    // FORGOT PASSWORD (Request reset code)
+    // ============================================
+    const forgotPassword = useCallback(async (email: string): Promise<boolean> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data?.message || 'Yêu cầu đặt lại mật khẩu thất bại');
+                return false;
+            }
+
+            return true;
+        } catch (err) {
+            console.error(err);
+            setError('Không thể kết nối server');
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // ============================================
+    // VERIFY RESET CODE
+    // ============================================
+    const verifyResetCode = useCallback(async (email: string, code: string): Promise<boolean> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/verify-reset-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data?.message || 'Mã xác thực không hợp lệ');
+                return false;
+            }
+
+            return true;
+        } catch (err) {
+            console.error(err);
+            setError('Không thể kết nối server');
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // ============================================
+    // RESET PASSWORD
+    // ============================================
+    const resetPassword = useCallback(async (email: string, code: string, newPassword: string): Promise<boolean> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code, newPassword }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data?.message || 'Đặt lại mật khẩu thất bại');
+                return false;
+            }
+
+            return true;
+        } catch (err) {
+            console.error(err);
+            setError('Không thể kết nối server');
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
 
     const logout = useCallback(() => {

@@ -33,6 +33,11 @@ export interface LayoutZone {
 export interface EventLayout {
     eventId: string;
     eventName?: string;
+    eventDate?: string; // ISO date string
+    eventImage?: string;
+    eventLocation?: string;
+    eventDescription?: string;
+    minPrice?: number;
     zones: LayoutZone[];
     canvasWidth?: number;
     canvasHeight?: number;

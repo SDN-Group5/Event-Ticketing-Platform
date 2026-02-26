@@ -175,6 +175,42 @@ Nền tảng bán vé sự kiện (Event Ticketing Platform) cho phép **Organiz
     - Giữ tiền tạm (escrow).
     - Chỉ giải ngân cho Organizer sau khi khách check-in thành công, hoặc sau thời gian T nào đó.
 
+#### 2.5.a. Mô hình Marketplace với PayOS (Thu hộ → Chi hộ)
+
+> Phần này triển khai riêng cho bài toán **1 sàn – nhiều Organizer**, nền tảng đứng giữa **thu tiền về trước**, sau đó **chi lại cho Organizer sau khi trừ hoa hồng (commission)**.
+
+- **Money-in (Thu tiền từ khách):**
+  - Tất cả QR/checkout PayOS dùng **kênh thanh toán đứng tên Sàn/Admin**.
+  - Khi khách thanh toán:
+    - Tiền chuyển thẳng vào **tài khoản ngân hàng của Sàn** (đã liên kết với PayOS).
+    - PayOS gửi **Webhook** về hệ thống:
+      - Hệ thống ghi nhận: đơn hàng nào, thuộc Organizer nào, tổng tiền bao nhiêu.
+      - Tính toán: `grossAmount` (tổng tiền khách trả), `commissionPercent`, `commissionAmount`, `netAmountForOrganizer`.
+
+- **Hạch toán nội bộ:**
+  - Với mỗi `Order` thành công:
+    - `amountGross` = tổng tiền vé.
+    - `commissionAmount` = `amountGross * commissionPercent`.
+    - `amountNetForOrganizer` = `amountGross - commissionAmount - phí giao dịch (nếu có)`.
+  - Hệ thống lưu lại các giá trị này để phục vụ đối soát & chi tiền.
+
+- **Money-out (Chi tiền cho Organizer qua API Chi hộ):**
+  - Định kỳ (cuối ngày/tuần/tháng) hoặc sau khi sự kiện kết thúc:
+    - Gom tất cả order `PAID` của từng Organizer, tính **tổng `amountNetForOrganizer`**.
+    - Tạo một bản ghi `Payout` (đối soát/chi tiền) cho mỗi Organizer.
+  - Gọi **API Chi hộ (Payout) của PayOS**:
+    - Nguồn tiền: tài khoản ngân hàng của Sàn.
+    - Đích: tài khoản ngân hàng của từng Organizer.
+    - Số tiền: `totalNetAmount` đã tính sau khi trừ commission.
+  - Nhận kết quả từ PayOS:
+    - Nếu thành công → cập nhật `Payout.status = SUCCESS`, đánh dấu các order đã được “settled”.
+    - Nếu thất bại → `Payout.status = FAILED`, để retry hoặc xử lý thủ công.
+
+- **Ý nghĩa nghiệp vụ:**
+  - Sàn **kiểm soát hoàn toàn dòng tiền**, chủ động thu **hoa hồng**.
+  - Organizer vẫn nhận được báo cáo và tiền rõ ràng, minh bạch theo từng kỳ.
+  - Mô hình phù hợp với các **Marketplace nhiều nhà bán**, không cần tính năng “split payment realtime”, tận dụng được **Thu hộ – Chi hộ** của PayOS.
+
 ---
 
 ### 2.6. Module 6 – Wallet & Customer Management

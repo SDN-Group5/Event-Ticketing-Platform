@@ -19,7 +19,7 @@ import { LoginPage, SignupPage, OTPPage, ResetPasswordPage } from './pages/auth'
 import { DashboardPage as OrganizerDashboard, CreateEventPage, AttendeesPage, AnalyticsPage, EventsPage, ManageVouchersPage, ManageStaffPage, NotificationsPage, CheckInPage } from './pages/organizer';
 
 // Admin Pages  
-import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage, LayoutApiTestPage, EventApprovalsPage, RefundRequestsPage, AdminAnalyticsPage, AdminSettingsPage } from './pages/admin';
+import { PayoutsPage, EventQueuePage, UsersPage, LayoutEditorPage, LayoutApiTestPage, EventApprovalsPage, OrganizerPayoutsPage, AdminAnalyticsPage, AdminSettingsPage } from './pages/admin';
 
 // Role Switcher Component (Demo purposes)
 const RoleSwitcher: React.FC = () => {

@@ -70,7 +70,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data?.message || 'Đăng nhập thất bại');
+                // Backend có thể trả về nhiều format khác nhau (message string, mảng errors, object...)
+                let message: string = 'Đăng nhập thất bại';
+
+                if (typeof data?.message === 'string') {
+                    message = data.message;
+                } else if (Array.isArray(data?.errors)) {
+                    // Ví dụ: [{ type, value, msg, path, location }]
+                    message = data.errors.map((e: any) => e.msg ?? '').filter(Boolean).join(', ');
+                } else if (data && typeof data === 'object') {
+                    // Thử lấy msg nếu có
+                    if (typeof data.msg === 'string') {
+                        message = data.msg;
+                    }
+                }
+
+                setError(message);
                 return null;
             }
 

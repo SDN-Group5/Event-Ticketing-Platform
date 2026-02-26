@@ -110,8 +110,7 @@ export const ZoneSelectionPage: React.FC = () => {
             },
             seats: selectedSeats,
             total,
-            zone: selectedZoneData,
-            ticketCount: selectedSeats.length
+            ticketCount: selectedSeats.length,
         };
         navigate('/checkout', { state: checkoutData });
     };

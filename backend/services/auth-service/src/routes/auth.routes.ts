@@ -1,7 +1,7 @@
 import express from "express";
 import { check, validationResult } from "express-validator";
-import verifyToken from "../middleware/auth";
-import * as authController from "../controllers/auth/auth.controller";
+import verifyToken from "../middleware/auth.middleware";
+import * as authController from "../controllers/auth.controller";
 
 const router = express.Router();
 
@@ -25,26 +25,14 @@ const router = express.Router();
  *               email:
  *                 type: string
  *                 format: email
- *                 description: User's email address
  *               password:
  *                 type: string
  *                 minLength: 6
- *                 description: User's password
  *     responses:
  *       200:
  *         description: Login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 userId:
- *                   type: string
- *                   description: User ID
  *       400:
  *         description: Invalid credentials or validation error
- *       500:
- *         description: Server error
  */
 router.post(
   "/login",
@@ -64,8 +52,6 @@ router.post(
   authController.login
 );
 
-// ============================================
-// POST /api/auth/register
 router.post(
   "/register",
   [
@@ -86,8 +72,6 @@ router.post(
   authController.register
 );
 
-// ============================================
-// POST /api/auth/verify-email
 router.post(
   "/verify-email",
   [check("email", "Email is required").isEmail(), check("code", "Code is required").isString().isLength({ min: 6, max: 6 })],
@@ -101,8 +85,6 @@ router.post(
   authController.verifyEmail
 );
 
-// ============================================
-// POST /api/auth/resend-verification
 router.post(
   "/resend-verification",
   [check("email", "Email is required").isEmail()],
@@ -116,16 +98,10 @@ router.post(
   authController.resendVerification
 );
 
-
 router.post("/logout", authController.logout);
 
-// ============================================
-// GET /api/auth/validate-token
-// Validate JWT token and return user info
 router.get("/validate-token", verifyToken, authController.validateToken);
 
-// ============================================
-// POST /api/auth/forgot-password
 router.post(
   "/forgot-password",
   [check("email", "Email is required").isEmail()],
@@ -139,8 +115,6 @@ router.post(
   authController.forgotPassword
 );
 
-// ============================================
-// POST /api/auth/verify-reset-code
 router.post(
   "/verify-reset-code",
   [
@@ -157,8 +131,6 @@ router.post(
   authController.verifyResetCode
 );
 
-// ============================================
-// POST /api/auth/reset-password
 router.post(
   "/reset-password",
   [

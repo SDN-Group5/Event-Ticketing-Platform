@@ -1,55 +1,95 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function SecuritySettings({ navigation }: any) {
+  const [faceId, setFaceId] = useState(true);
+  const [twoFactor, setTwoFactor] = useState(false);
+
   return (
-    <ScrollView className="flex-1 bg-[#f7f5f8] dark:bg-[#1c1022]">
-      <View className="flex-row items-center p-4">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="w-12">
-          <MaterialIcons name="arrow-back" size={24} color="#0f172a" />
+    <View className="flex-1 bg-[#0a0014]">
+      <View className="flex-row items-center p-4 pt-12 bg-[#1a0033] border-b border-[#4d0099]">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
+          <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
         </TouchableOpacity>
-        <Text className="flex-1 text-center text-lg font-bold text-slate-900 dark:text-white pr-12">Security Settings</Text>
+        <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Security</Text>
       </View>
 
-      <View className="px-4 py-4">
-        <View className="bg-white dark:bg-[#a60df2]/5 border border-slate-200 dark:border-[#a60df2]/10 rounded-xl p-6 mb-6">
-          <Text className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Current Password</Text>
-          <View className="flex-row items-center rounded-lg border border-slate-200 dark:border-[#a60df2]/20 bg-slate-50 dark:bg-[#1c1022]/50 h-12 px-3 mb-6">
-            <MaterialIcons name="vpn-key" size={20} color="#94a3b8" />
-            <TextInput className="flex-1 ml-3 text-slate-900 dark:text-white" placeholder="••••••••" placeholderTextColor="#94a3b8" secureTextEntry />
-          </View>
-
-          <Text className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">New Password</Text>
-          <View className="flex-row items-center rounded-lg border border-slate-200 dark:border-[#a60df2]/20 bg-slate-50 dark:bg-[#1c1022]/50 h-12 px-3 mb-4">
-            <MaterialIcons name="lock-outline" size={20} color="#94a3b8" />
-            <TextInput className="flex-1 ml-3 text-slate-900 dark:text-white" placeholder="••••••••" placeholderTextColor="#94a3b8" secureTextEntry />
-          </View>
-
-          <Text className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Confirm New Password</Text>
-          <View className="flex-row items-center rounded-lg border border-slate-200 dark:border-[#a60df2]/20 bg-slate-50 dark:bg-[#1c1022]/50 h-12 px-3 mb-6">
-            <MaterialIcons name="verified-user" size={20} color="#94a3b8" />
-            <TextInput className="flex-1 ml-3 text-slate-900 dark:text-white" placeholder="••••••••" placeholderTextColor="#94a3b8" secureTextEntry />
-          </View>
-
-          <TouchableOpacity className="h-12 bg-[#a60df2] rounded-lg items-center justify-center flex-row">
-            <MaterialIcons name="update" size={20} color="white" />
-            <Text className="text-white font-bold ml-2">Update Password</Text>
+      <ScrollView className="flex-1 px-4 pt-6">
+        <Text className="text-sm font-bold text-[#b388ff] uppercase tracking-wider mb-4 ml-2">Authentication</Text>
+        
+        <View className="bg-[#1a0033] border border-[#4d0099] rounded-3xl overflow-hidden mb-8">
+          <TouchableOpacity className="flex-row items-center justify-between p-5 border-b border-[#4d0099]">
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center mr-4">
+                <MaterialIcons name="lock" size={20} color="#00e5ff" />
+              </View>
+              <Text className="text-base font-bold text-white">Change Password</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#6a1b9a" />
           </TouchableOpacity>
+
+          <View className="flex-row items-center justify-between p-5 border-b border-[#4d0099]">
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center mr-4">
+                <MaterialIcons name="face" size={20} color="#d500f9" />
+              </View>
+              <Text className="text-base font-bold text-white">Face ID / Biometrics</Text>
+            </View>
+            <Switch
+              value={faceId}
+              onValueChange={setFaceId}
+              trackColor={{ false: '#4d0099', true: '#d500f9' }}
+              thumbColor={faceId ? '#fff' : '#b388ff'}
+            />
+          </View>
+
+          <View className="flex-row items-center justify-between p-5">
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center mr-4">
+                <MaterialIcons name="security" size={20} color="#00e5ff" />
+              </View>
+              <Text className="text-base font-bold text-white">Two-Factor Auth</Text>
+            </View>
+            <Switch
+              value={twoFactor}
+              onValueChange={setTwoFactor}
+              trackColor={{ false: '#4d0099', true: '#d500f9' }}
+              thumbColor={twoFactor ? '#fff' : '#b388ff'}
+            />
+          </View>
         </View>
 
-        <View className="bg-[#a60df2]/5 border border-[#a60df2]/20 rounded-xl p-6 mb-6">
-          <View className="flex-row items-center mb-4">
-            <MaterialIcons name="info" size={20} color="#a60df2" />
-            <Text className="font-bold text-[#a60df2] ml-2">Password Rules</Text>
+        <Text className="text-sm font-bold text-[#b388ff] uppercase tracking-wider mb-4 ml-2">Devices</Text>
+        
+        <View className="bg-[#1a0033] border border-[#4d0099] rounded-3xl overflow-hidden mb-8">
+          <View className="flex-row items-center justify-between p-5 border-b border-[#4d0099]">
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center mr-4">
+                <MaterialIcons name="smartphone" size={20} color="#d500f9" />
+              </View>
+              <View>
+                <Text className="text-base font-bold text-white">iPhone 14 Pro</Text>
+                <Text className="text-xs text-[#00e5ff] mt-1">Current Device</Text>
+              </View>
+            </View>
           </View>
-          <View className="space-y-2">
-            <Text className="text-slate-600 dark:text-slate-400 text-sm">• Minimum 8 characters long</Text>
-            <Text className="text-slate-600 dark:text-slate-400 text-sm">• Include at least one uppercase letter</Text>
-            <Text className="text-slate-600 dark:text-slate-400 text-sm">• Include one special character (!@#)</Text>
+          <View className="flex-row items-center justify-between p-5">
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center mr-4">
+                <MaterialIcons name="laptop-mac" size={20} color="#6a1b9a" />
+              </View>
+              <View>
+                <Text className="text-base font-bold text-white">MacBook Pro</Text>
+                <Text className="text-xs text-[#b388ff] mt-1">Last active: 2 days ago</Text>
+              </View>
+            </View>
+            <TouchableOpacity>
+              <Text className="text-red-500 font-bold">Log out</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }

@@ -3,95 +3,76 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function TicketSelection({ navigation }: any) {
-  const [vipCount, setVipCount] = useState(0);
-  const [gaCount, setGaCount] = useState(1);
-
-  const vipPrice = 150;
-  const gaPrice = 99;
-  const total = (vipCount * vipPrice) + (gaCount * gaPrice);
+  const [quantity, setQuantity] = useState(1);
 
   return (
-    <View className="flex-1 bg-[#f7f5f8] dark:bg-[#1c1022]">
-      <View className="flex-row items-center p-4 border-b border-slate-200 dark:border-slate-800">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="w-12">
-          <MaterialIcons name="arrow-back" size={24} color="#a60df2" />
+    <View className="flex-1 bg-[#0a0014]">
+      <View className="flex-row items-center p-4 pt-12 bg-[#1a0033] border-b border-[#4d0099]">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
+          <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
         </TouchableOpacity>
-        <Text className="flex-1 text-center text-lg font-bold text-slate-900 dark:text-white pr-12">Select Tickets</Text>
+        <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Select Tickets</Text>
       </View>
 
-      <ScrollView className="flex-1 p-4">
-        <Text className="text-xl font-bold text-slate-900 dark:text-white mb-6">Summer Music Festival 2024</Text>
-
-        {/* VIP Ticket */}
-        <View className="bg-white dark:bg-[#a60df2]/5 border border-slate-200 dark:border-[#a60df2]/20 rounded-2xl p-4 mb-4">
-          <View className="flex-row justify-between items-start mb-4">
+      <ScrollView className="flex-1 px-4 pt-6">
+        <View className="bg-[#1a0033] border border-[#d500f9] rounded-3xl p-5 mb-4 shadow-[0_0_15px_rgba(213,0,249,0.2)]">
+          <View className="flex-row justify-between items-start mb-2">
             <View>
-              <Text className="text-lg font-bold text-slate-900 dark:text-white">VIP Pass</Text>
-              <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">Front row access, free drinks</Text>
+              <Text className="text-xl font-bold text-white">VIP Pass</Text>
+              <Text className="text-sm text-[#b388ff]">Front row access, free drinks</Text>
             </View>
-            <Text className="text-xl font-bold text-[#a60df2]">${vipPrice}</Text>
+            <Text className="text-2xl font-bold text-[#00e5ff]">$99.00</Text>
           </View>
-          <View className="flex-row items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
-            <Text className="text-slate-700 dark:text-slate-300 font-medium">Quantity</Text>
-            <View className="flex-row items-center">
+          
+          <View className="flex-row items-center justify-between mt-6 pt-4 border-t border-[#4d0099]">
+            <Text className="text-white font-bold">Quantity</Text>
+            <View className="flex-row items-center bg-[#0a0014] rounded-full border border-[#4d0099]">
               <TouchableOpacity 
-                onPress={() => setVipCount(Math.max(0, vipCount - 1))}
-                className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
+                onPress={() => setQuantity(Math.max(1, quantity - 1))}
+                className="w-10 h-10 items-center justify-center"
               >
-                <MaterialIcons name="remove" size={20} color={vipCount > 0 ? "#a60df2" : "#94a3b8"} />
+                <MaterialIcons name="remove" size={20} color="#d500f9" />
               </TouchableOpacity>
-              <Text className="w-10 text-center font-bold text-lg text-slate-900 dark:text-white">{vipCount}</Text>
+              <Text className="text-lg font-bold text-white w-8 text-center">{quantity}</Text>
               <TouchableOpacity 
-                onPress={() => setVipCount(vipCount + 1)}
-                className="h-8 w-8 rounded-full bg-[#a60df2]/10 items-center justify-center"
+                onPress={() => setQuantity(quantity + 1)}
+                className="w-10 h-10 items-center justify-center"
               >
-                <MaterialIcons name="add" size={20} color="#a60df2" />
+                <MaterialIcons name="add" size={20} color="#d500f9" />
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        {/* General Admission */}
-        <View className="bg-white dark:bg-[#a60df2]/5 border border-slate-200 dark:border-[#a60df2]/20 rounded-2xl p-4 mb-4">
-          <View className="flex-row justify-between items-start mb-4">
+        <TouchableOpacity className="bg-[#1a0033] border border-[#4d0099] rounded-3xl p-5 mb-4 opacity-70">
+          <View className="flex-row justify-between items-start mb-2">
             <View>
-              <Text className="text-lg font-bold text-slate-900 dark:text-white">General Admission</Text>
-              <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">Standard entry</Text>
+              <Text className="text-xl font-bold text-white">General Admission</Text>
+              <Text className="text-sm text-[#b388ff]">Standard entry</Text>
             </View>
-            <Text className="text-xl font-bold text-[#a60df2]">${gaPrice}</Text>
+            <Text className="text-2xl font-bold text-[#00e5ff]">$49.00</Text>
           </View>
-          <View className="flex-row items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
-            <Text className="text-slate-700 dark:text-slate-300 font-medium">Quantity</Text>
-            <View className="flex-row items-center">
-              <TouchableOpacity 
-                onPress={() => setGaCount(Math.max(0, gaCount - 1))}
-                className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
-              >
-                <MaterialIcons name="remove" size={20} color={gaCount > 0 ? "#a60df2" : "#94a3b8"} />
-              </TouchableOpacity>
-              <Text className="w-10 text-center font-bold text-lg text-slate-900 dark:text-white">{gaCount}</Text>
-              <TouchableOpacity 
-                onPress={() => setGaCount(gaCount + 1)}
-                className="h-8 w-8 rounded-full bg-[#a60df2]/10 items-center justify-center"
-              >
-                <MaterialIcons name="add" size={20} color="#a60df2" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('SeatMapDesigner')}
+          className="bg-[#2a004d] border border-[#d500f9]/50 rounded-2xl p-4 mt-4 flex-row items-center justify-center"
+        >
+          <MaterialIcons name="event-seat" size={24} color="#00e5ff" />
+          <Text className="text-[#00e5ff] font-bold text-lg ml-2">Choose on Map</Text>
+        </TouchableOpacity>
       </ScrollView>
 
-      <View className="p-4 bg-white dark:bg-[#1c1022] border-t border-slate-200 dark:border-slate-800">
+      <View className="p-6 bg-[#1a0033] border-t border-[#4d0099] rounded-t-3xl">
         <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-slate-500 dark:text-slate-400">Total ({vipCount + gaCount} tickets)</Text>
-          <Text className="text-2xl font-bold text-slate-900 dark:text-white">${total.toFixed(2)}</Text>
+          <Text className="text-[#b388ff] font-bold text-lg">Total ({quantity} tickets)</Text>
+          <Text className="text-3xl font-black text-[#00e5ff]">${(99 * quantity).toFixed(2)}</Text>
         </View>
         <TouchableOpacity 
           onPress={() => navigation.navigate('Checkout')}
-          disabled={total === 0}
-          className={`h-14 rounded-xl items-center justify-center ${total > 0 ? 'bg-[#a60df2] shadow-lg shadow-[#a60df2]/30' : 'bg-slate-300 dark:bg-slate-800'}`}
+          className="w-full bg-[#d500f9] h-14 rounded-2xl items-center justify-center shadow-[0_0_20px_rgba(213,0,249,0.4)]"
         >
-          <Text className={`font-bold text-lg ${total > 0 ? 'text-white' : 'text-slate-500'}`}>Continue to Checkout</Text>
+          <Text className="text-white font-bold text-lg tracking-wide">Continue to Checkout</Text>
         </TouchableOpacity>
       </View>
     </View>

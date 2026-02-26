@@ -71,7 +71,7 @@ export const HomePage: React.FC = () => {
                         onClick={() => navigate('/search')}
                         className="h-14 px-8 rounded-xl bg-[#8655f6] text-white text-base font-bold shadow-[0_0_40px_rgba(137,90,246,0.6)] hover:bg-[#7f0df2] transition-all transform hover:-translate-y-1 flex items-center gap-2"
                     >
-                        <span>Book Now</span>
+                        <span>Explore Events</span>
                         <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
                     </button>
                 </div>
@@ -96,10 +96,10 @@ export const HomePage: React.FC = () => {
                                 <span className="material-symbols-outlined">location_on</span>
                             </div>
                             <select className="w-full h-14 bg-[#131118] border border-[#2d2839] text-white rounded-xl pl-12 pr-10 focus:ring-2 focus:ring-[#8655f6]/50 appearance-none">
-                                <option>Ho Chi Minh City</option>
-                                <option>Hanoi</option>
-                                <option>Da Nang</option>
                                 <option>All Cities</option>
+                                <option>New York</option>
+                                <option>Los Angeles</option>
+                                <option>Miami</option>
                             </select>
                         </div>
                         <div className="md:col-span-3 relative">

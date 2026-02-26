@@ -14,11 +14,8 @@ export const CheckoutPage: React.FC = () => {
         checkoutData?.eventId ? eventsData.find(e => e.id === checkoutData.eventId) : null,
         [checkoutData?.eventId]);
 
-    if (!checkoutData) {
+    if (!checkoutData || !event) {
         return <Navigate to="/" replace />;
-    }
-    if (!event) {
-        return <Navigate to={`/event/${checkoutData.eventId}/zones`} replace />;
     }
 
     const { zone, seats, ticketCount = seats?.length || 0, total } = checkoutData;
@@ -34,7 +31,6 @@ export const CheckoutPage: React.FC = () => {
                     seats,
                     ticketCount,
                     total,
-                    totalPaid: totalWithFees,
                     orderId: `TV-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 8).toUpperCase()}`
                 }
             });
@@ -128,42 +124,39 @@ export const CheckoutPage: React.FC = () => {
                                         {new Date(event.date).toLocaleDateString()} • {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </p>
                                     <p className="text-xs text-[#8655f6] mt-1">
-                                        {zone?.name ?? 'N/A'} ({zone?.type ?? 'seats'}) × {ticketCount}
+                                        {zone.name} ({zone.type}) × {ticketCount}
                                     </p>
                                 </div>
                             </div>
 
-                            {/* Danh sách ghế đã chọn */}
+                            {/* Selected Seats List */}
                             {seats && seats.length > 0 && (
-                                <div className="mb-4">
-                                    <p className="text-xs text-gray-400 mb-2">Ghế đã chọn:</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {seats.map((seat: { id: string; row: string; number: number; zone?: string }) => (
-                                            <span key={seat.id} className="text-xs px-2 py-1 rounded-lg bg-white/10 text-gray-300">
-                                                {seat.zone ? `${seat.zone} ` : ''}Row {seat.row}-{seat.number}
-                                            </span>
-                                        ))}
-                                    </div>
+                                <div className="mb-4 flex flex-wrap gap-2">
+                                    {seats.map((seat: any) => (
+                                        <span key={seat.id} className="text-[10px] px-2 py-1 rounded bg-white/10 text-gray-300">
+                                            Row {seat.row}-{seat.number}
+                                        </span>
+                                    ))}
                                 </div>
                             )}
 
                             <div className="border-t border-white/10 py-4 space-y-2">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-400">Vé ({ticketCount} chỗ{zone?.name ? ` • ${zone.name}` : ''})</span>
-                                    <span>${total.toLocaleString()}</span>
+                                    <span className="text-gray-400">Tickets ({ticketCount} × ${zone.price})</span>
+                                    <span>${(ticketCount * zone.price).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-400">Phí dịch vụ</span>
-                                    <span>${serviceFee.toFixed(2)}</span>
+                                    <span className="text-gray-400">Service Fee</span>
+                                    <span>$15.00</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-400">Phí xử lý</span>
-                                    <span>${processingFee.toFixed(2)}</span>
+                                    <span className="text-gray-400">Processing Fee</span>
+                                    <span>$5.00</span>
                                 </div>
                             </div>
                             <div className="border-t border-white/10 pt-4 flex justify-between items-end mb-6">
-                                <span className="text-gray-400">Tổng cộng</span>
-                                <span className="text-3xl font-bold">${totalWithFees.toLocaleString()}</span>
+                                <span className="text-gray-400">Total</span>
+                                <span className="text-3xl font-bold">${(total + 20).toLocaleString()}</span>
                             </div>
                             <button
                                 onClick={handlePayment}
@@ -173,12 +166,12 @@ export const CheckoutPage: React.FC = () => {
                                 {isProcessing ? (
                                     <>
                                         <span className="material-symbols-outlined animate-spin">progress_activity</span>
-                                        Đang xử lý...
+                                        Processing...
                                     </>
                                 ) : (
                                     <>
                                         <span className="material-symbols-outlined">lock</span>
-                                        Thanh toán ${totalWithFees.toLocaleString()}
+                                        Confirm and Pay ${(total + 20).toLocaleString()}
                                     </>
                                 )}
                             </button>

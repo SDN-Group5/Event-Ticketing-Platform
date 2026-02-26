@@ -1,20 +1,4 @@
-// Event types - khớp với events.json
-export interface EventFromJson {
-    id: string;
-    title: string;
-    artist?: string;
-    description: string;
-    date: string;
-    location: string;
-    image: string;
-    organizerId: string;
-    seatMapId: string;
-    minPrice: number;
-    maxPrice: number;
-    priceDisplay?: string;
-    status: 'published' | 'draft';
-}
-
+// Event types
 export interface Event {
     id: string;
     title: string;

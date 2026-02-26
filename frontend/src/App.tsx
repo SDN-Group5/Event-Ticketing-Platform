@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth, UserRole } from './contexts/AuthContext';
 
@@ -13,7 +13,7 @@ import { HomePage, SearchPage, EventDetailsPage, ZoneSelectionPage, CheckoutPage
 import Venue3DPage from './pages/client/Venue3DPage';
 
 // Auth Pages
-import { LoginPage, SignupPage, OTPPage, ResetPasswordPage } from './pages/auth';
+import { LoginPage, OTPPage, ResetPasswordPage } from './pages/auth';
 
 // Organizer Pages
 import { DashboardPage as OrganizerDashboard, CreateEventPage, AttendeesPage, AnalyticsPage, EventsPage, ManageVouchersPage, ManageStaffPage, NotificationsPage, CheckInPage } from './pages/organizer';
@@ -252,9 +252,6 @@ const AppRoutes: React.FC = () => {
             <Route path="/login" element={
                 isAuthenticated ? <Navigate to="/" replace /> : <AuthLayout><LoginPage /></AuthLayout>
             } />
-            <Route path="/signup" element={
-                isAuthenticated ? <Navigate to="/" replace /> : <AuthLayout><SignupPage /></AuthLayout>
-            } />
             <Route path="/otp" element={<AuthLayout><OTPPage /></AuthLayout>} />
             <Route path="/reset-password" element={<AuthLayout><ResetPasswordPage /></AuthLayout>} />
 
@@ -339,7 +336,7 @@ const AppRoutes: React.FC = () => {
             } />
             <Route path="/admin/refund-requests" element={
                 <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminLayout title="Organizer Payouts"><OrganizerPayoutsPage /></AdminLayout>
+                    <AdminLayout title="Refund Requests"><RefundRequestsPage /></AdminLayout>
                 </ProtectedRoute>
             } />
             <Route path="/admin/analytics" element={
@@ -363,6 +360,7 @@ const AppRoutes: React.FC = () => {
 const AppContent: React.FC = () => {
     return (
         <div>
+            <RoleSwitcher />
             <AppRoutes />
         </div>
     );

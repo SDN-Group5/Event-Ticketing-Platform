@@ -57,7 +57,6 @@ export const EventDetailsPage: React.FC = () => {
     const eventDate = new Date(event.eventDate || new Date());
     const dateStr = eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     const timeStr = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    const formatPriceVnd = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}m VND` : `${v}k VND`);
 
     const handleBuyTicket = () => {
         if (!isAuthenticated) {
@@ -150,7 +149,7 @@ export const EventDetailsPage: React.FC = () => {
                             <div key={ticket.type} className={`mb-4 p-4 rounded-xl border ${ticket.available ? 'border-[#2d2839] bg-[#1e1a29]/50 hover:border-[#8655f6]/50 cursor-pointer' : 'border-[#2d2839] bg-[#1e1a29]/30 opacity-50'} transition-all`}>
                                 <div className="flex justify-between mb-2">
                                     <span className="font-bold">{ticket.type}</span>
-                                    <span className="font-bold">{formatPriceVnd(ticket.price)}</span>
+                                    <span className="font-bold">${ticket.price}</span>
                                 </div>
                                 <div className="flex justify-between items-center mt-2">
                                     <span className={`text-xs flex items-center gap-1 ${ticket.available ? 'text-green-400' : 'text-red-400'}`}>

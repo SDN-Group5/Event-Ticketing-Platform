@@ -4,6 +4,6 @@ export { UsersPage } from './UsersPage';
 export { LayoutEditorPage } from './LayoutEditorPage';
 export { LayoutApiTestPage } from './LayoutApiTestPage';
 export { EventApprovalsPage } from './EventApprovalsPage';
-export { OrganizerPayoutsPage } from './RefundRequestsPage';
+export { RefundRequestsPage } from './RefundRequestsPage';
 export { AdminAnalyticsPage } from './AnalyticsPage';
 export { AdminSettingsPage } from './SettingsPage';

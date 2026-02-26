@@ -99,20 +99,14 @@ export const ZoneSelectionPage: React.FC = () => {
     };
 
     const handleCheckout = () => {
-        if (selectedSeats.length === 0 || !selectedZoneData) return;
         const checkoutData = {
             eventId: id,
-            zone: {
-                id: selectedZoneData.id,
-                name: selectedZoneData.name,
-                type: selectedZoneData.type,
-                price: selectedZoneData.price,
-            },
             seats: selectedSeats,
             total,
             ticketCount: selectedSeats.length,
         };
-        navigate('/checkout', { state: checkoutData });
+        console.log('Checkout data:', checkoutData);
+        navigate('/checkout');
     };
 
     const handleOpen360 = () => {

@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 // User roles
-export type UserRole = 'customer' | 'organizer' | 'admin' | 'staff';
+export type UserRole = 'customer' | 'organizer' | 'admin';
 
 // User interface
 export interface User {
@@ -12,27 +12,37 @@ export interface User {
     avatar?: string;
 }
 
-// Vite phải đọc env qua import.meta.env (không dùng process.env)
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:4000';
-const AUTH_TOKEN_KEY = 'auth_token';
+// Demo users for testing
+const DEMO_USERS: Record<UserRole, User> = {
+    customer: {
+        id: 'user-1',
+        name: 'Alex Rivers',
+        email: 'alex@example.com',
+        role: 'customer',
+        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAzQLjgCEZYT3Z1IquCHXVgRti4HN_IpR_ZI0626Xzmeo3jOq-mu0Nuow6DAApb6_rdyvuJhEq2q4hznXrT-Tgc1j5VnI-51JhxVBWR7FEwUD2q9WALOhWYKjo9JrV0tgBCH6Zq71AptCBLtxXhXyAGE9j3a-oW2efRycH7sNIKmq7UxRZhJwGo84k07maxd5CQyvHkEqQ0H_VlIdBqwF37eOg2TYpFsykyVyw28QBrHxtqkqLy4UJob9hPCFGjat0mGBGT_keoitGd',
+    },
+    organizer: {
+        id: 'org-1',
+        name: 'Sonic Horizon Events',
+        email: 'contact@sonichorizon.com',
+        role: 'organizer',
+        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKf-tSRtUuDs4uX7ou7uLckx9BBfn5MjZTm9_qAm2qhNwN4JwjW4BI9HrmPwlSwFVT45AYftcNa3ZiICRGPv5trEIex4OPctttjv9QzGkvGuyuOroWg54bQqBEyPd3Ce7YYw9rjQotO3AtcEQDAkXy5hz32K8jcCBJp9sEfYHpH4ss-kCCIX0pIov3Cuxc8f5VwszIJPFlJG5Kuw-wTVZw6E9Ae2mFFhrePdzq-xyF-agAcmjVa_PQsleK9lANTYwP24nzVGxp85yP',
+    },
+    admin: {
+        id: 'admin-1',
+        name: 'System Admin',
+        email: 'admin@ticketvibe.com',
+        role: 'admin',
+    },
+};
 
 // Auth context type
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
-    isLoading: boolean;
-    error: string | null;
-    clearError: () => void;
-    login: (email: string, password: string) => Promise<User | null>;
-    register: (payload: { firstName: string; lastName: string; email: string; password: string }) => Promise<boolean>;
+    login: (role: UserRole) => void;
     logout: () => void;
-    // Email verification
-    verifyEmail: (email: string, code: string) => Promise<boolean>;
-    resendVerification: (email: string) => Promise<boolean>;
-    // Password reset
-    forgotPassword: (email: string) => Promise<boolean>;
-    verifyResetCode: (email: string, code: string) => Promise<boolean>;
-    resetPassword: (email: string, code: string, newPassword: string) => Promise<boolean>;
+    switchRole: (role: UserRole) => void;
 }
 
 // Create context
@@ -70,22 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                // Backend có thể trả về nhiều format khác nhau (message string, mảng errors, object...)
-                let message: string = 'Đăng nhập thất bại';
-
-                if (typeof data?.message === 'string') {
-                    message = data.message;
-                } else if (Array.isArray(data?.errors)) {
-                    // Ví dụ: [{ type, value, msg, path, location }]
-                    message = data.errors.map((e: any) => e.msg ?? '').filter(Boolean).join(', ');
-                } else if (data && typeof data === 'object') {
-                    // Thử lấy msg nếu có
-                    if (typeof data.msg === 'string') {
-                        message = data.msg;
-                    }
-                }
-
-                setError(message);
+                setError(data?.message || 'Đăng nhập thất bại');
                 return null;
             }
 
@@ -304,74 +299,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     }, []);
 
-    // ============================================
-    // LOGOUT
-    // ============================================
     const logout = useCallback(() => {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
         setUser(null);
     }, []);
 
-    // ============================================
-    // LOAD CURRENT USER (on app start)
-    // ============================================
-    const loadCurrentUser = useCallback(async () => {
-        const token = localStorage.getItem(AUTH_TOKEN_KEY);
-        if (!token) return;
-
-        try {
-            const validateRes = await fetch(`${API_BASE_URL}/api/auth/validate-token`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (!validateRes.ok) {
-                localStorage.removeItem(AUTH_TOKEN_KEY);
-                return;
-            }
-
-            const userRes = await fetch(`${API_BASE_URL}/api/users/me`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (!userRes.ok) {
-                localStorage.removeItem(AUTH_TOKEN_KEY);
-                return;
-            }
-
-            const userInfo = await userRes.json();
-            const loadedUser: User = {
-                id: userInfo._id || userInfo.id || '',
-                name: `${userInfo.firstName ?? ''} ${userInfo.lastName ?? ''}`.trim() || userInfo.email,
-                email: userInfo.email,
-                role: userInfo.role,
-                avatar: userInfo.avatar,
-            };
-
-            setUser(loadedUser);
-        } catch (err) {
-            console.error(err);
-            localStorage.removeItem(AUTH_TOKEN_KEY);
-        }
+    const switchRole = useCallback((role: UserRole) => {
+        setUser(DEMO_USERS[role]);
     }, []);
-
-    useEffect(() => {
-        loadCurrentUser();
-    }, [loadCurrentUser]);
 
     const value: AuthContextType = {
         user,
         isAuthenticated: user !== null,
-        isLoading,
-        error,
-        clearError,
         login,
-        register,
         logout,
-        verifyEmail,
-        resendVerification,
-        forgotPassword,
-        verifyResetCode,
-        resetPassword,
+        switchRole,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

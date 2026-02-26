@@ -34,7 +34,7 @@ const App: React.FC = () => {
     { name: 'Payouts', screen: 'AdminPayouts', icon: 'payments', category: 'Admin' },
     { name: 'Queue', screen: 'AdminEventQueue', icon: 'queue', category: 'Admin' },
     { name: 'Users', screen: 'AdminUsers', icon: 'manage_accounts', category: 'Admin' },
-    //{ name: 'Editor', screen: 'LayoutEditor', icon: 'edit_square', category: 'Admin' },
+    { name: 'Editor', screen: 'LayoutEditor', icon: 'edit_square', category: 'Admin' },
   ];
 
   const renderScreen = () => {
@@ -66,7 +66,7 @@ const App: React.FC = () => {
       case 'AdminPayouts': return <AdminPayouts />;
       case 'AdminEventQueue': return <AdminEventQueue />;
       case 'AdminUsers': return <AdminUsers />;
-      //case 'LayoutEditor': return <LayoutEditor />;
+      case 'LayoutEditor': return <LayoutEditor />;
       
       default: return <ClientHome />;
     }

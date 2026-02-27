@@ -1,4 +1,5 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -14,6 +15,13 @@ import healthRoutes from './routes/health.routes';
 export { default as verifyToken } from './middleware/auth.middleware';
 export { roleCheck } from './middleware/roleCheck.middleware';
 export { User } from './models/user.model';
+
+// ============================================
+// LOAD ENV FROM backend/.env
+// ============================================
+dotenv.config({
+  path: path.resolve(__dirname, '../../../.env'),
+});
 
 // ============================================
 // CONFIGURATION

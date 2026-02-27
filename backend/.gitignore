@@ -40,6 +40,8 @@ logs/
 secrets/
 credentials/
 config/secrets.json
+backend/.env
+backend/docker/.env
 
 # Testing
 coverage/

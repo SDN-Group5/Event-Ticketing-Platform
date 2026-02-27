@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { SeatMap } from '../../components/seats';
 import { SeatZone, Seat as SeatType } from '../../types/seat';
-import seatMapsData from '../../data/seatMaps.json';
 
 export const VenueLayoutPage: React.FC = () => {
     const [layoutName, setLayoutName] = useState('New Stage Layout');

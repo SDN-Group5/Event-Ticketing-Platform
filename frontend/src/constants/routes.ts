@@ -7,6 +7,7 @@ export const ROUTES = {
   ZONE_SELECTION: '/event/:id/zones',
   CHECKOUT: '/checkout',
   PAYMENT_SUCCESS: '/payment-success',
+  PAYMENT_CANCEL: '/payment-cancel',
   PROFILE: '/profile',
   WISHLIST: '/wishlist',
   MY_TICKETS: '/my-tickets',

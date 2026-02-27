@@ -4,6 +4,7 @@ export { EventDetailsPage } from './EventDetailsPage';
 export { ZoneSelectionPage } from './ZoneSelectionPage';
 export { CheckoutPage } from './CheckoutPage';
 export { PaymentSuccessPage } from './PaymentSuccessPage';
+export { PaymentCancelPage } from './PaymentCancelPage';
 export { ProfilePage } from './ProfilePage';
 export { WishlistPage } from './WishlistPage';
 export { MyTicketsPage } from './MyTicketsPage';

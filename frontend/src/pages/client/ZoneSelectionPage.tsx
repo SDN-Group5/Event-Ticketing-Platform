@@ -4,13 +4,13 @@ import { EventLayoutViewer, PanoramaViewer } from '../../components/seats';
 import { Seat as SeatType, SelectedSeat } from '../../types/seat';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { SeatAPI, SeatData } from '../../services/seatApiService';
-
-import eventsData from '../../data/events.json';
+import eventsData from '../../data/events';
 import { Zone360Viewer } from '../../components/Zone360Viewer';
 
 export const ZoneSelectionPage: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+
     const [ticketCount, setTicketCount] = useState(2);
     const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
     const [previewSeat, setPreviewSeat] = useState<SeatType | null>(null);
@@ -25,7 +25,7 @@ export const ZoneSelectionPage: React.FC = () => {
 
     // Fetch layout and seats from MongoDB
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchData = async () => { 
             if (!id) return;
 
             try {
@@ -99,14 +99,25 @@ export const ZoneSelectionPage: React.FC = () => {
     };
 
     const handleCheckout = () => {
+        if (!id || selectedSeats.length === 0) return;
+
+        const zone = selectedZoneData || zones[0];
+
         const checkoutData = {
             eventId: id,
+            eventName: event?.title || layoutData?.eventName || 'Event',
+            eventImage: event?.image || layoutData?.eventImage || '',
+            eventDate: event?.date || layoutData?.eventDate || '',
+            eventLocation: event?.location || layoutData?.eventLocation || '',
+            organizerId: layoutData?.organizerId || event?.organizerId || 'unknown',
+            zone,
             seats: selectedSeats,
-            total,
             ticketCount: selectedSeats.length,
+            total,
         };
-        console.log('Checkout data:', checkoutData);
-        navigate('/checkout');
+
+        console.log('Navigating to checkout with data:', checkoutData);
+        navigate('/checkout', { state: checkoutData });
     };
 
     const handleOpen360 = () => {
@@ -196,10 +207,11 @@ export const ZoneSelectionPage: React.FC = () => {
                         <button
                             onClick={handleCheckout}
                             disabled={selectedSeats.length === 0}
-                            className={`font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center gap-2 ${selectedSeats.length > 0
-                                ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
-                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                }`}
+                            className={`font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center gap-2 ${
+                                selectedSeats.length > 0
+                                    ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
+                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                            }`}
                         >
                             <span className="material-symbols-outlined">shopping_cart</span>
                             <span>Checkout</span>

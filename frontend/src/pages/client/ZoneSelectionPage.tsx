@@ -25,7 +25,7 @@ export const ZoneSelectionPage: React.FC = () => {
 
     // Fetch layout and seats from MongoDB
     useEffect(() => {
-        const fetchData = async () => { 
+        const fetchData = async () => {
             if (!id) return;
 
             try {
@@ -93,6 +93,9 @@ export const ZoneSelectionPage: React.FC = () => {
             if (exists) {
                 return prev.filter(s => s.id !== seat.id);
             } else {
+                if (prev.length >= 2) {
+                    return prev;
+                }
                 return [...prev, seat];
             }
         });
@@ -207,11 +210,10 @@ export const ZoneSelectionPage: React.FC = () => {
                         <button
                             onClick={handleCheckout}
                             disabled={selectedSeats.length === 0}
-                            className={`font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center gap-2 ${
-                                selectedSeats.length > 0
-                                    ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
-                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                            }`}
+                            className={`font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center gap-2 ${selectedSeats.length > 0
+                                ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
+                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                }`}
                         >
                             <span className="material-symbols-outlined">shopping_cart</span>
                             <span>Checkout</span>

@@ -137,8 +137,10 @@ export default function Venue3DPage() {
                 }));
                 setSavedLayouts(formattedLayouts);
 
-                // Auto-select first saved layout if available
-                if (formattedLayouts.length > 0) {
+                // Auto-select the layout matching the URL id, or first saved layout
+                if (id && formattedLayouts.some(l => l.id === id)) {
+                    setSelectedLayoutId(id);
+                } else if (formattedLayouts.length > 0) {
                     setSelectedLayoutId(formattedLayouts[0].id);
                 }
             } catch (err) {

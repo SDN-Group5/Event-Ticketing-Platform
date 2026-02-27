@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, UserRole } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/common/Button';
 
 export const LoginPage: React.FC = () => {
@@ -21,8 +21,12 @@ export const LoginPage: React.FC = () => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        login('customer');
-        navigate('/');
+
+        const loggedInUser = await login(email, password);
+
+        if (loggedInUser) {
+            navigate('/');
+        }
     };
 
     return (

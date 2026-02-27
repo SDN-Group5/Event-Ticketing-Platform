@@ -47,6 +47,24 @@ services:
     restart: unless-stopped
 
   # ============================================
+  # PAYMENT SERVICE (Port 4004)
+  # ============================================
+  payment-service:
+    build:
+      context: ../services/payment-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    ports:
+      - "4004:4004"
+    environment:
+      - NODE_ENV=development
+      - PAYMENT_SERVICE_PORT=4004
+    networks:
+      - ticketing-network
+    restart: unless-stopped
+
+  # ============================================
   # AUTH SERVICE (Port 4001)
   # ============================================
   auth-service:

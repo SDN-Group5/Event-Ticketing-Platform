@@ -4,7 +4,6 @@ import { Venue3DViewer } from '../../components/venue3d';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { SeatAPI } from '../../services/seatApiService';
 import { LayoutZone, EventLayout } from '../../types/layout';
-import eventsData from '../../data/events.json';
 
 // Sample venue data (fallback)
 const sampleZones = [
@@ -215,12 +214,6 @@ export default function Venue3DPage() {
             label: `${zone.name} - $${zone.price}`,
         }));
     }, [currentZones]);
-
-    // Get event data
-    const event = useMemo(() => {
-        if (!id) return null;
-        return eventsData.find(e => e.id === id);
-    }, [id]);
 
     // Calculate total price
     const totalPrice = useMemo(() => {

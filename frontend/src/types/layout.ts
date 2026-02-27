@@ -1,47 +1,61 @@
-// Layout types for event-specific venue layouts
+// Shared layout types used by layout editor, 2D/3D viewers and layout APIs
 
-export interface Position {
-    x: number;
-    y: number;
+export interface LayoutPosition {
+  x: number;
+  y: number;
 }
 
-export interface Size {
-    width: number;
-    height: number;
+export interface LayoutSize {
+  width: number;
+  height: number;
 }
 
-export type ZoneType = 'seats' | 'standing' | 'stage' | 'exit' | 'barrier';
+export type LayoutZoneType =
+  | 'seats'
+  | 'standing'
+  | 'stage'
+  | 'exit'
+  | 'barrier'
+  | 'spotlight'
+  | string;
 
 export interface LayoutZone {
-    id: string;
-    name: string;
-    type: ZoneType;
-    position: Position;
-    size: Size;
-    color: string;
-    rotation?: number; // Rotation in degrees
-    rows?: number;
-    seatsPerRow?: number;
-    price?: number;
-    elevation?: number; // Height/elevation in 3D view (default: 0)
-    hideScreen?: boolean; // Whether to hide the screen in 3D/2D views
-    videoUrl?: string; // URL for the stage screen video
-    screenHeight?: number; // Height of the stage screen
-    screenWidthRatio?: number; // Ratio of screen width to stage width (0-1)
+  id: string;
+  name: string;
+  type: LayoutZoneType;
+  position: LayoutPosition;
+  size: LayoutSize;
+  color: string;
+  rotation?: number;
+  rows?: number;
+  seatsPerRow?: number;
+  price?: number;
+  elevation?: number;
+  hideScreen?: boolean;
+  screenHeight?: number;
+  screenWidthRatio?: number;
+  videoUrl?: string;
 }
 
 export interface EventLayout {
-    eventId: string;
-    eventName?: string;
-    eventDate?: string; // ISO date string
-    eventImage?: string;
-    eventLocation?: string;
-    eventDescription?: string;
-    minPrice?: number;
-    zones: LayoutZone[];
-    canvasWidth?: number;
-    canvasHeight?: number;
-    canvasColor?: string;
-    createdAt: string;
-    updatedAt: string;
+  eventId: string;
+  eventName?: string;
+
+  // Optional event metadata used by the frontend
+  eventDate?: string;
+  eventImage?: string;
+  eventLocation?: string;
+  eventDescription?: string;
+  minPrice?: number;
+
+  zones: LayoutZone[];
+
+  // Canvas configuration
+  canvasWidth?: number;
+  canvasHeight?: number;
+  canvasColor?: string;
+
+  createdAt?: string;
+  updatedAt?: string;
 }
+

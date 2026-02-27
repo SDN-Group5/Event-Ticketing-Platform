@@ -54,7 +54,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                             </div>
                         </div>
                     ) : (
-                        <Button onClick={onLoginClick} size="md">
+                        <Button
+                            onClick={() => {
+                                window.location.href = 'http://localhost:3000/login';
+                            }}
+                            size="md"
+                        >
                             Login
                         </Button>
                     )}

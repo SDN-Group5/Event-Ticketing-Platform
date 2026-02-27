@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { LayoutZone } from '../../types/layout';
 import { SEAT_UNIT_2D } from '../../constants/layoutConstants';
-import eventsData from '../../data/events.json';
+import eventsData from '../../data/events';
 
 // Types
 interface Position {

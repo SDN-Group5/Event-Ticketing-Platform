@@ -150,6 +150,7 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                                                         if (isInteractive) {
                                                             onSeatToggle({
                                                                 ...seat,
+                                                                // Giá theo zone: mỗi khu (hàng) có giá riêng (rẻ/đắt)
                                                                 price: zone.price,
                                                                 zone: zone.name,
                                                             } as unknown as SelectedSeat);

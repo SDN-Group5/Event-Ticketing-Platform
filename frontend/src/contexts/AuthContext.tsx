@@ -1,19 +1,23 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import type { UserRole } from '../../../shared/type';
 
-// User roles
-export type UserRole = 'customer' | 'organizer' | 'admin';
+// Constants
+const API_BASE_URL =
+  // cast để tránh lỗi type khi chưa khai báo vite/client trong tsconfig
+  (import.meta as any).env.VITE_API_URL || 'http://localhost:4001';
+const AUTH_TOKEN_KEY = 'auth_token';
 
-// User interface
+// User interface dùng cho session phía frontend
 export interface User {
     id: string;
     name: string;
     email: string;
     role: UserRole;
-    avatar?: string;
+    avatar?: string | null;
 }
 
-// Demo users for testing
-const DEMO_USERS: Record<UserRole, User> = {
+// Demo users cho switchRole (chỉ dùng một vài role)
+const DEMO_USERS: Partial<Record<UserRole, User>> = {
     customer: {
         id: 'user-1',
         name: 'Alex Rivers',
@@ -40,7 +44,7 @@ const DEMO_USERS: Record<UserRole, User> = {
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
-    login: (role: UserRole) => void;
+    login: (email: string, password: string) => Promise<User | null>;
     logout: () => void;
     switchRole: (role: UserRole) => void;
 }
@@ -98,8 +102,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 id: userInfo.id || userInfo._id || '',
                 name: `${userInfo.firstName ?? ''} ${userInfo.lastName ?? ''}`.trim() || userInfo.email,
                 email: userInfo.email,
-                role: userInfo.role,
-                avatar: userInfo.avatar,
+                role: userInfo.role as UserRole,
+                avatar: userInfo.avatar ?? null,
             };
 
             setUser(loggedInUser);
@@ -304,7 +308,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, []);
 
     const switchRole = useCallback((role: UserRole) => {
-        setUser(DEMO_USERS[role]);
+        const demoUser = DEMO_USERS[role];
+        if (demoUser) {
+            setUser(demoUser);
+        }
     }, []);
 
     const value: AuthContextType = {

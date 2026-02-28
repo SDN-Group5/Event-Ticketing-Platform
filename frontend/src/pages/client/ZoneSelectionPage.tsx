@@ -72,6 +72,7 @@ export const ZoneSelectionPage: React.FC = () => {
                 seatsPerRow: zone.seatsPerRow || 1,
                 position: zone.position,
                 size: zone.size,
+                rotation: zone.rotation || 0,
                 view360Url: 'https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg'
             }));
     }, [layoutData]);

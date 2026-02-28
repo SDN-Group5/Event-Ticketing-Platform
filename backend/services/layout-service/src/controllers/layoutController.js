@@ -169,6 +169,18 @@ export const updateLayout = async (req, res) => {
             });
         }
 
+        // ✨ Capture old seat zone IDs BEFORE overwriting layout.zones
+        const oldSeatZoneIds = new Set(
+            layout.zones
+                .filter(z => z.type === 'seats')
+                .map(z => z.id)
+        );
+        const oldSeatZoneMap = new Map(
+            layout.zones
+                .filter(z => z.type === 'seats')
+                .map(z => [z.id, z])
+        );
+
         layout.zones = zones;
         layout.canvasWidth = canvasWidth;
         layout.canvasHeight = canvasHeight;
@@ -182,26 +194,21 @@ export const updateLayout = async (req, res) => {
         if (eventDescription) layout.eventDescription = eventDescription;
         if (minPrice !== undefined) layout.minPrice = minPrice;
 
-        // Version will be auto-incremented by pre-save/update hook, 
-        // but if we use save() we might need to handle it manually or rely on the hook.
-        // The schema has a pre 'findOneAndUpdate' hook, but here we are finding then saving.
-        // Let's manually increment or let a pre-save hook do it. 
-        // The provided schema example had a pre-save hook for validation but pre-findOneAndUpdate for version.
-        // We should probably add a pre-save hook for versioning too or just increment it here.
         layout.version = (layout.version || 0) + 1;
 
         await layout.save();
 
         // ✨ AUTO-GENERATE SEATS: Handle seat zones for updates
-        // Find new seat zones (zones that don't exist in old layout or have different seat configuration)
-        const oldSeatZones = layout.zones.filter(z => z.type === 'seats');
         const newSeatZones = zones.filter(z => z.type === 'seats');
+        console.log(`[Layout] Processing ${newSeatZones.length} seat zones. Old zone map has ${oldSeatZoneMap.size} entries.`);
 
         for (const newZone of newSeatZones) {
-            const oldZone = oldSeatZones.find(z => z.id === newZone.id);
+            const oldZone = oldSeatZoneMap.get(newZone.id);
+            console.log(`[Layout] Zone "${newZone.name}" (${newZone.id}): oldZone=${oldZone ? `rows=${oldZone.rows},cols=${oldZone.seatsPerRow}` : 'NOT FOUND (NEW)'}, newZone: rows=${newZone.rows},cols=${newZone.seatsPerRow}`);
 
             // Generate seats if it's a new zone or seat configuration changed
             if (!oldZone || oldZone.rows !== newZone.rows || oldZone.seatsPerRow !== newZone.seatsPerRow) {
+                console.log(`[Layout] Triggering seat (re)generation for zone "${newZone.name}"`);
                 try {
                     // Delete old seats for this zone if reconfigured
                     if (oldZone) {
@@ -216,6 +223,8 @@ export const updateLayout = async (req, res) => {
                 } catch (seatError) {
                     console.error(`[Layout] Error generating seats for zone ${newZone.name}:`, seatError);
                 }
+            } else {
+                console.log(`[Layout] Zone "${newZone.name}" unchanged - skipping seat generation`);
             }
         }
 

@@ -52,7 +52,10 @@ app.use(morgan('combined', {
 // ROUTES
 // ============================================
 app.use('/health', healthRoutes);
+// Giữ nguyên prefix /api/auth cho các client hiện có
 app.use('/api/auth', authRoutes);
+// Đồng thời expose các route gốc (/login, /register, ...) để gateway sau khi pathRewrite có thể gọi trực tiếp
+app.use('/', authRoutes);
 app.use('/api/users', userRoutes);
 
 // Root

@@ -29,7 +29,7 @@ export const ZoneSelectionPage: React.FC = () => {
 
     // Fetch layout and seats from MongoDB
     useEffect(() => {
-        const fetchData = async () => { 
+        const fetchData = async () => {
             if (!id) return;
 
             try {
@@ -76,6 +76,7 @@ export const ZoneSelectionPage: React.FC = () => {
                 seatsPerRow: zone.seatsPerRow || 1,
                 position: zone.position,
                 size: zone.size,
+                rotation: zone.rotation || 0,
                 view360Url: 'https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg'
             }));
     }, [layoutData]);
@@ -97,6 +98,9 @@ export const ZoneSelectionPage: React.FC = () => {
             if (exists) {
                 return prev.filter(s => s.id !== seat.id);
             } else {
+                if (prev.length >= 2) {
+                    return prev;
+                }
                 return [...prev, seat];
             }
         });

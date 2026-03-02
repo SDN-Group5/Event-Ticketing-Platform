@@ -6,6 +6,7 @@ export interface Seat {
   id: string;
   row: string; // row label, e.g. "A" or "1"
   number: number;
+  label?: string; // e.g. "D8", "R10-S2"
   zone: string; // zone id or human readable zone name
   status: SeatStatus;
   price: number;

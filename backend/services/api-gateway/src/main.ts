@@ -21,8 +21,6 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(
   morgan('combined', {
     stream: { write: (msg) => console.log(`[api-gateway] ${msg.trim()}`) },

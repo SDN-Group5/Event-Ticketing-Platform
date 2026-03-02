@@ -81,7 +81,7 @@ export const EventDetailsPage: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#151022] via-[#151022]/40 to-transparent" />
                 <button
-                    onClick={() => navigate(-1)}
+                    onClick={() => navigate('/')}
                     className="absolute top-4 left-4 flex items-center gap-2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full text-white hover:bg-black/60 transition-colors"
                 >
                     <span className="material-symbols-outlined">arrow_back</span>

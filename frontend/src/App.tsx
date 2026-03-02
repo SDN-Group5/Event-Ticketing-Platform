@@ -88,14 +88,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/event/:id/venue-3d" element={<Venue3DPage />} />
 
       {/* Protected Client Routes */}
-      <Route
-        path={ROUTES.PAYMENT_SUCCESS}
-        element={
-          <ProtectedRoute allowedRoles={['customer']}>
-            <PaymentSuccessPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path={ROUTES.PAYMENT_SUCCESS} element={<PaymentSuccessPage />} />
       <Route path={ROUTES.PAYMENT_CANCEL} element={<PaymentCancelPage />} />
       <Route
         path={ROUTES.PROFILE}
@@ -307,22 +300,22 @@ const AppRoutes: React.FC = () => {
 
 // Main App Content
 const AppContent: React.FC = () => {
-    return (
-        <div>
-            <AppRoutes />
-        </div>
-    );
+  return (
+    <div>
+      <AppRoutes />
+    </div>
+  );
 };
 
 // Main App Component
 const App: React.FC = () => {
-    return (
-        <Router>
-            <AuthProvider>
-                <AppContent />
-            </AuthProvider>
-        </Router>
-    );
+  return (
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </Router>
+  );
 };
 
 export default App;

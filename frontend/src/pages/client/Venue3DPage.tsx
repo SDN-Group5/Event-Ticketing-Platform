@@ -260,7 +260,7 @@ export default function Venue3DPage() {
             <div className="absolute top-6 left-6 z-30">
                 <button
                     onClick={() => id ? navigate(`/event/${id}/zones`) : navigate('/')}
-                    className="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur hover:bg-black/60 transition-colors border border-white/10"
+                    className="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur hover:bg-black/60 transition-colors border border-white/10 shrink-0 p-0 aspect-square"
                 >
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
@@ -270,7 +270,7 @@ export default function Venue3DPage() {
             <div className="absolute top-6 left-20 z-30">
                 <button
                     onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className={`w-12 h-12 flex items-center justify-center rounded-full backdrop-blur transition-all duration-300 border ${sidebarOpen ? 'bg-white/10 text-white border-white/20' : 'bg-black/40 text-gray-200 border-white/10 hover:bg-black/60 hover:text-white'}`}
+                    className={`w-12 h-12 flex items-center justify-center rounded-full backdrop-blur transition-all duration-300 border shrink-0 p-0 aspect-square ${sidebarOpen ? 'bg-white/10 text-white border-white/20' : 'bg-black/40 text-gray-200 border-white/10 hover:bg-black/60 hover:text-white'}`}
                     title={sidebarOpen ? 'Close controls' : 'Open view controls'}
                 >
                     <span className="material-symbols-outlined transition-transform duration-300">

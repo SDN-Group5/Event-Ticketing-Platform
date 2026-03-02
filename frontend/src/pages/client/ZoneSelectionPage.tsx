@@ -116,12 +116,15 @@ export const ZoneSelectionPage: React.FC = () => {
 
         const zone = selectedZoneData || zones[0];
 
-        const items = selectedSeats.map(seat => ({
-            zoneName: zone.name,
-            seatId: seat.id,
-            price: zone.price,
-            quantity: 1,
-        }));
+        const items = selectedSeats.map(seat => {
+            const seatZone = zones.find(z => z.name === seat.zone) || zones[0];
+            return {
+                zoneName: seat.zone,
+                seatId: seat.id,
+                price: seatZone ? seatZone.price : seat.price,
+                quantity: 1,
+            };
+        });
 
         try {
             setIsProcessingPayment(true);
@@ -157,7 +160,7 @@ export const ZoneSelectionPage: React.FC = () => {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate(`/event/${id}`)}
-                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors shrink-0"
                     >
                         <span className="material-symbols-outlined">arrow_back</span>
                     </button>
@@ -233,11 +236,10 @@ export const ZoneSelectionPage: React.FC = () => {
                         <button
                             onClick={handleCheckout}
                             disabled={selectedSeats.length === 0 || isProcessingPayment}
-                            className={`font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center gap-2 ${
-                                selectedSeats.length > 0 && !isProcessingPayment
-                                    ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
-                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                            }`}
+                            className={`font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center gap-2 ${selectedSeats.length > 0 && !isProcessingPayment
+                                ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
+                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                }`}
                         >
                             <span className="material-symbols-outlined">shopping_cart</span>
                             <span>{isProcessingPayment ? 'Đang tạo thanh toán...' : 'Checkout'}</span>

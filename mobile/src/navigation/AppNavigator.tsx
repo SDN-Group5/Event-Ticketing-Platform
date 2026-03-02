@@ -20,7 +20,6 @@ import SeatMapDesigner from '../screens/organizer/SeatMapDesigner';
 import EditProfile from '../screens/EditProfile';
 import SecuritySettings from '../screens/auth/SecuritySettings';
 import Notifications from '../screens/Notifications';
-import Explore from '../screens/Explore';
 
 const Stack = createNativeStackNavigator();
 
@@ -28,7 +27,7 @@ export default function AppNavigator() {
   const { auth } = useAuth();
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0a0014' } }}>
       {auth.role !== 'guest' ? (
         // User is signed in
         <Stack.Group>
@@ -43,7 +42,6 @@ export default function AppNavigator() {
           <Stack.Screen name="EditProfile" component={EditProfile} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettings} />
           <Stack.Screen name="Notifications" component={Notifications} />
-          <Stack.Screen name='Explore' component={Explore} />
         </Stack.Group>
       ) : (
         // User is NOT signed in

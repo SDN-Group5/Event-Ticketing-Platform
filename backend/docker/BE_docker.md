@@ -14,7 +14,7 @@ Mở terminal tại thư mục `backend` (thư mục cha của `docker`):
 2. **Khởi động Docker**:
    ```bash
    cd docker
-   docker compose up -d
+   docker compose up -d --build
    ```
 
 ## 3. Kiểm tra

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LayoutAPI } from '../../services/layoutApiService';
 
 export const CreateEventPage: React.FC = () => {
     const navigate = useNavigate();
@@ -12,6 +13,8 @@ export const CreateEventPage: React.FC = () => {
         description: '',
         category: 'music',
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const steps = [
         { num: 1, label: 'Basic Info' },
@@ -20,11 +23,37 @@ export const CreateEventPage: React.FC = () => {
         { num: 4, label: 'Review' },
     ];
 
-    const handleNext = () => {
-        if (step < 4) setStep(step + 1);
-        else {
+    const handleNext = async () => {
+        if (step < 4) {
+            setStep(step + 1);
+        } else {
             // Submit and redirect
-            navigate('/organizer');
+            setIsSubmitting(true);
+            setError(null);
+            try {
+                // Use the valid ObjectId for temp eventId
+                const tempEventId = Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+
+                // We don't need to create zones during event creation, pass empty array
+                await LayoutAPI.createLayout({
+                    eventId: tempEventId,
+                    eventName: formData.name,
+                    eventDate: formData.date ? new Date(`${formData.date}T${formData.time || '00:00'}`).toISOString() : undefined,
+                    eventLocation: formData.venue,
+                    eventDescription: formData.description,
+                    zones: [],
+                    canvasWidth: 800,
+                    canvasHeight: 600,
+                    canvasColor: '#0f1219'
+                });
+
+                navigate('/organizer');
+            } catch (err: any) {
+                console.error("Failed to create event:", err);
+                setError(err.response?.data?.error?.message || err.message || "Failed to create event");
+            } finally {
+                setIsSubmitting(false);
+            }
         }
     };
 
@@ -201,6 +230,14 @@ export const CreateEventPage: React.FC = () => {
                     {step === 4 && (
                         <div className="space-y-6">
                             <h3 className="text-lg font-bold text-white mb-4">Review Your Event</h3>
+
+                            {error && (
+                                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-red-400">error</span>
+                                    <p className="text-sm text-red-400">{error}</p>
+                                </div>
+                            )}
+
                             <div className="bg-[#0f172a] rounded-xl p-6 border border-slate-700">
                                 <div className="space-y-4">
                                     <div className="flex justify-between">
@@ -221,10 +258,13 @@ export const CreateEventPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">
-                                <span className="material-symbols-outlined text-emerald-400">check_circle</span>
-                                <p className="text-sm text-emerald-400">Your event is ready to be published!</p>
-                            </div>
+
+                            {!error && (
+                                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-emerald-400">check_circle</span>
+                                    <p className="text-sm text-emerald-400">Your event is ready to be published!</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -232,18 +272,24 @@ export const CreateEventPage: React.FC = () => {
                     <div className="flex justify-between mt-8 pt-6 border-t border-white/5">
                         <button
                             onClick={handleBack}
-                            className="px-6 py-3 border border-slate-600 rounded-xl font-medium text-slate-300 hover:bg-white/5 transition-colors"
+                            disabled={isSubmitting}
+                            className="px-6 py-3 border border-slate-600 rounded-xl font-medium text-slate-300 hover:bg-white/5 transition-colors disabled:opacity-50"
                         >
                             {step === 1 ? 'Cancel' : 'Back'}
                         </button>
                         <button
                             onClick={handleNext}
-                            className="px-8 py-3 bg-gradient-to-r from-[#8655f6] to-[#d946ef] rounded-xl font-bold text-white shadow-lg shadow-[#8655f6]/30 hover:shadow-[#8655f6]/50 transition-all flex items-center gap-2"
+                            disabled={isSubmitting}
+                            className="px-8 py-3 bg-gradient-to-r from-[#8655f6] to-[#d946ef] rounded-xl font-bold text-white shadow-lg shadow-[#8655f6]/30 hover:shadow-[#8655f6]/50 transition-all flex items-center gap-2 disabled:opacity-50"
                         >
                             {step === 4 ? (
                                 <>
-                                    <span className="material-symbols-outlined">publish</span>
-                                    Publish Event
+                                    {isSubmitting ? (
+                                        <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                                    ) : (
+                                        <span className="material-symbols-outlined">publish</span>
+                                    )}
+                                    {isSubmitting ? 'Publishing...' : 'Publish Event'}
                                 </>
                             ) : (
                                 <>

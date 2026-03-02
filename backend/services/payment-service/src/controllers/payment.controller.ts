@@ -141,6 +141,10 @@ export const createPayment = async (req: Request, res: Response) => {
 
     const channel: PayOSChannel = rawChannel === 'mobile' ? 'mobile' : 'jsp';
 
+    // Business rule: không giữ lại các đơn chưa thanh toán.
+    // Trước khi tạo order mới, xoá tất cả order cũ của user chưa paid (pending/processing/expired/cancelled...).
+    await Order.deleteMany({ userId, status: { $ne: 'paid' } });
+
     const subtotal = items.reduce(
       (sum: number, item: any) => sum + item.price * (item.quantity || 1),
       0
@@ -233,12 +237,17 @@ export const getOrder = async (req: Request, res: Response) => {
 
 /**
  * GET /api/payments/user/:userId
- * Lấy danh sách đơn hàng của user
+ * Lấy danh sách đơn hàng của user.
+ * Nghiệp vụ: chỉ lưu/trả về payment trạng thái đã thanh toán (paid) hoặc đã hoàn tiền (refunded).
+ * Đơn pending/processing/cancelled/expired không đưa vào lịch sử (TTL hoặc webhook/verify sẽ xoá).
  */
 export const getUserOrders = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    const orders = await Order.find({
+      userId,
+      status: { $in: ['paid', 'refunded'] },
+    }).sort({ createdAt: -1 });
 
     return res.json({ success: true, data: orders });
   } catch (err: any) {
@@ -283,16 +292,20 @@ export const handleWebhook = async (req: Request, res: Response) => {
         order.paidAt = new Date();
 
         await runAutoPayout(order);
+        await order.save();
       }
-    } else if (paymentInfo.status === 'CANCELLED') {
-      order.status = 'cancelled';
-      order.cancelledAt = new Date();
-    } else if (paymentInfo.status === 'EXPIRED') {
-      order.status = 'expired';
+      console.log(`[webhook] Order ${orderCode} → paid | payoutStatus=${order.payoutStatus}`);
+    } else if (paymentInfo.status === 'CANCELLED' || paymentInfo.status === 'EXPIRED') {
+      // Yêu cầu business: không lưu các order bị huỷ / hết hạn
+      await Order.deleteOne({ _id: order._id });
+      console.log(
+        `[webhook] Order ${orderCode} bị ${paymentInfo.status}, đã xoá khỏi database theo yêu cầu business.`
+      );
+    } else {
+      console.log(
+        `[webhook] Order ${orderCode} nhận trạng thái PayOS=${paymentInfo.status}, không thay đổi dữ liệu.`
+      );
     }
-
-    await order.save();
-    console.log(`[webhook] Order ${orderCode} → ${order.status} | payoutStatus=${order.payoutStatus}`);
 
     return res.json({ success: true });
   } catch (err: any) {
@@ -327,11 +340,10 @@ export const cancelPayment = async (req: Request, res: Response) => {
       }
     }
 
-    order.status = 'cancelled';
-    order.cancelledAt = new Date();
-    await order.save();
+    // Yêu cầu business: khi user huỷ thanh toán thì xoá luôn order
+    await Order.deleteOne({ _id: order._id });
 
-    return res.json({ success: true, data: order });
+    return res.json({ success: true, data: null, message: 'Đơn hàng đã được huỷ và xoá khỏi hệ thống' });
   } catch (err: any) {
     console.error('[cancelPayment] Error:', err);
     return res.status(500).json({ success: false, message: err.message });
@@ -352,12 +364,16 @@ export const verifyPayment = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
     }
 
-    if (order.status === 'paid') {
-      return res.json({ success: true, data: { status: 'paid', order } });
-    }
-
     if (!order.payosPaymentLinkId) {
-      return res.json({ success: true, data: { status: order.status, order } });
+      // Nếu không có paymentLinkId thì coi như order này không hợp lệ
+      return res.json({
+        success: true,
+        data: {
+          status: order.status,
+          order,
+          payosStatus: 'UNKNOWN',
+        },
+      });
     }
 
     const payosClient = getPayOSClient((order as any).channel);
@@ -369,16 +385,36 @@ export const verifyPayment = async (req: Request, res: Response) => {
       order.paidAt = new Date();
       await runAutoPayout(order);
       await order.save();
-    } else if (paymentInfo.status === 'CANCELLED' && currentStatus !== 'cancelled') {
-      order.status = 'cancelled';
-      order.cancelledAt = new Date();
-      await order.save();
+
+      return res.json({
+        success: true,
+        data: {
+          status: 'paid',
+          order,
+          payosStatus: paymentInfo.status,
+        },
+      });
     }
 
+    if (paymentInfo.status === 'CANCELLED' || paymentInfo.status === 'EXPIRED') {
+      // Yêu cầu business: xoá các order không thanh toán thành công
+      await Order.deleteOne({ _id: order._id });
+
+      return res.json({
+        success: true,
+        data: {
+          status: 'deleted',
+          order: null,
+          payosStatus: paymentInfo.status,
+        },
+      });
+    }
+
+    // Các trạng thái khác: trả về hiện trạng, không chỉnh sửa DB
     return res.json({
       success: true,
       data: {
-        status: order.status,
+        status: currentStatus,
         order,
         payosStatus: paymentInfo.status,
       },

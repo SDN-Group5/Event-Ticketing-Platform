@@ -22,6 +22,7 @@ import {
   ProfilePage,
   WishlistPage,
   MyTicketsPage,
+  TransactionHistoryPage,
   RefundRequestPage,
 } from './pages/client';
 import Venue3DPage from './pages/client/Venue3DPage';
@@ -88,14 +89,6 @@ const AppRoutes: React.FC = () => {
 
       {/* Protected Client Routes */}
       <Route
-        path={ROUTES.CHECKOUT}
-        element={
-          <ProtectedRoute allowedRoles={['customer']}>
-            <CheckoutPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path={ROUTES.PAYMENT_SUCCESS}
         element={
           <ProtectedRoute allowedRoles={['customer']}>
@@ -125,6 +118,14 @@ const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute allowedRoles={['customer']}>
             <ClientLayout><MyTicketsPage /></ClientLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.TRANSACTION_HISTORY}
+        element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <ClientLayout><TransactionHistoryPage /></ClientLayout>
           </ProtectedRoute>
         }
       />

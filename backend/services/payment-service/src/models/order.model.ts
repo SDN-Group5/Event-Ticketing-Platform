@@ -102,4 +102,14 @@ const OrderSchema = new Schema(
   { timestamps: true }
 );
 
+// Nghiệp vụ: chỉ lưu lâu dài những payment đã thanh toán (paid/refunded).
+// TTL index: tự xoá các order KHÔNG phải paid sau 5 phút (pending/processing/cancelled/expired).
+OrderSchema.index(
+  { createdAt: 1 },
+  {
+    expireAfterSeconds: 300, // 5 phút
+    partialFilterExpression: { status: { $ne: 'paid' } },
+  }
+);
+
 export const Order = mongoose.model<IOrder>('Order', OrderSchema);

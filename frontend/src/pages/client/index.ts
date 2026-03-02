@@ -8,4 +8,5 @@ export { PaymentCancelPage } from './PaymentCancelPage';
 export { ProfilePage } from './ProfilePage';
 export { WishlistPage } from './WishlistPage';
 export { MyTicketsPage } from './MyTicketsPage';
+export { TransactionHistoryPage } from './TransactionHistoryPage';
 export { RefundRequestPage } from './RefundRequestPage';

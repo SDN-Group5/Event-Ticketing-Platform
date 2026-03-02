@@ -1,6 +1,17 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { ROUTES } from '../../constants/routes';
+
+const MENU_ITEMS = [
+  { label: 'Vé của tôi', path: ROUTES.MY_TICKETS },
+  { label: 'Lịch sử giao dịch', path: ROUTES.TRANSACTION_HISTORY },
+  { label: 'Yêu thích', path: ROUTES.WISHLIST },
+  { label: 'Cài đặt hồ sơ', path: ROUTES.PROFILE },
+];
 
 export const ProfilePage: React.FC = () => {
+    const location = useLocation();
+
     return (
         <div className="min-h-screen bg-[#0f172a] text-white flex">
             {/* Side Nav */}
@@ -13,14 +24,14 @@ export const ProfilePage: React.FC = () => {
                     </div>
                 </div>
                 <nav className="flex flex-col gap-2">
-                    {['My Tickets', 'Favorites', 'Profile Settings', 'Payment Methods'].map(item => (
-                        <a
-                            key={item}
-                            href="#"
-                            className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${item === 'My Tickets' ? 'bg-[#8655f6] text-white shadow-lg shadow-[#8655f6]/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                    {MENU_ITEMS.map(({ label, path }) => (
+                        <Link
+                            key={path}
+                            to={path}
+                            className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${location.pathname === path ? 'bg-[#8655f6] text-white shadow-lg shadow-[#8655f6]/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
                         >
-                            {item}
-                        </a>
+                            {label}
+                        </Link>
                     ))}
                 </nav>
             </aside>

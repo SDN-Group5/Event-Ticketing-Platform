@@ -102,4 +102,14 @@ const OrderSchema = new Schema(
   { timestamps: true }
 );
 
+// TTL index: tự xoá các order KHÔNG phải paid sau 5 phút
+// Mongo sẽ check theo trường createdAt, chỉ áp dụng cho document có status != 'paid'
+OrderSchema.index(
+  { createdAt: 1 },
+  {
+    expireAfterSeconds: 300, // 5 phút
+    partialFilterExpression: { status: { $ne: 'paid' } },
+  }
+);
+
 export const Order = mongoose.model<IOrder>('Order', OrderSchema);

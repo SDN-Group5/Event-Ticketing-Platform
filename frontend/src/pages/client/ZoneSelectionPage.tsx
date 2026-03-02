@@ -1,15 +1,18 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EventLayoutViewer, PanoramaViewer } from '../../components/seats';
 import { Seat as SeatType, SelectedSeat } from '../../types/seat';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { SeatAPI, SeatData } from '../../services/seatApiService';
+import { PaymentAPI } from '../../services/paymentApiService';
+import { useAuth } from '../../contexts/AuthContext';
 import eventsData from '../../data/events';
 import { Zone360Viewer } from '../../components/Zone360Viewer';
 
 export const ZoneSelectionPage: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+    const { user } = useAuth();
 
     const [ticketCount, setTicketCount] = useState(2);
     const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
@@ -19,6 +22,7 @@ export const ZoneSelectionPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [layoutData, setLayoutData] = useState<any>(null);
     const [seatsData, setSeatsData] = useState<SeatData[]>([]);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
     // Load event data
     const event = useMemo(() => eventsData.find(e => e.id === id), [id]);
@@ -98,27 +102,45 @@ export const ZoneSelectionPage: React.FC = () => {
         });
     };
 
-    const handleCheckout = () => {
-        if (!id || selectedSeats.length === 0) return;
+    const handleCheckout = useCallback(async () => {
+        if (!id || selectedSeats.length === 0 || isProcessingPayment) return;
+
+        if (!user) {
+            navigate('/login');
+            return;
+        }
 
         const zone = selectedZoneData || zones[0];
 
-        const checkoutData = {
-            eventId: id,
-            eventName: event?.title || layoutData?.eventName || 'Event',
-            eventImage: event?.image || layoutData?.eventImage || '',
-            eventDate: event?.date || layoutData?.eventDate || '',
-            eventLocation: event?.location || layoutData?.eventLocation || '',
-            organizerId: layoutData?.organizerId || event?.organizerId || 'unknown',
-            zone,
-            seats: selectedSeats,
-            ticketCount: selectedSeats.length,
-            total,
-        };
+        const items = selectedSeats.map(seat => ({
+            zoneName: zone.name,
+            seatId: seat.id,
+            price: zone.price,
+            quantity: 1,
+        }));
 
-        console.log('Navigating to checkout with data:', checkoutData);
-        navigate('/checkout', { state: checkoutData });
-    };
+        try {
+            setIsProcessingPayment(true);
+            const result = await PaymentAPI.createPayment({
+                userId: user.id,
+                eventId: id,
+                eventName: event?.title || layoutData?.eventName || 'Event',
+                organizerId: layoutData?.organizerId || event?.organizerId || 'unknown',
+                items,
+            });
+
+            if (result.checkoutUrl) {
+                window.location.href = result.checkoutUrl;
+            } else if (result.qrCode) {
+                window.open(result.checkoutUrl || result.qrCode, '_blank');
+            }
+        } catch (err) {
+            console.error('Error creating payment from ZoneSelectionPage:', err);
+            alert('Không thể tạo thanh toán. Vui lòng thử lại.');
+        } finally {
+            setIsProcessingPayment(false);
+        }
+    }, [id, selectedSeats, user, navigate, event, layoutData, selectedZoneData, zones, isProcessingPayment]);
 
     const handleOpen360 = () => {
         navigate(`/event/${id}/venue-3d`);
@@ -206,15 +228,15 @@ export const ZoneSelectionPage: React.FC = () => {
                         </button>
                         <button
                             onClick={handleCheckout}
-                            disabled={selectedSeats.length === 0}
+                            disabled={selectedSeats.length === 0 || isProcessingPayment}
                             className={`font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center gap-2 ${
-                                selectedSeats.length > 0
+                                selectedSeats.length > 0 && !isProcessingPayment
                                     ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
                                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                             }`}
                         >
                             <span className="material-symbols-outlined">shopping_cart</span>
-                            <span>Checkout</span>
+                            <span>{isProcessingPayment ? 'Đang tạo thanh toán...' : 'Checkout'}</span>
                         </button>
                     </div>
                 </div>

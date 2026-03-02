@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { PaymentAPI } from '../../services/paymentApiService';
+import { ROUTES } from '../../constants/routes';
 
 interface Ticket {
   id: string;
@@ -12,65 +15,93 @@ interface Ticket {
   ticketCode: string;
   price: number;
   status: 'active' | 'used' | 'refunded' | 'cancelled';
+  eventId?: string;
+}
+
+type FilterStatus = 'all' | 'active' | 'used' | 'refunded';
+
+const STATUS_LABELS: Record<Ticket['status'], string> = {
+  active: 'Chưa sử dụng',
+  used: 'Đã sử dụng',
+  refunded: 'Đã hoàn tiền',
+  cancelled: 'Đã hủy',
+};
+
+const FILTER_LABELS: Record<FilterStatus, string> = {
+  all: 'Tất cả',
+  active: 'Chưa sử dụng',
+  used: 'Đã sử dụng',
+  refunded: 'Đã hoàn tiền',
+};
+
+/** Map order (paid/refunded) + item → Ticket. Một order nhiều item = nhiều vé. */
+function ordersToTickets(orders: any[]): Ticket[] {
+  const list: Ticket[] = [];
+  const placeholderImg = 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400';
+  for (const order of orders) {
+    if (order.status !== 'paid' && order.status !== 'refunded') continue;
+    const ticketStatus: Ticket['status'] = order.status === 'refunded' ? 'refunded' : 'active';
+    const dateStr = order.paidAt ? new Date(order.paidAt).toISOString().slice(0, 10) : (order.createdAt ? new Date(order.createdAt).toISOString().slice(0, 10) : '');
+    const items = order.items || [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const qty = Math.max(1, Number(item.quantity) || 1);
+      for (let j = 0; j < qty; j++) {
+        list.push({
+          id: `${order._id}-${i}-${j}`,
+          eventName: order.eventName || 'Sự kiện',
+          eventImage: placeholderImg,
+          date: dateStr,
+          location: order.location || '—',
+          zone: item.zoneName || '—',
+          seatNumber: item.seatId || '—',
+          ticketCode: `TV-${order.orderCode}-${i}${qty > 1 ? `-${j + 1}` : ''}`,
+          price: Number(item.price) || 0,
+          status: ticketStatus,
+          eventId: order.eventId,
+        });
+      }
+    }
+  }
+  return list.sort((a, b) => (b.date.localeCompare(a.date)));
 }
 
 export const MyTicketsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'active' | 'used' | 'refunded'>('all');
+  const [filter, setFilter] = useState<FilterStatus>('all');
 
   useEffect(() => {
-    // TODO: Fetch tickets from API
-    // const fetchTickets = async () => {
-    //   try {
-    //     const response = await fetch('/api/my-tickets');
-    //     const data = await response.json();
-    //     setTickets(data);
-    //   } catch (error) {
-    //     console.error('Error fetching tickets:', error);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchTickets();
-
-    // Mock data
-    setTickets([
-      {
-        id: '1',
-        eventName: 'Concert A',
-        eventImage: 'https://via.placeholder.com/300x400',
-        date: '2024-03-15',
-        location: 'Ho Chi Minh City',
-        zone: 'VIP',
-        seatNumber: 'A1',
-        ticketCode: 'TICKET123456',
-        price: 500000,
-        status: 'active',
-      },
-      {
-        id: '2',
-        eventName: 'Sports Event B',
-        eventImage: 'https://via.placeholder.com/300x400',
-        date: '2024-02-10',
-        location: 'Hanoi',
-        zone: 'Standard',
-        seatNumber: 'B5',
-        ticketCode: 'TICKET789012',
-        price: 300000,
-        status: 'used',
-      },
-    ]);
-    setLoading(false);
-  }, []);
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const fetchTickets = async () => {
+      try {
+        const data = await PaymentAPI.getUserOrders(user.id);
+        const orders = Array.isArray(data) ? data : (data as any)?.data ?? [];
+        const mapped = ordersToTickets(orders);
+        if (!cancelled) setTickets(mapped);
+      } catch (error) {
+        console.error('Error fetching tickets from orders:', error);
+        if (!cancelled) setTickets([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchTickets();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const filteredTickets = tickets.filter(ticket => {
     if (filter === 'all') return true;
     return ticket.status === filter;
   });
 
-  const getStatusBadgeColor = (status: string) => {
+  const getStatusBadgeColor = (status: Ticket['status']) => {
     switch (status) {
       case 'active':
         return 'bg-green-500/20 text-green-400';
@@ -85,7 +116,7 @@ export const MyTicketsPage: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: Ticket['status']) => {
     switch (status) {
       case 'active':
         return 'verified';
@@ -100,6 +131,11 @@ export const MyTicketsPage: React.FC = () => {
     }
   };
 
+  if (!user) {
+    navigate(ROUTES.LOGIN);
+    return null;
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -111,8 +147,8 @@ export const MyTicketsPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8 mb-20">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">My Tickets</h1>
-        <p className="text-gray-400">View and manage your event tickets</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Lịch sử mua vé</h1>
+        <p className="text-gray-400">Xem danh sách vé đã mua và trạng thái sử dụng.</p>
       </div>
 
       {/* Filter Tabs */}
@@ -127,7 +163,7 @@ export const MyTicketsPage: React.FC = () => {
                 : 'bg-[#2a2436] text-gray-400 hover:bg-[#342640]'
             }`}
           >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {FILTER_LABELS[status]}
           </button>
         ))}
       </div>
@@ -135,13 +171,16 @@ export const MyTicketsPage: React.FC = () => {
       {filteredTickets.length === 0 ? (
         <div className="text-center py-16">
           <span className="material-symbols-outlined text-6xl text-gray-600 mb-4">confirmation_number</span>
-          <h2 className="text-xl font-semibold text-gray-400 mb-2">No tickets found</h2>
-          <p className="text-gray-500 mb-6">You don't have any {filter !== 'all' ? filter : ''} tickets yet.</p>
+          <h2 className="text-xl font-semibold text-gray-400 mb-2">Không tìm thấy vé</h2>
+          <p className="text-gray-500 mb-6">
+            Bạn chưa có vé
+            {filter !== 'all' ? ` ở trạng thái "${FILTER_LABELS[filter]}"` : ''}.
+          </p>
           <button
-            onClick={() => navigate('/search')}
+            onClick={() => navigate(ROUTES.SEARCH)}
             className="px-6 py-2 bg-[#8655f6] hover:bg-[#7644e0] text-white rounded-lg transition-colors"
           >
-            Buy Tickets
+            Mua vé ngay
           </button>
         </div>
       ) : (
@@ -169,7 +208,7 @@ export const MyTicketsPage: React.FC = () => {
                       <div className="flex flex-wrap gap-3 text-gray-400 text-sm mt-2">
                         <div className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm">calendar_today</span>
-                          {new Date(ticket.date).toLocaleDateString()}
+                          {new Date(ticket.date).toLocaleDateString('vi-VN')}
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm">location_on</span>
@@ -177,27 +216,31 @@ export const MyTicketsPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getStatusBadgeColor(ticket.status)}`}>
+                    <div
+                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getStatusBadgeColor(
+                        ticket.status,
+                      )}`}
+                    >
                       <span className="material-symbols-outlined text-sm">{getStatusIcon(ticket.status)}</span>
-                      {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                      {STATUS_LABELS[ticket.status]}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-500 text-xs mb-1">Zone</p>
+                      <p className="text-gray-500 text-xs mb-1">Khu vực</p>
                       <p className="text-white font-semibold">{ticket.zone}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-xs mb-1">Seat</p>
+                      <p className="text-gray-500 text-xs mb-1">Ghế</p>
                       <p className="text-white font-semibold">{ticket.seatNumber}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-xs mb-1">Price</p>
-                      <p className="text-white font-semibold">{ticket.price.toLocaleString()} đ</p>
+                      <p className="text-gray-500 text-xs mb-1">Giá vé</p>
+                      <p className="text-white font-semibold">{ticket.price.toLocaleString('vi-VN')} đ</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-xs mb-1">Code</p>
+                      <p className="text-gray-500 text-xs mb-1">Mã vé</p>
                       <p className="text-white font-mono text-xs">{ticket.ticketCode}</p>
                     </div>
                   </div>
@@ -208,15 +251,15 @@ export const MyTicketsPage: React.FC = () => {
                   {ticket.status === 'active' && (
                     <>
                       <button className="px-4 py-2 bg-[#8655f6] hover:bg-[#7644e0] text-white rounded-lg text-sm transition-colors">
-                        View QR Code
+                        Xem QR Code
                       </button>
                       <button className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors">
-                        Request Refund
+                        Yêu cầu hoàn tiền
                       </button>
                     </>
                   )}
                   {ticket.status === 'used' && (
-                    <p className="text-gray-400 text-xs text-center">Ticket already used</p>
+                    <p className="text-gray-400 text-xs text-center">Vé đã được sử dụng.</p>
                   )}
                 </div>
               </div>

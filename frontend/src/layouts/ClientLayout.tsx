@@ -15,10 +15,7 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({
     return (
         <div className="relative flex flex-col min-h-screen w-full overflow-y-auto bg-[#151022]">
             {showNavbar && (
-                <Navbar
-                    showSearch={showSearch}
-                    onLoginClick={() => console.log('Login clicked')}
-                />
+                <Navbar showSearch={showSearch} />
             )}
             <main className="flex-1">
                 {children}

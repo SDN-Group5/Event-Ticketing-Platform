@@ -62,11 +62,8 @@ export const TransactionHistoryPage: React.FC = () => {
     let cancelled = false;
     const load = async () => {
       try {
-        console.log('[TransactionHistory] user.id =', user.id);
         const data = await PaymentAPI.getUserOrders(user.id);
-        console.log('[TransactionHistory] API raw data =', data);
         const list = Array.isArray(data) ? data : (data as any)?.data ?? [];
-        console.log('[TransactionHistory] mapped orders length =', list.length);
         if (!cancelled) setOrders(list);
       } catch (err) {
         console.error('Lỗi tải lịch sử giao dịch:', err);
@@ -101,9 +98,9 @@ export const TransactionHistoryPage: React.FC = () => {
         <p className="text-gray-400">Xem tất cả đơn hàng và trạng thái thanh toán.</p>
       </div>
 
-      {/* Filter */}
+      {/* Filter: API chỉ trả về đơn đã thanh toán (paid) / đã hoàn tiền (refunded) */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {(['all', 'paid', 'processing', 'pending', 'cancelled', 'expired', 'refunded'] as const).map((s) => (
+        {(['all', 'paid', 'refunded'] as const).map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s)}

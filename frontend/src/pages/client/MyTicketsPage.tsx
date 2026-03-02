@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { PaymentAPI } from '../../services/paymentApiService';
 import { ROUTES } from '../../constants/routes';
+import { TicketPopup } from '../../components/ticket/TicketPopup';
 
 interface Ticket {
   id: string;
@@ -16,6 +17,7 @@ interface Ticket {
   price: number;
   status: 'active' | 'used' | 'refunded' | 'cancelled';
   eventId?: string;
+  row?: string;
 }
 
 type FilterStatus = 'all' | 'active' | 'used' | 'refunded';
@@ -45,6 +47,27 @@ function ordersToTickets(orders: any[]): Ticket[] {
     const items = order.items || [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
+      let seatNumber: string = item.seatId || '—';
+      let row: string | undefined;
+
+      // Chuẩn hoá seatId để hiển thị đẹp trên vé.
+      // Hỗ trợ 2 format:
+      // - <zoneId>-R{row}-S{seat}
+      // - <anything>-{row}-{seat}
+      if (item.seatId) {
+        let match = item.seatId.match(/-R(\d+)-S(\d+)$/);
+        if (!match) {
+          match = item.seatId.match(/-(\d+)-(\d+)$/);
+        }
+        if (match) {
+          row = match[1];
+          seatNumber = match[2];
+        } else if (item.seatId.length > 10) {
+          // Fallback: cắt bớt chuỗi cho gọn nếu không đúng pattern
+          seatNumber = item.seatId.slice(-6);
+        }
+      }
+
       const qty = Math.max(1, Number(item.quantity) || 1);
       for (let j = 0; j < qty; j++) {
         list.push({
@@ -54,11 +77,12 @@ function ordersToTickets(orders: any[]): Ticket[] {
           date: dateStr,
           location: order.location || '—',
           zone: item.zoneName || '—',
-          seatNumber: item.seatId || '—',
+          seatNumber,
           ticketCode: `TV-${order.orderCode}-${i}${qty > 1 ? `-${j + 1}` : ''}`,
           price: Number(item.price) || 0,
           status: ticketStatus,
           eventId: order.eventId,
+          row,
         });
       }
     }
@@ -72,6 +96,7 @@ export const MyTicketsPage: React.FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterStatus>('all');
+  const [popupTicket, setPopupTicket] = useState<Ticket | null>(null);
 
   useEffect(() => {
     if (!user?.id) {
@@ -184,88 +209,77 @@ export const MyTicketsPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {filteredTickets.map(ticket => (
-            <div
-              key={ticket.id}
-              className="bg-[#2a2436] rounded-xl overflow-hidden hover:shadow-lg transition-all hover:scale-[1.01]"
-            >
-              <div className="flex flex-col md:flex-row">
-                {/* Event Image */}
-                <div className="md:w-32 h-32 flex-shrink-0">
-                  <img
-                    src={ticket.eventImage}
-                    alt={ticket.eventName}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                {/* Ticket Info */}
-                <div className="flex-1 p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
+        <>
+          <div className="space-y-4">
+            {filteredTickets.map(ticket => (
+              <div
+                key={ticket.id}
+                className="bg-[#2a2436] rounded-xl overflow-hidden hover:shadow-lg transition-all"
+              >
+                <div className="flex flex-col sm:flex-row p-4 gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <h3 className="text-white font-bold text-lg">{ticket.eventName}</h3>
-                      <div className="flex flex-wrap gap-3 text-gray-400 text-sm mt-2">
-                        <div className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-sm">calendar_today</span>
-                          {new Date(ticket.date).toLocaleDateString('vi-VN')}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-sm">location_on</span>
-                          {ticket.location}
-                        </div>
-                      </div>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                          ticket.status,
+                        )}`}
+                      >
+                        {STATUS_LABELS[ticket.status]}
+                      </span>
                     </div>
-                    <div
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getStatusBadgeColor(
-                        ticket.status,
-                      )}`}
-                    >
-                      <span className="material-symbols-outlined text-sm">{getStatusIcon(ticket.status)}</span>
-                      {STATUS_LABELS[ticket.status]}
-                    </div>
+                    <p className="text-gray-400 text-sm mb-2">
+                      {new Date(ticket.date).toLocaleDateString('vi-VN')} · {ticket.zone} · Ghế {ticket.seatNumber}
+                    </p>
+                    <p className="text-gray-500 text-xs font-mono">{ticket.ticketCode}</p>
                   </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Khu vực</p>
-                      <p className="text-white font-semibold">{ticket.zone}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Ghế</p>
-                      <p className="text-white font-semibold">{ticket.seatNumber}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Giá vé</p>
-                      <p className="text-white font-semibold">{ticket.price.toLocaleString('vi-VN')} đ</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Mã vé</p>
-                      <p className="text-white font-mono text-xs">{ticket.ticketCode}</p>
-                    </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {ticket.status === 'active' && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setPopupTicket(ticket)}
+                          className="px-4 py-2.5 bg-[#8655f6] hover:bg-[#7644e0] text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-lg">qr_code_2</span>
+                          Xem vé
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigate(ROUTES.REFUND_REQUESTS)}
+                          className="px-4 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
+                        >
+                          Hoàn tiền
+                        </button>
+                      </>
+                    )}
+                    {ticket.status === 'used' && (
+                      <p className="text-gray-400 text-sm">Vé đã sử dụng</p>
+                    )}
+                    {ticket.status === 'refunded' && (
+                      <p className="text-gray-500 text-sm">Đã hoàn tiền</p>
+                    )}
                   </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-col justify-center gap-2 p-4 md:border-l md:border-[#3a3447]">
-                  {ticket.status === 'active' && (
-                    <>
-                      <button className="px-4 py-2 bg-[#8655f6] hover:bg-[#7644e0] text-white rounded-lg text-sm transition-colors">
-                        Xem QR Code
-                      </button>
-                      <button className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors">
-                        Yêu cầu hoàn tiền
-                      </button>
-                    </>
-                  )}
-                  {ticket.status === 'used' && (
-                    <p className="text-gray-400 text-xs text-center">Vé đã được sử dụng.</p>
-                  )}
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <TicketPopup
+            isOpen={!!popupTicket}
+            onClose={() => setPopupTicket(null)}
+            ticket={popupTicket ? {
+              id: popupTicket.id,
+              eventName: popupTicket.eventName,
+              date: popupTicket.date,
+              location: popupTicket.location,
+              zone: popupTicket.zone,
+              seatNumber: popupTicket.seatNumber,
+              ticketCode: popupTicket.ticketCode,
+              row: popupTicket.row,
+            } : null}
+          />
+        </>
       )}
     </div>
   );

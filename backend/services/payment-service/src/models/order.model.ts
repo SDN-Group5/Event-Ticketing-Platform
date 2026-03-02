@@ -102,8 +102,8 @@ const OrderSchema = new Schema(
   { timestamps: true }
 );
 
-// TTL index: tự xoá các order KHÔNG phải paid sau 5 phút
-// Mongo sẽ check theo trường createdAt, chỉ áp dụng cho document có status != 'paid'
+// Nghiệp vụ: chỉ lưu lâu dài những payment đã thanh toán (paid/refunded).
+// TTL index: tự xoá các order KHÔNG phải paid sau 5 phút (pending/processing/cancelled/expired).
 OrderSchema.index(
   { createdAt: 1 },
   {

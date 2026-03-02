@@ -237,12 +237,17 @@ export const getOrder = async (req: Request, res: Response) => {
 
 /**
  * GET /api/payments/user/:userId
- * Lấy danh sách đơn hàng của user
+ * Lấy danh sách đơn hàng của user.
+ * Nghiệp vụ: chỉ lưu/trả về payment trạng thái đã thanh toán (paid) hoặc đã hoàn tiền (refunded).
+ * Đơn pending/processing/cancelled/expired không đưa vào lịch sử (TTL hoặc webhook/verify sẽ xoá).
  */
 export const getUserOrders = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    const orders = await Order.find({
+      userId,
+      status: { $in: ['paid', 'refunded'] },
+    }).sort({ createdAt: -1 });
 
     return res.json({ success: true, data: orders });
   } catch (err: any) {

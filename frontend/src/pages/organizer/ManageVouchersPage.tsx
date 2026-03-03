@@ -1,98 +1,184 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  OrganizerVoucherAPI,
+  VoucherDTO,
+  VoucherInput,
+} from '../../services/voucherApiService';
 
-interface Voucher {
+interface Voucher extends VoucherDTO {
   id: string;
+}
+
+interface VoucherFormState {
   code: string;
   description: string;
   discountType: 'percentage' | 'fixed';
-  discountValue: number;
-  maxUses: number;
-  usedCount: number;
-  startDate: string;
+  discountValue: string;
+  maxUses: string;
   endDate: string;
-  minimumPrice?: number;
+  minimumPrice: string;
   status: 'active' | 'inactive' | 'expired';
 }
 
 export const ManageVouchersPage: React.FC = () => {
+  const { user } = useAuth();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
+  const [form, setForm] = useState<VoucherFormState>({
+    code: '',
+    description: '',
+    discountType: 'percentage',
+    discountValue: '',
+    maxUses: '1',
+    endDate: '',
+    minimumPrice: '',
+    status: 'active',
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Fetch vouchers from API
-    // const fetchVouchers = async () => {
-    //   try {
-    //     const response = await fetch('/api/organizer/vouchers');
-    //     const data = await response.json();
-    //     setVouchers(data);
-    //   } catch (error) {
-    //     console.error('Error fetching vouchers:', error);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchVouchers();
+    const fetchVouchers = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const data = await OrganizerVoucherAPI.listMyVouchers(user.id);
+        const mapped: Voucher[] = data.map((v) => ({
+          ...v,
+          id: v._id,
+        }));
+        setVouchers(mapped);
+      } catch (err) {
+        console.error('Error fetching vouchers:', err);
+        setError('Không tải được danh sách voucher');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Mock data
-    setVouchers([
-      {
-        id: '1',
-        code: 'SUMMER50',
-        description: '50% off summer events',
-        discountType: 'percentage',
-        discountValue: 50,
-        maxUses: 100,
-        usedCount: 45,
-        startDate: '2024-01-01',
-        endDate: '2024-06-30',
-        status: 'active',
-      },
-      {
-        id: '2',
-        code: 'FLAT100K',
-        description: 'Flat 100K discount',
-        discountType: 'fixed',
-        discountValue: 100000,
-        maxUses: 200,
-        usedCount: 180,
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
-        minimumPrice: 500000,
-        status: 'active',
-      },
-      {
-        id: '3',
-        code: 'OLDCODE',
-        description: 'Expired voucher',
-        discountType: 'percentage',
-        discountValue: 20,
-        maxUses: 50,
-        usedCount: 50,
-        startDate: '2023-01-01',
-        endDate: '2023-12-31',
-        status: 'expired',
-      },
-    ]);
-    setLoading(false);
-  }, []);
+    fetchVouchers();
+  }, [user?.id]);
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this voucher?')) {
-      setVouchers(vouchers.filter(v => v.id !== id));
-      // TODO: Call API to delete voucher
-    }
+    if (!user?.id) return;
+    if (!window.confirm('Bạn có chắc muốn xoá voucher này?')) return;
+
+    (async () => {
+      try {
+        await OrganizerVoucherAPI.deleteVoucher(user.id, id);
+        setVouchers((prev) => prev.filter((v) => v.id !== id));
+      } catch (err) {
+        console.error('Error deleting voucher:', err);
+        setError('Xoá voucher thất bại');
+      }
+    })();
   };
 
   const handleEdit = (voucher: Voucher) => {
     setEditingVoucher(voucher);
+    setForm({
+      code: voucher.code,
+      description: voucher.description || '',
+      discountType: voucher.discountType,
+      discountValue: String(voucher.discountValue),
+      maxUses: String(voucher.maxUses),
+      endDate: voucher.endDate ? voucher.endDate.slice(0, 10) : '',
+      minimumPrice:
+        voucher.minimumPrice != null ? String(voucher.minimumPrice) : '',
+      status: voucher.status,
+    });
+    setError(null);
     setShowModal(true);
   };
 
   const handleCreateNew = () => {
     setEditingVoucher(null);
+    setForm({
+      code: '',
+      description: '',
+      discountType: 'percentage',
+      discountValue: '',
+      maxUses: '1',
+      endDate: '',
+      minimumPrice: '',
+      status: 'active',
+    });
+    setError(null);
     setShowModal(true);
+  };
+
+  const handleFormChange = (
+    field: keyof VoucherFormState,
+    value: string,
+  ) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const buildPayloadFromForm = (): VoucherInput => {
+    return {
+      code: form.code.trim().toUpperCase(),
+      description: form.description.trim() || undefined,
+      discountType: form.discountType,
+      discountValue: Number(form.discountValue || 0),
+      maxUses: Number(form.maxUses || 1),
+      endDate: form.endDate || undefined,
+      minimumPrice: form.minimumPrice
+        ? Number(form.minimumPrice)
+        : undefined,
+      status: form.status,
+    };
+  };
+
+  const handleSave = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const payload = buildPayloadFromForm();
+
+      if (!payload.code || !payload.discountValue || !payload.maxUses) {
+        setError('Vui lòng nhập đủ mã, giá trị giảm và số lượt dùng');
+        setSaving(false);
+        return;
+      }
+
+      if (editingVoucher) {
+        const updated = await OrganizerVoucherAPI.updateVoucher(
+          user.id,
+          editingVoucher.id,
+          payload,
+        );
+        setVouchers((prev) =>
+          prev.map((v) =>
+            v.id === editingVoucher.id ? { ...updated, id: updated._id } : v,
+          ),
+        );
+      } else {
+        const created = await OrganizerVoucherAPI.createVoucher(
+          user.id,
+          payload,
+        );
+        setVouchers((prev) => [{ ...created, id: created._id }, ...prev]);
+      }
+
+      setShowModal(false);
+    } catch (err: any) {
+      console.error('Error saving voucher:', err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Lưu voucher thất bại';
+      setError(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -105,6 +191,65 @@ export const ManageVouchersPage: React.FC = () => {
         return 'bg-red-500/20 text-red-400';
       default:
         return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'ACTIVE';
+      case 'inactive':
+        return 'DISABLED';
+      case 'expired':
+        return 'EXPIRED';
+      default:
+        return status.toUpperCase();
+    }
+  };
+
+  const handleToggleStatus = async (voucher: Voucher) => {
+    if (!user?.id) return;
+    if (voucher.status === 'expired') return;
+
+    const newStatus: VoucherFormState['status'] =
+      voucher.status === 'active' ? 'inactive' : 'active';
+
+    setTogglingId(voucher.id);
+    setError(null);
+
+    // Optimistic update
+    setVouchers(prev =>
+      prev.map(v =>
+        v.id === voucher.id ? { ...v, status: newStatus } : v,
+      ),
+    );
+
+    try {
+      const updated = await OrganizerVoucherAPI.updateVoucher(user.id, voucher.id, {
+        status: newStatus,
+      });
+
+      setVouchers(prev =>
+        prev.map(v =>
+          v.id === voucher.id ? { ...updated, id: updated._id } : v,
+        ),
+      );
+    } catch (err: any) {
+      console.error('Error toggling voucher status:', err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Không thể cập nhật trạng thái voucher';
+      setError(msg);
+
+      // Revert on error
+      setVouchers(prev =>
+        prev.map(v =>
+          v.id === voucher.id ? { ...v, status: voucher.status } : v,
+        ),
+      );
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -153,13 +298,31 @@ export const ManageVouchersPage: React.FC = () => {
             >
               {/* Voucher Header */}
               <div className="bg-gradient-to-r from-[#8655f6] to-[#d946ef] p-4">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center gap-4">
                   <div>
                     <h3 className="text-white font-bold text-xl tracking-wide">{voucher.code}</h3>
                     <p className="text-white/80 text-sm mt-1">{voucher.description}</p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(voucher.status)}`}>
-                    {voucher.status.toUpperCase()}
+                  <div className="flex flex-col items-end gap-2">
+                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(voucher.status)}`}>
+                      {getStatusLabel(voucher.status)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStatus(voucher)}
+                      disabled={voucher.status === 'expired' || togglingId === voucher.id}
+                      className={`w-12 h-6 rounded-full flex items-center px-1 transition-all ${
+                        voucher.status === 'active'
+                          ? 'bg-emerald-500/80'
+                          : 'bg-gray-500/70'
+                      } ${voucher.status === 'expired' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <span
+                        className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
+                          voucher.status === 'active' ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -245,6 +408,12 @@ export const ManageVouchersPage: React.FC = () => {
             </div>
 
             <div className="p-6 space-y-4">
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/40 text-red-300 text-sm rounded-lg px-3 py-2">
+                  {error}
+                </div>
+              )}
+
               {/* Form Fields */}
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Voucher Code</label>
@@ -252,7 +421,8 @@ export const ManageVouchersPage: React.FC = () => {
                   type="text"
                   placeholder="e.g., SUMMER50"
                   className="w-full bg-[#2a2436] border border-[#3a3447] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#8655f6]"
-                  defaultValue={editingVoucher?.code}
+                  value={form.code}
+                  onChange={(e) => handleFormChange('code', e.target.value)}
                 />
               </div>
 
@@ -262,16 +432,28 @@ export const ManageVouchersPage: React.FC = () => {
                   type="text"
                   placeholder="Describe this voucher"
                   className="w-full bg-[#2a2436] border border-[#3a3447] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#8655f6]"
-                  defaultValue={editingVoucher?.description}
+                  value={form.description}
+                  onChange={(e) =>
+                    handleFormChange('description', e.target.value)
+                  }
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Type</label>
-                  <select className="w-full bg-[#2a2436] border border-[#3a3447] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#8655f6]">
-                    <option value="percentage">Percentage</option>
-                    <option value="fixed">Fixed Amount</option>
+                  <select
+                    className="w-full bg-[#2a2436] border border-[#3a3447] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#8655f6]"
+                    value={form.discountType}
+                    onChange={(e) =>
+                      handleFormChange(
+                        'discountType',
+                        e.target.value as VoucherFormState['discountType'],
+                      )
+                    }
+                  >
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="fixed">Fixed Amount (đ)</option>
                   </select>
                 </div>
                 <div>
@@ -280,7 +462,10 @@ export const ManageVouchersPage: React.FC = () => {
                     type="number"
                     placeholder="0"
                     className="w-full bg-[#2a2436] border border-[#3a3447] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#8655f6]"
-                    defaultValue={editingVoucher?.discountValue}
+                    value={form.discountValue}
+                    onChange={(e) =>
+                      handleFormChange('discountValue', e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -292,7 +477,10 @@ export const ManageVouchersPage: React.FC = () => {
                     type="number"
                     placeholder="0"
                     className="w-full bg-[#2a2436] border border-[#3a3447] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#8655f6]"
-                    defaultValue={editingVoucher?.maxUses}
+                    value={form.maxUses}
+                    onChange={(e) =>
+                      handleFormChange('maxUses', e.target.value)
+                    }
                   />
                 </div>
                 <div>
@@ -300,9 +488,30 @@ export const ManageVouchersPage: React.FC = () => {
                   <input
                     type="date"
                     className="w-full bg-[#2a2436] border border-[#3a3447] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#8655f6]"
-                    defaultValue={editingVoucher?.endDate}
+                    value={form.endDate}
+                    onChange={(e) =>
+                      handleFormChange('endDate', e.target.value)
+                    }
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Status</label>
+                <select
+                  className="w-full bg-[#2a2436] border border-[#3a3447] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#8655f6]"
+                  value={form.status}
+                  onChange={(e) =>
+                    handleFormChange(
+                      'status',
+                      e.target.value as VoucherFormState['status'],
+                    )
+                  }
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Disabled</option>
+                  <option value="expired">Expired</option>
+                </select>
               </div>
 
               <div>
@@ -311,7 +520,10 @@ export const ManageVouchersPage: React.FC = () => {
                   type="number"
                   placeholder="0"
                   className="w-full bg-[#2a2436] border border-[#3a3447] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#8655f6]"
-                  defaultValue={editingVoucher?.minimumPrice}
+                  value={form.minimumPrice}
+                  onChange={(e) =>
+                    handleFormChange('minimumPrice', e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -324,13 +536,15 @@ export const ManageVouchersPage: React.FC = () => {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  // TODO: Call API to create/update voucher
-                }}
+                onClick={handleSave}
+                disabled={saving}
                 className="flex-1 px-4 py-2 bg-[#8655f6] hover:bg-[#7644e0] text-white rounded-lg transition-colors"
               >
-                {editingVoucher ? 'Update' : 'Create'}
+                {saving
+                  ? 'Saving...'
+                  : editingVoucher
+                  ? 'Update'
+                  : 'Create'}
               </button>
             </div>
           </div>

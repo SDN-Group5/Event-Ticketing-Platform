@@ -9,7 +9,6 @@ export const CheckoutPage: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [hasAttemptedCreate, setHasAttemptedCreate] = useState(false);
   const [paymentData, setPaymentData] = useState<{
     qrCode: string;
     checkoutUrl: string;
@@ -19,6 +18,9 @@ export const CheckoutPage: React.FC = () => {
     organizerAmount: number;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeAccuracy, setAgreeAccuracy] = useState(false);
 
   const checkoutData = location.state;
 
@@ -37,6 +39,7 @@ export const CheckoutPage: React.FC = () => {
     seats,
     ticketCount = seats?.length || 1,
     total,
+    voucherCode,
   } = checkoutData;
 
   // Chuẩn hoá chuỗi QR từ PayOS để <img src="..."> hiển thị đúng
@@ -61,6 +64,10 @@ export const CheckoutPage: React.FC = () => {
    * - Trạng thái đơn hàng sau đó được kiểm tra lại bằng PaymentAPI.verifyPayment(orderCode).
    */
   const handleCreatePayment = useCallback(async () => {
+    if (!agreeTerms || !agreePrivacy || !agreeAccuracy) {
+      setError('Vui lòng đọc và đồng ý với điều khoản, chính sách bảo mật và xác nhận thông tin đơn hàng.');
+      return;
+    }
     if (!user) {
       navigate(ROUTES.LOGIN);
       return;
@@ -91,6 +98,7 @@ export const CheckoutPage: React.FC = () => {
         eventName: eventName || 'Event',
         organizerId: organizerId || 'unknown',
         items,
+        voucherCode: (voucherCode as string | undefined) || undefined,
       });
 
       // Auto redirect thẳng sang trang thanh toán PayOS,
@@ -116,16 +124,7 @@ export const CheckoutPage: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [user, navigate, eventId, eventName, organizerId, seats, zone, ticketCount]);
-
-  useEffect(() => {
-    // Tự động gọi tạo thanh toán đúng 1 lần khi vào trang,
-    // tránh loop gọi lại liên tục khi bị lỗi server.
-    if (!paymentData && !isProcessing && !hasAttemptedCreate) {
-      setHasAttemptedCreate(true);
-      void handleCreatePayment();
-    }
-  }, [paymentData, isProcessing, hasAttemptedCreate, handleCreatePayment]);
+  }, [user, navigate, eventId, eventName, organizerId, seats, zone, ticketCount, voucherCode, agreeTerms, agreePrivacy, agreeAccuracy]);
 
   const handleOpenPayOS = () => {
     if (paymentData?.checkoutUrl) {
@@ -200,9 +199,48 @@ export const CheckoutPage: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Consent checkboxes */}
+                  <div className="mb-6 space-y-3 text-left max-w-md mx-auto text-sm">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agreeTerms}
+                        onChange={(e) => setAgreeTerms(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-gray-500 bg-transparent"
+                      />
+                      <span>
+                        Tôi đã đọc và đồng ý với <span className="font-semibold">điều khoản huỷ/đổi vé</span> của sự kiện
+                        (vé đã mua chỉ có thể huỷ theo chính sách của ban tổ chức).
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agreePrivacy}
+                        onChange={(e) => setAgreePrivacy(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-gray-500 bg-transparent"
+                      />
+                      <span>
+                        Tôi đồng ý để hệ thống xử lý dữ liệu cá nhân của tôi theo{' '}
+                        <span className="font-semibold">chính sách bảo mật thông tin khách hàng</span>.
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agreeAccuracy}
+                        onChange={(e) => setAgreeAccuracy(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-gray-500 bg-transparent"
+                      />
+                      <span>
+                        Tôi xác nhận <span className="font-semibold">thông tin đơn hàng (sự kiện, ngày giờ, số lượng vé) là chính xác</span>.
+                      </span>
+                    </label>
+                  </div>
+
                   <button
                     onClick={handleCreatePayment}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !agreeTerms || !agreePrivacy || !agreeAccuracy}
                     className="px-8 py-4 rounded-xl bg-gradient-to-r from-[#8655f6] to-[#d946ef] text-white font-bold text-lg hover:shadow-lg hover:shadow-[#8655f6]/30 transition-all disabled:opacity-50 flex items-center justify-center gap-3 mx-auto"
                   >
                     {isProcessing ? (
@@ -363,10 +401,16 @@ export const CheckoutPage: React.FC = () => {
                 </span>
               </div>
 
-              <p className="text-center text-xs text-gray-500 mt-6 flex items-center justify-center gap-1">
-                <span className="material-symbols-outlined text-sm">verified_user</span>
-                Thanh toán bảo mật qua PayOS
-              </p>
+              <div className="mt-6 space-y-2 text-xs text-gray-400">
+                <div className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">info</span>
+                  <span>Vui lòng kiểm tra kỹ thông tin trước khi xác nhận thanh toán.</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">verified_user</span>
+                  <span>Thanh toán được xử lý an toàn qua PayOS, thông tin khách hàng được bảo mật.</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -25,26 +25,26 @@ const createProxy = (target: string, pathRewrite?: Record<string, string>): Opti
    */
   timeout: 60_000,
   proxyTimeout: 60_000,
-  // Đã gom onError và onProxyReq vào trong thuộc tính "on"
-  on: {
-    error: (err, req, res: any) => {
-      console.error(`[Proxy Error] ${target}:`, err.message);
-      if (!res.headersSent) {
-        res.status(503).json({
-          success: false,
-          message: `Service unavailable: ${target}`,
-          error: err.message,
-        });
-      }
-    },
-    proxyReq: (proxyReq, req) => {
-      // Forward cookies/headers nếu cần
-      if (req.headers.cookie) {
-        proxyReq.setHeader('Cookie', req.headers.cookie);
-      }
-    },
+  /**
+   * Xử lý lỗi từ upstream (http-proxy-middleware v2 dùng onError/onProxyReq ở cấp root).
+   */
+  onError: (err, req, res: any) => {
+    console.error(`[Proxy Error] ${target}:`, err.message);
+    if (!res.headersSent) {
+      res.status(503).json({
+        success: false,
+        message: `Service unavailable: ${target}`,
+        error: err.message,
+      });
+    }
   },
-});
+  onProxyReq: (proxyReq, req) => {
+    // Forward cookies/headers nếu cần
+    if (req.headers.cookie) {
+      proxyReq.setHeader('Cookie', req.headers.cookie);
+    }
+  },
+} as Options);
 
 // ============================================
 // SETUP ROUTES

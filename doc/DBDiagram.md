@@ -206,3 +206,34 @@ Table order_items {
   price       int    [not null]                           // giá 1 vé của item
   quantity    int    [not null, default: 1]               // số lượng vé cho item
 }
+
+///////////////////////////////////////////////////////
+// VOUCHERS / DISCOUNT SERVICE - MÃ GIẢM GIÁ & VOUCHER
+///////////////////////////////////////////////////////
+
+Table vouchers {
+  id             string [pk, note: 'Mongo ObjectId']           // id voucher
+
+  code           varchar [unique, not null]                    // mã voucher (SUMMER50, CANCEL50-1234,...)
+  description    varchar                                       // mô tả ngắn
+
+  discount_type  varchar [not null, note: 'percentage|fixed']  // kiểu giảm giá
+  discount_value int    [not null]                             // % hoặc số tiền giảm
+
+  max_uses       int    [not null, default: 1]                 // số lần dùng tối đa
+  used_count     int    [not null, default: 0]                 // đã dùng bao nhiêu lần
+
+  start_date     datetime                                      // ngày bắt đầu áp dụng
+  end_date       datetime                                      // ngày hết hạn
+
+  minimum_price  int                                           // đơn tối thiểu để áp dụng
+
+  status         varchar [not null, note: 'active|inactive|expired'] // trạng thái
+
+  organizer_id   string [ref: > users.id]                      // organizer sở hữu voucher (nếu có)
+  event_id       string [ref: > events.id]                     // chỉ dùng cho 1 event (nếu có)
+  user_id        string [ref: > users.id]                      // voucher cá nhân hoá (huỷ vé thì cấp riêng cho user)
+
+  created_at     datetime
+  updated_at     datetime
+}

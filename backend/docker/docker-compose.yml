@@ -39,9 +39,12 @@ services:
       dockerfile: Dockerfile
     ports:
       - "4002:4002"
+    env_file:
+      - ../.env
     environment:
       - PORT=4002
       - MONGODB_URI=${MONGODB_ATLAS_URI:-mongodb://host.docker.internal:27017/Ticket}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-me}
     networks:
       - ticketing-network
     restart: unless-stopped

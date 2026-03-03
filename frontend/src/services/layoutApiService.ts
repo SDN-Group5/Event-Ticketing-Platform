@@ -82,6 +82,12 @@ export const LayoutAPI = {
         return data.data!;
     },
 
+    /** Get my layouts (createdBy current user) */
+    getMyLayouts: async (): Promise<EventLayout[]> => {
+        const { data } = await api.get<ApiResponse<EventLayout[]>>('/layouts/mine');
+        return data.data!;
+    },
+
     /** Get layout by Event ID */
     getLayout: async (eventId: string): Promise<EventLayout> => {
         const { data } = await api.get<ApiResponse<EventLayout>>(`/layouts/event/${eventId}`);

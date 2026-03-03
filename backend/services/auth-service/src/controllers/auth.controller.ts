@@ -57,9 +57,19 @@ export const login = async (req: Request, res: Response) => {
             { userId: user._id },
             process.env.JWT_SECRET_KEY as string,
             {
-              expiresIn: "1d",
+              // Thời gian sống của phiên đăng nhập: 7 ngày
+              expiresIn: "7d",
             }
           );
+
+        // Set JWT vào httpOnly cookie để dùng cho web
+        const cookieMaxAgeMs = 7 * 24 * 60 * 60 * 1000; // 7 ngày
+        res.cookie("jwt", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: cookieMaxAgeMs,
+        });
       
         console.log(`✅ [LOGIN] Success for user ${email} (role=${user.role})`);
 

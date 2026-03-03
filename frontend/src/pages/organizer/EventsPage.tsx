@@ -1,76 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LayoutAPI } from '../../services/layoutApiService';
+import { useAuth } from '../../contexts/AuthContext';
+import type { EventLayout, LayoutZone } from '../../types/layout';
 
 interface OrganizerEvent {
-  id: string;
+  eventId: string;
   name: string;
-  image: string;
-  date: string;
-  location: string;
+  image?: string;
+  date?: string;
+  location?: string;
   ticketsSold: number;
   totalCapacity: number;
   revenue: number;
-  status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
+  status: 'published' | 'completed';
 }
 
 export const EventsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'draft' | 'published' | 'ongoing' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'published' | 'completed'>('all');
+
+  const sumSeatMetadata = (zones: LayoutZone[]) => {
+    let totalCapacity = 0;
+    let ticketsSold = 0;
+    let revenue = 0;
+
+    for (const z of zones || []) {
+      if (z.type !== 'seats') continue;
+      const meta = (z as any).seatMetadata as
+        | { totalSeats?: number; soldSeats?: number }
+        | undefined;
+
+      const zoneTotal = meta?.totalSeats ?? 0;
+      const zoneSold = meta?.soldSeats ?? 0;
+      const price = typeof z.price === 'number' ? z.price : 0;
+
+      totalCapacity += zoneTotal;
+      ticketsSold += zoneSold;
+      revenue += zoneSold * price;
+    }
+
+    return { totalCapacity, ticketsSold, revenue };
+  };
+
+  const mapLayoutToOrganizerEvent = (layout: EventLayout): OrganizerEvent => {
+    const { totalCapacity, ticketsSold, revenue } = sumSeatMetadata(layout.zones || []);
+    const eventDateMs = layout.eventDate ? new Date(layout.eventDate).getTime() : NaN;
+    const status: OrganizerEvent['status'] =
+      Number.isFinite(eventDateMs) && eventDateMs < Date.now() ? 'completed' : 'published';
+
+    return {
+      eventId: String(layout.eventId),
+      name: layout.eventName || 'Untitled event',
+      image: layout.eventImage,
+      date: layout.eventDate,
+      location: layout.eventLocation,
+      ticketsSold,
+      totalCapacity,
+      revenue,
+      status,
+    };
+  };
 
   useEffect(() => {
-    // TODO: Fetch organizer's events from API
-    // const fetchEvents = async () => {
-    //   try {
-    //     const response = await fetch('/api/organizer/events');
-    //     const data = await response.json();
-    //     setEvents(data);
-    //   } catch (error) {
-    //     console.error('Error fetching events:', error);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchEvents();
+    const fetchEvents = async () => {
+      try {
+        if (!user?.id) {
+          setEvents([]);
+          return;
+        }
 
-    // Mock data
-    setEvents([
-      {
-        id: '1',
-        name: 'Summer Music Festival',
-        image: 'https://via.placeholder.com/400x250',
-        date: '2024-06-15',
-        location: 'Ho Chi Minh City',
-        ticketsSold: 850,
-        totalCapacity: 1000,
-        revenue: 425000000,
-        status: 'published',
-      },
-      {
-        id: '2',
-        name: 'Tech Conference 2024',
-        image: 'https://via.placeholder.com/400x250',
-        date: '2024-05-20',
-        location: 'Hanoi',
-        ticketsSold: 320,
-        totalCapacity: 500,
-        revenue: 96000000,
-        status: 'ongoing',
-      },
-      {
-        id: '3',
-        name: 'Art Exhibition',
-        image: 'https://via.placeholder.com/400x250',
-        date: '2024-04-10',
-        location: 'Da Nang',
-        ticketsSold: 450,
-        totalCapacity: 600,
-        revenue: 45000000,
-        status: 'completed',
-      },
-    ]);
-    setLoading(false);
+        const layouts = await LayoutAPI.getMyLayouts();
+        const mapped = (layouts || []).map(mapLayoutToOrganizerEvent);
+        setEvents(mapped);
+      } catch (error) {
+        console.error('Error fetching organizer events (from EventLayout):', error);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
   }, []);
 
   const filteredEvents = events.filter(event => {
@@ -80,16 +94,10 @@ export const EventsPage: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft':
-        return 'bg-gray-500/20 text-gray-400';
       case 'published':
         return 'bg-green-500/20 text-green-400';
-      case 'ongoing':
-        return 'bg-blue-500/20 text-blue-400';
       case 'completed':
         return 'bg-purple-500/20 text-purple-400';
-      case 'cancelled':
-        return 'bg-red-500/20 text-red-400';
       default:
         return 'bg-gray-500/20 text-gray-400';
     }
@@ -97,16 +105,10 @@ export const EventsPage: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'draft':
-        return 'draft';
       case 'published':
         return 'check_circle';
-      case 'ongoing':
-        return 'radio_button_checked';
       case 'completed':
         return 'done_all';
-      case 'cancelled':
-        return 'cancel';
       default:
         return 'info';
     }
@@ -140,7 +142,7 @@ export const EventsPage: React.FC = () => {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {(['all', 'draft', 'published', 'ongoing', 'completed'] as const).map(status => (
+        {(['all', 'published', 'completed'] as const).map(status => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -170,14 +172,14 @@ export const EventsPage: React.FC = () => {
         <div className="space-y-4">
           {filteredEvents.map(event => (
             <div
-              key={event.id}
+              key={event.eventId}
               className="bg-[#2a2436] rounded-xl overflow-hidden hover:shadow-lg transition-all hover:scale-[1.01]"
             >
               <div className="flex flex-col md:flex-row">
                 {/* Event Image */}
                 <div className="md:w-48 h-40 flex-shrink-0">
                   <img
-                    src={event.image}
+                    src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'}
                     alt={event.name}
                     className="w-full h-full object-cover"
                   />
@@ -191,11 +193,11 @@ export const EventsPage: React.FC = () => {
                       <div className="flex flex-wrap gap-3 text-gray-400 text-sm mt-2">
                         <div className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm">calendar_today</span>
-                          {new Date(event.date).toLocaleDateString()}
+                          {event.date ? new Date(event.date).toLocaleDateString() : 'TBD'}
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm">location_on</span>
-                          {event.location}
+                          {event.location || 'TBD'}
                         </div>
                       </div>
                     </div>
@@ -216,7 +218,7 @@ export const EventsPage: React.FC = () => {
                     <div className="w-full bg-[#3a3447] rounded-full h-2">
                       <div
                         className="bg-gradient-to-r from-[#8655f6] to-[#d946ef] h-2 rounded-full transition-all"
-                        style={{ width: `${fillPercentage(event.ticketsSold, event.totalCapacity)}%` }}
+                        style={{ width: `${event.totalCapacity > 0 ? fillPercentage(event.ticketsSold, event.totalCapacity) : 0}%` }}
                       ></div>
                     </div>
                   </div>
@@ -229,7 +231,9 @@ export const EventsPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-gray-500 text-xs mb-1">Occupancy</p>
-                      <p className="text-white font-bold">{fillPercentage(event.ticketsSold, event.totalCapacity).toFixed(1)}%</p>
+                      <p className="text-white font-bold">
+                        {(event.totalCapacity > 0 ? fillPercentage(event.ticketsSold, event.totalCapacity) : 0).toFixed(1)}%
+                      </p>
                     </div>
                   </div>
 
@@ -241,11 +245,6 @@ export const EventsPage: React.FC = () => {
                     <button className="px-4 py-2 bg-[#3a3447] hover:bg-[#3a3447]/80 text-gray-300 rounded-lg text-sm transition-colors">
                       Edit
                     </button>
-                    {event.status === 'draft' && (
-                      <button className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-sm transition-colors">
-                        Publish
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>

@@ -31,9 +31,9 @@ const api = axios.create({
     timeout: 10000, // 10 second timeout
 });
 
-// Add auth token interceptor if needed
+// Add auth token interceptor (dùng chung key với AuthContext)
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
 
     // Log request details

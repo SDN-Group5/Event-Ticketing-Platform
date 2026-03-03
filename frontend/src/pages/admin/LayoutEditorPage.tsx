@@ -1071,8 +1071,9 @@ export const LayoutEditorPage: React.FC = () => {
                             Show Seats
                         </label>
                         <button
-                            onClick={() => navigate('/venue-3d')}
-                            className="px-4 py-2 text-sm border border-slate-700 rounded-lg font-medium hover:bg-white/5"
+                            onClick={() => selectedEventId ? navigate(`/event/${selectedEventId}/venue-3d`) : null}
+                            disabled={!selectedEventId}
+                            className="px-4 py-2 text-sm border border-slate-700 rounded-lg font-medium hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Preview
                         </button>

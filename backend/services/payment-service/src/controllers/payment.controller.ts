@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import PayOS from '@payos/node';
+import axios from 'axios';
 import { Order } from '../models/order.model';
 import { Voucher } from '../models/voucher.model';
 import { transferToOrganizerBank } from '../services/bankTransfer.service';
@@ -8,6 +9,7 @@ import { markSeatsSoldForOrder } from '../services/seatPurchase.service';
 
 const COMMISSION_RATE = 0.05; // 5% hoa hồng mặc định cho app
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL || 'http://localhost:3001';
 
 const PAYOS_CLIENT_ID = process.env.PAYOS_CLIENT_ID;
 const PAYOS_API_KEY = process.env.PAYOS_API_KEY;
@@ -76,6 +78,26 @@ function generateOrderCode(): number {
   const timestamp = Date.now() % 1_000_000_000;
   const random = Math.floor(Math.random() * 1000);
   return timestamp * 1000 + random;
+}
+
+async function markSeatsSold(order: any): Promise<void> {
+  if (!order.items || order.items.length === 0) return;
+  const seatIds = order.items
+    .filter((item: any) => item.seatId)
+    .map((item: any) => item.seatId);
+  if (seatIds.length === 0) return;
+  try {
+    const url = `${LAYOUT_SERVICE_URL}/api/v1/events/${order.eventId}/seats/bulk-sold`;
+    await axios.post(url, {
+      seatIds,
+      userId: order.userId,
+      bookingId: String(order.orderCode),
+    }, { timeout: 5000 });
+    console.log(`[markSeatsSold] Marked ${seatIds.length} seats as sold for order ${order.orderCode}`);
+  } catch (err: any) {
+    // Non-fatal: log and continue. Seats may not exist yet if not generated.
+    console.warn(`[markSeatsSold] Could not update seat status:`, err?.message || err);
+  }
 }
 
 async function runAutoPayout(order: any): Promise<void> {
@@ -388,8 +410,6 @@ export const handleWebhook = async (req: Request, res: Response) => {
         order.status = 'paid';
         order.paidAt = new Date();
 
-        // Đánh dấu ghế đã bán + auto payout cho organizer
-        await markSeatsSoldForOrder(order);
         await runAutoPayout(order);
         await order.save();
       }
@@ -485,7 +505,6 @@ export const verifyPayment = async (req: Request, res: Response) => {
     if (paymentInfo.status === 'PAID' && currentStatus !== 'paid') {
       order.status = 'paid';
       order.paidAt = new Date();
-      await markSeatsSoldForOrder(order);
       await runAutoPayout(order);
       await order.save();
 

@@ -96,7 +96,7 @@ export const VenueLayoutPage: React.FC = () => {
                             <h3 className="font-bold text-lg">Zones</h3>
                             <button
                                 onClick={handleAddZone}
-                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
+                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0 aspect-square"
                             >
                                 +
                             </button>
@@ -108,8 +108,8 @@ export const VenueLayoutPage: React.FC = () => {
                                     key={zone.id}
                                     onClick={() => setSelectedZoneId(zone.id)}
                                     className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedZoneId === zone.id
-                                            ? 'bg-[#8655f6]/10 border-[#8655f6]'
-                                            : 'bg-[#151022] border-white/5 hover:border-white/20'
+                                        ? 'bg-[#8655f6]/10 border-[#8655f6]'
+                                        : 'bg-[#151022] border-white/5 hover:border-white/20'
                                         }`}
                                 >
                                     <div className="flex justify-between items-start mb-3">

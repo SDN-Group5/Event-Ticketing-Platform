@@ -300,7 +300,7 @@ export const ZoneSelectionPage: React.FC = () => {
             <header className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => navigate(`/event/${id}`)}
+                        onClick={() => navigate(ROUTES.HOME)}
                         className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors shrink-0"
                     >
                         <span className="material-symbols-outlined">arrow_back</span>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { PaymentAPI } from '../../services/paymentApiService';
+import { RefundAPI } from '../../services/refundApiService';
 import { ROUTES } from '../../constants/routes';
 import { TicketPopup } from '../../components/ticket/TicketPopup';
 
@@ -25,7 +26,7 @@ type FilterStatus = 'all' | 'active' | 'used' | 'refunded';
 const STATUS_LABELS: Record<Ticket['status'], string> = {
   active: 'Chưa sử dụng',
   used: 'Đã sử dụng',
-  refunded: 'Đã hoàn tiền',
+  refunded: 'Đã huỷ (voucher 50%)',
   cancelled: 'Đã hủy',
 };
 
@@ -97,6 +98,10 @@ export const MyTicketsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [popupTicket, setPopupTicket] = useState<Ticket | null>(null);
+  const [cancelLoading, setCancelLoading] = useState<string | null>(null);
+  const [cancelTicketTarget, setCancelTicketTarget] = useState<Ticket | null>(null);
+  const [agreeNoRefund, setAgreeNoRefund] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
 
   useEffect(() => {
     if (!user?.id) {
@@ -153,6 +158,50 @@ export const MyTicketsPage: React.FC = () => {
         return 'cancel';
       default:
         return 'info';
+    }
+  };
+
+  const canConfirmCancel =
+    !!cancelTicketTarget && agreeNoRefund && agreePrivacy && !cancelLoading;
+
+  const resetCancelModal = () => {
+    setCancelTicketTarget(null);
+    setAgreeNoRefund(false);
+    setAgreePrivacy(false);
+    setCancelLoading(null);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelTicketTarget || !user?.id) return;
+
+    // Lấy orderCode từ ticketCode: TV-{orderCode}-{index}
+    const match = cancelTicketTarget.ticketCode.match(/^TV-(\d+)-/);
+    const orderCode = match ? match[1] : null;
+    if (!orderCode) {
+      alert('Không xác định được đơn hàng để huỷ.');
+      return;
+    }
+    try {
+      setCancelLoading(cancelTicketTarget.id);
+      const res = await RefundAPI.cancelPaidOrderWithVoucher(orderCode);
+      console.log('cancel-with-voucher result', res);
+      alert(
+        'Đã huỷ vé và cấp voucher 50% giá trị đơn. Vui lòng kiểm tra email hoặc mục voucher.',
+      );
+      // Reload lịch sử vé để cập nhật trạng thái
+      const data = await PaymentAPI.getUserOrders(user.id);
+      const orders = Array.isArray(data) ? data : (data as any)?.data ?? [];
+      const mapped = ordersToTickets(orders);
+      setTickets(mapped);
+      resetCancelModal();
+    } catch (err: any) {
+      console.error('Error cancel ticket with voucher:', err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Huỷ vé thất bại, vui lòng thử lại.';
+      alert(msg);
+      setCancelLoading(null);
     }
   };
 
@@ -246,10 +295,18 @@ export const MyTicketsPage: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => navigate(ROUTES.REFUND_REQUESTS)}
-                          className="px-4 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
+                          onClick={() => {
+                            setCancelTicketTarget(ticket);
+                            setAgreeNoRefund(false);
+                            setAgreePrivacy(false);
+                          }}
+                          className="px-4 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                          disabled={cancelLoading === ticket.id}
                         >
-                          Hoàn tiền
+                          <span className="material-symbols-outlined text-lg">
+                            {cancelLoading === ticket.id ? 'hourglass_top' : 'redeem'}
+                          </span>
+                          {cancelLoading === ticket.id ? 'Đang huỷ...' : 'Huỷ vé (nhận voucher)'}
                         </button>
                       </>
                     )}
@@ -257,7 +314,9 @@ export const MyTicketsPage: React.FC = () => {
                       <p className="text-gray-400 text-sm">Vé đã sử dụng</p>
                     )}
                     {ticket.status === 'refunded' && (
-                      <p className="text-gray-500 text-sm">Đã hoàn tiền</p>
+                      <p className="text-gray-500 text-sm">
+                        Đã huỷ vé và cấp voucher 50% giá trị đơn
+                      </p>
                     )}
                   </div>
                 </div>
@@ -279,6 +338,133 @@ export const MyTicketsPage: React.FC = () => {
               row: popupTicket.row,
             } : null}
           />
+
+          {/* Huỷ vé + voucher confirm modal */}
+          {cancelTicketTarget && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4">
+              <div className="bg-[#1e1828] border border-[#3a3447] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <div className="p-5 border-b border-[#3a3447] flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-white mb-1">
+                      Xác nhận huỷ vé (nhận voucher)
+                    </h2>
+                    <p className="text-xs text-gray-400">
+                      Vui lòng đọc kỹ chính sách trước khi tiếp tục. Sau khi huỷ sẽ không thể
+                      khôi phục vé.
+                    </p>
+                  </div>
+                  <button
+                    onClick={resetCancelModal}
+                    className="p-1 rounded-full hover:bg-white/10 text-gray-400"
+                  >
+                    <span className="material-symbols-outlined text-lg">close</span>
+                  </button>
+                </div>
+
+                <div className="p-5 space-y-4 text-sm text-gray-200">
+                  <div className="bg-[#261b3a] rounded-xl p-4 border border-[#3a3447]">
+                    <p className="font-semibold text-white mb-2">
+                      Vé: {cancelTicketTarget.eventName}
+                    </p>
+                    <p className="text-xs text-gray-400 mb-1">
+                      Ghế {cancelTicketTarget.zone} · Ghế {cancelTicketTarget.seatNumber}
+                    </p>
+                    <p className="text-xs text-gray-500 font-mono">
+                      Mã vé: {cancelTicketTarget.ticketCode}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 text-xs text-gray-300">
+                    <p className="font-semibold text-white">Lưu ý huỷ vé:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>
+                        Sau khi huỷ, <span className="font-semibold">vé sẽ mất hiệu lực vĩnh viễn</span>{' '}
+                        và không thể khôi phục.
+                      </li>
+                      <li>
+                        Bạn <span className="font-semibold">không được hoàn tiền</span>. Hệ thống sẽ
+                        cấp <span className="font-semibold">1 voucher giảm giá 50% giá trị đơn</span>{' '}
+                        (sử dụng trong 30 ngày).
+                      </li>
+                      <li>
+                        Ghế của bạn sẽ được trả về trạng thái trống để người khác có thể mua lại.
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-2 text-xs text-gray-300">
+                    <p className="font-semibold text-white">
+                      Chính sách bảo mật & xử lý dữ liệu khách hàng:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>
+                        Thông tin cá nhân và lịch sử giao dịch của bạn được sử dụng để cấp voucher và
+                        quản lý đơn hàng theo quy định.
+                      </li>
+                      <li>
+                        Chúng tôi không chia sẻ dữ liệu cá nhân cho bên thứ ba ngoài các đối tác thanh
+                        toán/đối tác tổ chức sự kiện liên quan.
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-3 pt-2 border-t border-[#3a3447]">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agreeNoRefund}
+                        onChange={(e) => setAgreeNoRefund(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-500 bg-transparent"
+                      />
+                      <span>
+                        Tôi hiểu rằng <span className="font-semibold">hệ thống sẽ không hoàn tiền</span> và
+                        chỉ cấp voucher 50% giá trị đơn hàng.
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agreePrivacy}
+                        onChange={(e) => setAgreePrivacy(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-500 bg-transparent"
+                      />
+                      <span>
+                        Tôi đồng ý với việc xử lý dữ liệu cá nhân theo{' '}
+                        <span className="font-semibold">chính sách bảo mật thông tin khách hàng</span>.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="p-5 border-t border-[#3a3447] flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={resetCancelModal}
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-[#3a3447] text-gray-200 hover:bg-[#4a3e5a]"
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmCancel}
+                    disabled={!canConfirmCancel}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                      canConfirmCancel
+                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        : 'bg-red-500/40 text-red-200 cursor-not-allowed'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      {cancelLoading === cancelTicketTarget.id ? 'hourglass_top' : 'redeem'}
+                    </span>
+                    {cancelLoading === cancelTicketTarget.id
+                      ? 'Đang huỷ...'
+                      : 'Xác nhận huỷ vé & nhận voucher'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

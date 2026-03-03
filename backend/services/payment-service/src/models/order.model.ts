@@ -39,6 +39,11 @@ export interface IOrder extends Document {
   payosCheckoutUrl?: string;
   qrCode?: string;
 
+  // Voucher / discount info (snapshot)
+  voucherCode?: string;
+  voucherDiscount?: number;
+  voucherId?: string;
+
   paidAt?: Date;
   cancelledAt?: Date;
 }
@@ -95,6 +100,10 @@ const OrderSchema = new Schema(
     payosPaymentLinkId: { type: String },
     payosCheckoutUrl: { type: String },
     qrCode: { type: String },
+
+    voucherCode: { type: String },
+    voucherDiscount: { type: Number },
+    voucherId: { type: String },
 
     paidAt: { type: Date },
     cancelledAt: { type: Date },

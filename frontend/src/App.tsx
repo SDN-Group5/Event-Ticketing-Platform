@@ -16,7 +16,6 @@ import {
   SearchPage,
   EventDetailsPage,
   ZoneSelectionPage,
-  CheckoutPage,
   PaymentSuccessPage,
   PaymentCancelPage,
   ProfilePage,

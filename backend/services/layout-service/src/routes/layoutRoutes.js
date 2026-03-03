@@ -7,19 +7,18 @@ import {
     validateLayout,
     getAllLayouts
 } from '../controllers/layoutController.js';
-
-// ... (middleware)
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Public or Authenticated routes
+// Public routes
 router.get('/', getAllLayouts); // GET /api/v1/layouts
 router.get('/event/:eventId', getLayoutByEvent);
 
-// Protected routes (Organizer/Admin)
-router.post('/', createLayout);
-router.put('/event/:eventId', updateLayout);
-router.delete('/event/:eventId', deleteLayout);
-router.post('/validate', validateLayout);
+// Protected routes (Organizer/Admin) - cần token để lấy createdBy
+router.post('/', requireAuth, createLayout);
+router.put('/event/:eventId', requireAuth, updateLayout);
+router.delete('/event/:eventId', requireAuth, deleteLayout);
+router.post('/validate', requireAuth, validateLayout);
 
 export default router;

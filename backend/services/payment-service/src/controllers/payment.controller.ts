@@ -1,10 +1,15 @@
 import { Request, Response } from 'express';
 import PayOS from '@payos/node';
+import axios from 'axios';
 import { Order } from '../models/order.model';
+import { Voucher } from '../models/voucher.model';
 import { transferToOrganizerBank } from '../services/bankTransfer.service';
+import { releaseSeatsForOrder } from '../services/seatRelease.service';
+import { markSeatsSoldForOrder } from '../services/seatPurchase.service';
 
 const COMMISSION_RATE = 0.05; // 5% hoa hồng mặc định cho app
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL || 'http://localhost:3001';
 
 const PAYOS_CLIENT_ID = process.env.PAYOS_CLIENT_ID;
 const PAYOS_API_KEY = process.env.PAYOS_API_KEY;
@@ -75,6 +80,26 @@ function generateOrderCode(): number {
   return timestamp * 1000 + random;
 }
 
+async function markSeatsSold(order: any): Promise<void> {
+  if (!order.items || order.items.length === 0) return;
+  const seatIds = order.items
+    .filter((item: any) => item.seatId)
+    .map((item: any) => item.seatId);
+  if (seatIds.length === 0) return;
+  try {
+    const url = `${LAYOUT_SERVICE_URL}/api/v1/events/${order.eventId}/seats/bulk-sold`;
+    await axios.post(url, {
+      seatIds,
+      userId: order.userId,
+      bookingId: String(order.orderCode),
+    }, { timeout: 5000 });
+    console.log(`[markSeatsSold] Marked ${seatIds.length} seats as sold for order ${order.orderCode}`);
+  } catch (err: any) {
+    // Non-fatal: log and continue. Seats may not exist yet if not generated.
+    console.warn(`[markSeatsSold] Could not update seat status:`, err?.message || err);
+  }
+}
+
 async function runAutoPayout(order: any): Promise<void> {
   if (!order.organizerAmount || order.organizerAmount <= 0) {
     order.payoutStatus = 'skipped';
@@ -133,7 +158,15 @@ export const createPayment = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: 'Thiếu userId - hãy đăng nhập' });
     }
 
-    const { eventId, eventName, organizerId, items, organizerBank, channel: rawChannel } = req.body;
+    const {
+      eventId,
+      eventName,
+      organizerId,
+      items,
+      organizerBank,
+      channel: rawChannel,
+      voucherCode: rawVoucherCode,
+    } = req.body;
 
     if (!eventId || !eventName || !organizerId || !items?.length) {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin đơn hàng' });
@@ -141,14 +174,101 @@ export const createPayment = async (req: Request, res: Response) => {
 
     const channel: PayOSChannel = rawChannel === 'mobile' ? 'mobile' : 'jsp';
 
+    // Business rule: không giữ lại các đơn chưa thanh toán.
+    // Trước khi tạo order mới, xoá tất cả order cũ của user chưa paid (pending/processing/expired/cancelled...).
+    await Order.deleteMany({ userId, status: { $ne: 'paid' } });
+
     const subtotal = items.reduce(
       (sum: number, item: any) => sum + item.price * (item.quantity || 1),
       0
     );
 
-    const commissionAmount = Math.round(subtotal * COMMISSION_RATE);
-    const organizerAmount = subtotal - commissionAmount;
-    const totalAmount = subtotal;
+    // ================== ÁP DỤNG VOUCHER (NẾU CÓ) ==================
+    let totalAmount = subtotal;
+    let voucherDiscount = 0;
+    let voucherCode: string | undefined;
+    let voucherId: string | undefined;
+
+    if (rawVoucherCode) {
+      const normalizedCode = String(rawVoucherCode).trim().toUpperCase();
+      const now = new Date();
+
+      const voucher = await Voucher.findOne({
+        code: normalizedCode,
+        status: 'active',
+        $or: [
+          { startDate: { $exists: false } },
+          { startDate: { $lte: now } },
+        ],
+      });
+
+      if (!voucher) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mã voucher không hợp lệ hoặc không tồn tại',
+        });
+      }
+
+      if (voucher.endDate && voucher.endDate < now) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mã voucher đã hết hạn',
+        });
+      }
+
+      if (voucher.maxUses && voucher.usedCount >= voucher.maxUses) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mã voucher đã được sử dụng tối đa số lần cho phép',
+        });
+      }
+
+      if (voucher.minimumPrice && subtotal < voucher.minimumPrice) {
+        return res.status(400).json({
+          success: false,
+          message: `Đơn hàng phải tối thiểu ${voucher.minimumPrice} để dùng mã này`,
+        });
+      }
+
+      // Nếu voucher gắn với 1 event cụ thể thì enforce
+      if (voucher.eventId && voucher.eventId !== eventId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mã voucher không áp dụng cho sự kiện này',
+        });
+      }
+
+      // Nếu voucher cá nhân hoá cho 1 user
+      if (voucher.userId && voucher.userId !== userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mã voucher này chỉ áp dụng cho tài khoản đã được cấp',
+        });
+      }
+
+      // Tính số tiền được giảm
+      if (voucher.discountType === 'percentage') {
+        voucherDiscount = Math.floor(
+          (subtotal * Number(voucher.discountValue || 0)) / 100,
+        );
+      } else {
+        voucherDiscount = Number(voucher.discountValue || 0);
+      }
+
+      if (voucherDiscount < 0) voucherDiscount = 0;
+      if (voucherDiscount > subtotal) voucherDiscount = subtotal;
+
+      totalAmount = subtotal - voucherDiscount;
+      voucherCode = normalizedCode;
+      voucherId = voucher._id.toString();
+
+      // Tăng đếm dùng voucher (optimistic, không quá quan trọng tính chính xác 100%)
+      voucher.usedCount += 1;
+      await voucher.save();
+    }
+
+    const commissionAmount = Math.round(totalAmount * COMMISSION_RATE);
+    const organizerAmount = totalAmount - commissionAmount;
     const orderCode = generateOrderCode();
 
     const order = await Order.create({
@@ -164,6 +284,9 @@ export const createPayment = async (req: Request, res: Response) => {
       commissionAmount,
       organizerAmount,
       totalAmount,
+      voucherCode,
+      voucherDiscount,
+      voucherId,
       channel,
       status: 'pending',
     });
@@ -233,12 +356,17 @@ export const getOrder = async (req: Request, res: Response) => {
 
 /**
  * GET /api/payments/user/:userId
- * Lấy danh sách đơn hàng của user
+ * Lấy danh sách đơn hàng của user.
+ * Nghiệp vụ: chỉ lưu/trả về payment trạng thái đã thanh toán (paid) hoặc đã hoàn tiền (refunded).
+ * Đơn pending/processing/cancelled/expired không đưa vào lịch sử (TTL hoặc webhook/verify sẽ xoá).
  */
 export const getUserOrders = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    const orders = await Order.find({
+      userId,
+      status: { $in: ['paid', 'refunded'] },
+    }).sort({ createdAt: -1 });
 
     return res.json({ success: true, data: orders });
   } catch (err: any) {
@@ -283,16 +411,21 @@ export const handleWebhook = async (req: Request, res: Response) => {
         order.paidAt = new Date();
 
         await runAutoPayout(order);
+        await order.save();
       }
-    } else if (paymentInfo.status === 'CANCELLED') {
-      order.status = 'cancelled';
-      order.cancelledAt = new Date();
-    } else if (paymentInfo.status === 'EXPIRED') {
-      order.status = 'expired';
+      console.log(`[webhook] Order ${orderCode} → paid | payoutStatus=${order.payoutStatus}`);
+    } else if (paymentInfo.status === 'CANCELLED' || paymentInfo.status === 'EXPIRED') {
+      // Yêu cầu business: không lưu các order bị huỷ / hết hạn
+      await releaseSeatsForOrder(order);
+      await Order.deleteOne({ _id: order._id });
+      console.log(
+        `[webhook] Order ${orderCode} bị ${paymentInfo.status}, đã xoá khỏi database theo yêu cầu business.`
+      );
+    } else {
+      console.log(
+        `[webhook] Order ${orderCode} nhận trạng thái PayOS=${paymentInfo.status}, không thay đổi dữ liệu.`
+      );
     }
-
-    await order.save();
-    console.log(`[webhook] Order ${orderCode} → ${order.status} | payoutStatus=${order.payoutStatus}`);
 
     return res.json({ success: true });
   } catch (err: any) {
@@ -327,11 +460,12 @@ export const cancelPayment = async (req: Request, res: Response) => {
       }
     }
 
-    order.status = 'cancelled';
-    order.cancelledAt = new Date();
-    await order.save();
+    // Yêu cầu business: khi user huỷ thanh toán thì xoá luôn order
+    // và trả ghế về trạng thái trống (nếu có)
+    await releaseSeatsForOrder(order);
+    await Order.deleteOne({ _id: order._id });
 
-    return res.json({ success: true, data: order });
+    return res.json({ success: true, data: null, message: 'Đơn hàng đã được huỷ và xoá khỏi hệ thống' });
   } catch (err: any) {
     console.error('[cancelPayment] Error:', err);
     return res.status(500).json({ success: false, message: err.message });
@@ -352,12 +486,16 @@ export const verifyPayment = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
     }
 
-    if (order.status === 'paid') {
-      return res.json({ success: true, data: { status: 'paid', order } });
-    }
-
     if (!order.payosPaymentLinkId) {
-      return res.json({ success: true, data: { status: order.status, order } });
+      // Nếu không có paymentLinkId thì coi như order này không hợp lệ
+      return res.json({
+        success: true,
+        data: {
+          status: order.status,
+          order,
+          payosStatus: 'UNKNOWN',
+        },
+      });
     }
 
     const payosClient = getPayOSClient((order as any).channel);
@@ -369,16 +507,36 @@ export const verifyPayment = async (req: Request, res: Response) => {
       order.paidAt = new Date();
       await runAutoPayout(order);
       await order.save();
-    } else if (paymentInfo.status === 'CANCELLED' && currentStatus !== 'cancelled') {
-      order.status = 'cancelled';
-      order.cancelledAt = new Date();
-      await order.save();
+
+      return res.json({
+        success: true,
+        data: {
+          status: 'paid',
+          order,
+          payosStatus: paymentInfo.status,
+        },
+      });
     }
 
+    if (paymentInfo.status === 'CANCELLED' || paymentInfo.status === 'EXPIRED') {
+      // Yêu cầu business: xoá các order không thanh toán thành công
+      await Order.deleteOne({ _id: order._id });
+
+      return res.json({
+        success: true,
+        data: {
+          status: 'deleted',
+          order: null,
+          payosStatus: paymentInfo.status,
+        },
+      });
+    }
+
+    // Các trạng thái khác: trả về hiện trạng, không chỉnh sửa DB
     return res.json({
       success: true,
       data: {
-        status: order.status,
+        status: currentStatus,
         order,
         payosStatus: paymentInfo.status,
       },
@@ -386,5 +544,130 @@ export const verifyPayment = async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('[verifyPayment] Error:', err);
     return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * POST /api/payments/cancel-with-voucher/:orderCode
+ * Huỷ vé đã thanh toán theo dạng "không hoàn tiền" nhưng cấp voucher 50% giá trị đơn
+ * + cố gắng trả ghế về trạng thái trống ở seat service.
+ *
+ * Yêu cầu:
+ * - order.status phải là 'paid'
+ * - userId trong header/body phải trùng với order.userId
+ */
+export const cancelPaidOrderWithVoucher = async (req: Request, res: Response) => {
+  try {
+    const { orderCode } = req.params;
+    const userId =
+      (req.headers['x-user-id'] as string) ||
+      (req.body && (req.body.userId as string));
+
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: 'Thiếu userId (header x-user-id hoặc body.userId)' });
+    }
+
+    const order = await Order.findOne({ orderCode: Number(orderCode) });
+
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Không tìm thấy đơn hàng' });
+    }
+
+    if (order.userId !== userId) {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Bạn không có quyền huỷ đơn hàng này' });
+    }
+
+    if (order.status !== 'paid') {
+      return res.status(400).json({
+        success: false,
+        message: 'Chỉ có thể huỷ các đơn đã thanh toán (paid)',
+      });
+    }
+
+    const totalAmount = Number(order.totalAmount || 0);
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Đơn hàng không hợp lệ để cấp voucher',
+      });
+    }
+
+    // Tính giá trị voucher = 50% giá trị đơn
+    const voucherValue = Math.floor(totalAmount * 0.5);
+    if (voucherValue <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Số tiền đơn hàng quá nhỏ, không thể cấp voucher',
+      });
+    }
+
+    // Tạo code voucher tương đối unique
+    const baseCode = `CANCEL-${order.orderCode}`;
+    let code = baseCode;
+    let suffix = 0;
+    // Tránh trùng code nếu user huỷ nhiều lần (hoặc retry)
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      // eslint-disable-next-line no-await-in-loop
+      const exists = await Voucher.findOne({ code });
+      if (!exists) break;
+      suffix += 1;
+      code = `${baseCode}-${suffix}`;
+    }
+
+    const now = new Date();
+    const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // +30 ngày
+
+    const voucher = await Voucher.create({
+      code,
+      description: `Voucher 50% giá trị đơn ${order.orderCode}`,
+      discountType: 'fixed',
+      discountValue: voucherValue,
+      maxUses: 1,
+      usedCount: 0,
+      startDate: now,
+      endDate,
+      minimumPrice: undefined,
+      status: 'active',
+      organizerId: order.organizerId,
+      eventId: order.eventId,
+      userId: order.userId,
+    });
+
+    // Cập nhật order:
+    // - đánh dấu là "refunded" (để FE hiện là đã xử lý)
+    // - lưu lại thông tin voucher đã cấp
+    order.status = 'refunded';
+    order.cancelledAt = new Date();
+    (order as any).voucherCode = voucher.code;
+    (order as any).voucherDiscount = voucher.discountValue;
+    (order as any).voucherId = voucher._id.toString();
+    await order.save();
+
+    // Best-effort: gọi sang seat service để trả ghế về trạng thái trống
+    await releaseSeatsForOrder(order);
+
+    return res.json({
+      success: true,
+      data: {
+        orderCode: order.orderCode,
+        status: order.status,
+        voucher,
+      },
+      message:
+        'Đơn hàng đã được huỷ theo chính sách voucher. Đã cấp voucher 50% giá trị đơn và trả ghế về trống (nếu có).',
+    });
+  } catch (err: any) {
+    console.error('[cancelPaidOrderWithVoucher] Error:', err);
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Lỗi huỷ đơn + cấp voucher',
+    });
   }
 };

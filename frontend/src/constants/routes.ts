@@ -11,6 +11,7 @@ export const ROUTES = {
   PROFILE: '/profile',
   WISHLIST: '/wishlist',
   MY_TICKETS: '/my-tickets',
+  TRANSACTION_HISTORY: '/transaction-history',
   REFUND_REQUESTS: '/refund-requests',
 
   // Auth routes

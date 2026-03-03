@@ -6,10 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import TabNavigator from './TabNavigator';
 
 // Auth Screens
-import LoginScreen from '../screens/auth/LoginScreen';
+import Login from '../screens/auth/LoginScreen';
 import CreateAccount from '../screens/auth/CreateAccount';
-import ForgotPassword from '../screens/auth/ForgotPassword';
-import VerifyEmail from '../screens/auth/VerifyEmail';
 
 // App Screens
 import EventDetail from '../screens/EventDetail';
@@ -22,7 +20,10 @@ import SeatMapDesigner from '../screens/organizer/SeatMapDesigner';
 import EditProfile from '../screens/EditProfile';
 import SecuritySettings from '../screens/auth/SecuritySettings';
 import Notifications from '../screens/Notifications';
-import Explore from '../screens/Explore';
+import UserScreen from '../screens/user/UserHomeScreen';
+import StaffScreen from '../screens/staff/StaffHomeScreen';
+import ScanTicket from '../screens/ScanTicket';
+import MyEvents from '../screens/MyEvents';
 
 const Stack = createNativeStackNavigator();
 
@@ -31,7 +32,17 @@ export default function AppNavigator() {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0a0014' } }}>
-      {auth.role !== 'guest' ? (
+      {auth.role === 'staff' ? (
+        // Staff is signed in
+        <Stack.Group>
+          <Stack.Screen name="StaffScreen" component={StaffScreen} />
+          <Stack.Screen name="ScanTicket" component={ScanTicket} />
+          <Stack.Screen name="MyEvents" component={MyEvents} />
+          <Stack.Screen name="CreateEvent" component={CreateEvent} />
+          <Stack.Screen name="EventDetail" component={EventDetail} />
+          <Stack.Screen name="Notifications" component={Notifications} />
+        </Stack.Group>
+      ) : auth.role === 'user' ? (
         // User is signed in
         <Stack.Group>
           <Stack.Screen name="MainTabs" component={TabNavigator} />
@@ -45,15 +56,12 @@ export default function AppNavigator() {
           <Stack.Screen name="EditProfile" component={EditProfile} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettings} />
           <Stack.Screen name="Notifications" component={Notifications} />
-          <Stack.Screen name="Explore" component={Explore} />
         </Stack.Group>
       ) : (
         // User is NOT signed in
         <Stack.Group>
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="CreateAccount" component={CreateAccount} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-          <Stack.Screen name="VerifyEmail" component={VerifyEmail} />
         </Stack.Group>
       )}
     </Stack.Navigator>

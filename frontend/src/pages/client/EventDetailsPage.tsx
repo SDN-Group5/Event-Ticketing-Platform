@@ -82,10 +82,9 @@ export const EventDetailsPage: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#151022] via-[#151022]/40 to-transparent" />
                 <button
                     onClick={() => navigate('/')}
-                    className="absolute top-4 left-4 flex items-center gap-2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full text-white hover:bg-black/60 transition-colors"
+                    className="absolute top-4 left-4 w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full text-white hover:bg-black/60 transition-colors shrink-0 p-0"
                 >
                     <span className="material-symbols-outlined">arrow_back</span>
-                    Back
                 </button>
                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-10 max-w-[1280px] mx-auto">
                     <h1 className="text-4xl md:text-6xl font-bold mb-2">{event.eventName || 'Untitled Event'}</h1>

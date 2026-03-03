@@ -27,6 +27,7 @@ export interface CreatePaymentInput {
     price: number;
     quantity: number;
   }[];
+  voucherCode?: string;
 }
 
 export interface PaymentResponse {

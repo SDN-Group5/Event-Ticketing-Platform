@@ -16,12 +16,12 @@ import {
   SearchPage,
   EventDetailsPage,
   ZoneSelectionPage,
-  CheckoutPage,
   PaymentSuccessPage,
   PaymentCancelPage,
   ProfilePage,
   WishlistPage,
   MyTicketsPage,
+  TransactionHistoryPage,
   RefundRequestPage,
 } from './pages/client';
 import Venue3DPage from './pages/client/Venue3DPage';
@@ -87,22 +87,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/event/:id/venue-3d" element={<Venue3DPage />} />
 
       {/* Protected Client Routes */}
-      <Route
-        path={ROUTES.CHECKOUT}
-        element={
-          <ProtectedRoute allowedRoles={['customer']}>
-            <CheckoutPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.PAYMENT_SUCCESS}
-        element={
-          <ProtectedRoute allowedRoles={['customer']}>
-            <PaymentSuccessPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path={ROUTES.PAYMENT_SUCCESS} element={<PaymentSuccessPage />} />
       <Route path={ROUTES.PAYMENT_CANCEL} element={<PaymentCancelPage />} />
       <Route
         path={ROUTES.PROFILE}
@@ -125,6 +110,14 @@ const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute allowedRoles={['customer']}>
             <ClientLayout><MyTicketsPage /></ClientLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.TRANSACTION_HISTORY}
+        element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <ClientLayout><TransactionHistoryPage /></ClientLayout>
           </ProtectedRoute>
         }
       />
@@ -306,22 +299,22 @@ const AppRoutes: React.FC = () => {
 
 // Main App Content
 const AppContent: React.FC = () => {
-    return (
-        <div>
-            <AppRoutes />
-        </div>
-    );
+  return (
+    <div>
+      <AppRoutes />
+    </div>
+  );
 };
 
 // Main App Component
 const App: React.FC = () => {
-    return (
-        <Router>
-            <AuthProvider>
-                <AppContent />
-            </AuthProvider>
-        </Router>
-    );
+  return (
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </Router>
+  );
 };
 
 export default App;

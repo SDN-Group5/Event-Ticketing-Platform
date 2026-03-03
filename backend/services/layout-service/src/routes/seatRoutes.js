@@ -123,4 +123,62 @@ router.delete('/events/:eventId/seats/:seatId/reservation', authenticate, async 
     }
 });
 
+/**
+ * POST /api/v1/events/:eventId/seats/bulk-sold
+ * Body: { seatIds: string[], userId, bookingId }
+ * Marks seats as sold by zoneId. seatId format: "zoneId-row-seatNum" (last two segments are row and seatNumber)
+ */
+router.post('/events/:eventId/seats/bulk-sold', async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { seatIds, userId, bookingId } = req.body;
+
+        if (!seatIds || !seatIds.length) {
+            return res.status(400).json({ error: 'seatIds is required' });
+        }
+
+        // Parse zoneId, row, seatNumber from seatId string like "zone-1772464570867-3miaaphot-3-4"
+        // Last two segments are row and seatNumber; everything before is zoneId
+        const updates = [];
+        for (const rawSeatId of seatIds) {
+            const parts = rawSeatId.split('-');
+            if (parts.length < 4) continue;
+            const seatNumber = parseInt(parts[parts.length - 1]);
+            const row = parseInt(parts[parts.length - 2]);
+            const zoneId = parts.slice(0, parts.length - 2).join('-');
+            updates.push({ zoneId, row, seatNumber });
+        }
+
+        const mongoose = (await import('mongoose')).default;
+        const objectIdEventId = new mongoose.Types.ObjectId(eventId);
+        const results = [];
+
+        for (const { zoneId, row, seatNumber } of updates) {
+            const seat = await Seat.findOneAndUpdate(
+                { eventId: objectIdEventId, zoneId, row, seatNumber, status: { $ne: 'sold' } },
+                {
+                    $set: {
+                        status: 'sold',
+                        soldBy: userId || null,
+                        soldAt: new Date(),
+                        ...(mongoose.Types.ObjectId.isValid(bookingId) ? { bookingId } : {}),
+                        reservationExpiry: null,
+                    },
+                    $inc: { version: 1 }
+                },
+                { new: true }
+            );
+            if (seat) {
+                results.push(seat);
+                // Update zone cache
+                try { await seatService.updateZoneCache(seat.layoutId, zoneId); } catch (_) { }
+            }
+        }
+
+        res.json({ success: true, updated: results.length, seats: results });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 export default router;

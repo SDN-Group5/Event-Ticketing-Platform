@@ -7,6 +7,15 @@ import {
   cancelPayment,
   verifyPayment,
 } from '../controllers/payment.controller';
+import {
+  cancelPaidOrderWithVoucher,
+} from '../controllers/payment.controller';
+import {
+  getOrganizerVouchers,
+  createVoucher,
+  updateVoucher,
+  deleteVoucher,
+} from '../controllers/voucher.controller';
 
 const router = Router();
 
@@ -27,5 +36,21 @@ router.get('/user/:userId', getUserOrders);
 
 // Huỷ đơn hàng
 router.post('/cancel/:orderCode', cancelPayment);
+
+// Huỷ đơn đã thanh toán nhưng cấp voucher 50% thay vì hoàn tiền
+router.post('/cancel-with-voucher/:orderCode', cancelPaidOrderWithVoucher);
+
+// ================== VOUCHERS (ORGANIZER) ==================
+// Lấy danh sách voucher của organizer hiện tại
+router.get('/organizer/vouchers', getOrganizerVouchers);
+
+// Tạo voucher mới
+router.post('/organizer/vouchers', createVoucher);
+
+// Cập nhật voucher
+router.put('/organizer/vouchers/:id', updateVoucher);
+
+// Xoá voucher
+router.delete('/organizer/vouchers/:id', deleteVoucher);
 
 export default router;

@@ -519,7 +519,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
     }
 
     if (paymentInfo.status === 'CANCELLED' || paymentInfo.status === 'EXPIRED') {
-      // Yêu cầu business: xoá các order không thanh toán thành công
+      await releaseSeatsForOrder(order);
       await Order.deleteOne({ _id: order._id });
 
       return res.json({

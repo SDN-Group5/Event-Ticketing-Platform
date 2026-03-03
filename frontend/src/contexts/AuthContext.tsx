@@ -79,6 +79,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
+                // Cho phép trình duyệt nhận & gửi cookie (jwt) với request này
+                credentials: 'include',
             });
 
             const data = await response.json();

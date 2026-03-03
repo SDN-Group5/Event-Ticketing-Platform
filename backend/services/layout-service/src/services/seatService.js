@@ -1,6 +1,7 @@
 import Seat from '../models/Seat.js';
 import EventLayout from '../models/EventLayout.js';
 import mongoose from 'mongoose';
+import { broadcastSeatUpdate } from '../socket.js';
 
 class SeatService {
     /**
@@ -88,23 +89,11 @@ class SeatService {
     }
 
     /**
-     * Reserve seat với timeout
+     * Reserve seat với timeout (mặc định 5 phút)
+     * Không giới hạn số ghế mỗi user, chỉ cần seat còn available.
      */
-    async reserveSeat(eventId, zoneId, row, seatNumber, userId, timeoutMinutes = 15) {
+    async reserveSeat(eventId, zoneId, row, seatNumber, userId, timeoutMinutes = 5) {
         const objectIdEventId = new mongoose.Types.ObjectId(eventId);
-
-        // Check if the user already has reserved or sold seats for this event
-        const existingSeatsCount = await Seat.countDocuments({
-            eventId: objectIdEventId,
-            $or: [
-                { status: 'reserved', reservedBy: userId },
-                { status: 'sold', soldBy: userId }
-            ]
-        });
-
-        if (existingSeatsCount >= 2) {
-            throw new Error('You can only lock and buy up to 2 seats per event.');
-        }
 
         const expiryTime = new Date(Date.now() + timeoutMinutes * 60 * 1000);
 
@@ -132,8 +121,13 @@ class SeatService {
             throw new Error('Seat not available');
         }
 
-        // ✨ HYBRID: Update cache
         await this.updateZoneCache(seat.layoutId, zoneId);
+
+        broadcastSeatUpdate(eventId, [{
+            zoneId, row, seatNumber,
+            status: 'reserved',
+            reservedBy: userId,
+        }]);
 
         return seat;
     }
@@ -165,8 +159,12 @@ class SeatService {
             throw new Error('Seat not reserved by this user');
         }
 
-        // ✨ HYBRID: Update cache
         await this.updateZoneCache(seat.layoutId, seat.zoneId);
+
+        broadcastSeatUpdate(String(seat.eventId), [{
+            zoneId: seat.zoneId, row: seat.row, seatNumber: seat.seatNumber,
+            status: 'sold',
+        }]);
 
         return seat;
     }
@@ -197,8 +195,12 @@ class SeatService {
             throw new Error('Seat not found or not reserved by this user');
         }
 
-        // ✨ HYBRID: Update cache
         await this.updateZoneCache(seat.layoutId, seat.zoneId);
+
+        broadcastSeatUpdate(String(seat.eventId), [{
+            zoneId: seat.zoneId, row: seat.row, seatNumber: seat.seatNumber,
+            status: 'available',
+        }]);
 
         return seat;
     }
@@ -230,15 +232,27 @@ class SeatService {
             }
         );
 
-        // ✨ HYBRID: Update cache for affected zones
         const affectedZones = new Map();
+        const eventBroadcasts = new Map();
+
         expiredSeats.forEach(seat => {
-            const key = `${seat.layoutId}-${seat.zoneId}`;
-            affectedZones.set(key, { layoutId: seat.layoutId, zoneId: seat.zoneId });
+            const zKey = `${seat.layoutId}-${seat.zoneId}`;
+            affectedZones.set(zKey, { layoutId: seat.layoutId, zoneId: seat.zoneId });
+
+            const eId = String(seat.eventId);
+            if (!eventBroadcasts.has(eId)) eventBroadcasts.set(eId, []);
+            eventBroadcasts.get(eId).push({
+                zoneId: seat.zoneId, row: seat.row, seatNumber: seat.seatNumber,
+                status: 'available',
+            });
         });
 
         for (const { layoutId, zoneId } of affectedZones.values()) {
             await this.updateZoneCache(layoutId, zoneId);
+        }
+
+        for (const [eventId, seats] of eventBroadcasts) {
+            broadcastSeatUpdate(eventId, seats);
         }
 
         return expiredSeats;

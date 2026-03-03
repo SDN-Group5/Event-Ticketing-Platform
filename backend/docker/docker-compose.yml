@@ -63,7 +63,7 @@ services:
     environment:
       - NODE_ENV=development
       - PAYMENT_SERVICE_PORT=4004
-      - LAYOUT_SERVICE_URL=http://layout-service:4002
+      - LAYOUT_SERVICE_URL=http://layout-service:4002/api/v1
     networks:
       - ticketing-network
     restart: unless-stopped

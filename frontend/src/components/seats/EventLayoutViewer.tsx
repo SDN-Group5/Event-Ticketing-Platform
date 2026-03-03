@@ -7,6 +7,7 @@ interface EventLayoutViewerProps {
     seats?: SeatData[];
     selectedSeats: SelectedSeat[];
     onSeatToggle: (seat: SelectedSeat) => void;
+    currentUserId?: string | null;
 }
 
 export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
@@ -14,6 +15,7 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
     seats = [],
     selectedSeats,
     onSeatToggle,
+    currentUserId,
 }) => {
     const [openZoneId, setOpenZoneId] = useState<string | null>(null);
 
@@ -34,17 +36,31 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
         if (zone.type !== 'seats' || !zone.rows || !zone.seatsPerRow) return [];
         if (seats.length > 0) {
             const zoneSeats = seats.filter(s => s.zoneId === zone.id);
-            return zoneSeats.map(seatData => ({
-                id: `${seatData.zoneId}-${seatData.row}-${seatData.seatNumber}`,
-                row: String(seatData.row),
-                number: seatData.seatNumber,
-                label: `${getRowLetter(seatData.row)}${seatData.seatNumber}`,
-                zone: zone.name,
-                status: seatData.status === 'sold' || seatData.status === 'reserved'
-                    ? 'occupied'
-                    : seatData.status === 'blocked' ? 'blocked' : 'available',
-                price: seatData.price,
-            }));
+            return zoneSeats.map(seatData => {
+                const isReservedByCurrentUser =
+                    currentUserId &&
+                    seatData.status === 'reserved' &&
+                    typeof seatData.reservedBy === 'string' &&
+                    seatData.reservedBy === currentUserId;
+
+                const status =
+                    seatData.status === 'sold' ||
+                        (seatData.status === 'reserved' && !isReservedByCurrentUser)
+                        ? 'occupied'
+                        : seatData.status === 'blocked'
+                            ? 'blocked'
+                            : 'available';
+
+                return {
+                    id: `${seatData.zoneId}-${seatData.row}-${seatData.seatNumber}`,
+                    row: String(seatData.row),
+                    number: seatData.seatNumber,
+                    label: `${getRowLetter(seatData.row)}${seatData.seatNumber}`,
+                    zone: zone.name,
+                    status,
+                    price: seatData.price,
+                } as Seat;
+            });
         }
         const fallbackSeats: Seat[] = [];
         for (let row = 0; row < zone.rows; row++) {

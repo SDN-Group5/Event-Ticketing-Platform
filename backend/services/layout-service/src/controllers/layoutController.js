@@ -57,6 +57,41 @@ export const getAllLayouts = async (req, res) => {
     }
 };
 
+// Get layouts created by current user (Organizer/Admin)
+export const getMyLayouts = async (req, res) => {
+    try {
+        const userId = req.user ? req.user.id : null;
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                error: {
+                    code: 'UNAUTHORIZED',
+                    message: 'Thiếu token xác thực'
+                }
+            });
+        }
+
+        const layouts = await EventLayout
+            .find({ createdBy: userId })
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: layouts.length,
+            data: layouts
+        });
+    } catch (error) {
+        console.error('Error getting my layouts:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'INTERNAL_ERROR',
+                message: 'Server error retrieving layouts'
+            }
+        });
+    }
+};
+
 // Create or Update Layout
 // Note: The spec distinguishes between Create and Update, but for simplicity we often handle upsert or strict separation.
 // The spec says POST for create and PUT for update.

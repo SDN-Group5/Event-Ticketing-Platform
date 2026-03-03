@@ -6,10 +6,9 @@ const SEAT_API_BASE_URL =
   'http://localhost:4002/api/v1';
 
 /**
- * Best-effort: gọi sang seat/layout service để trả ghế về trạng thái trống
- * dựa trên danh sách seatId trong order.items.
- *
- * Nếu service ghế chưa sẵn sàng hoặc lỗi → chỉ log warning, không throw.
+ * Best-effort: gọi sang layout-service bulk-release để trả ghế về trạng thái trống.
+ * Dùng route POST /events/:eventId/seats/bulk-release (không cần auth).
+ * WebSocket broadcast sẽ tự động thông báo cho tất cả client.
  */
 export async function releaseSeatsForOrder(order: any): Promise<void> {
   try {
@@ -25,24 +24,21 @@ export async function releaseSeatsForOrder(order: any): Promise<void> {
 
     if (!seatIds.length) return;
 
-    await Promise.all(
-      seatIds.map(async (seatId) => {
-        try {
-          // Theo FE seatApiService: DELETE /events/:eventId/seats/:seatId/reservation
-          await axios.delete(
-            `${baseUrl}/events/${eventId}/seats/${seatId}/reservation`,
-          );
-        } catch (err: any) {
-          console.warn(
-            '[releaseSeatsForOrder] Không thể trả ghế về trống',
-            seatId,
-            '-',
-            err?.response?.status,
-            err?.response?.data || err?.message,
-          );
-        }
-      }),
-    );
+    try {
+      const resp = await axios.post(
+        `${baseUrl}/events/${eventId}/seats/bulk-release`,
+        { seatIds },
+      );
+      console.log(
+        `[releaseSeatsForOrder] Released ${resp.data?.released || 0} seats for event ${eventId}`,
+      );
+    } catch (err: any) {
+      console.warn(
+        '[releaseSeatsForOrder] bulk-release failed:',
+        err?.response?.status,
+        err?.response?.data || err?.message,
+      );
+    }
   } catch (err: any) {
     console.warn('[releaseSeatsForOrder] Lỗi chung:', err?.message || err);
   }

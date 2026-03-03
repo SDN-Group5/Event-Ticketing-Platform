@@ -1,42 +1,53 @@
 import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 import config from './src/config/env.config.js';
 import connectMongoDB from './src/config/mongo.config.js';
 import cors from 'cors';
 import express from 'express';
 import indexRoute from './src/routes/index.js';
 import { startSeatCleanupJob } from './src/jobs/seatCleanup.js';
+import { setIO } from './src/socket.js';
 
-import { engine } from 'express-handlebars'; // Import Handlebars
+import { engine } from 'express-handlebars';
 
 const app = express();
 const port = config.port;
 
-app.use(cors({
+const corsOptions = {
     origin: 'http://localhost:3000',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
-}));
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Set View Engine (EJS)
 app.set('view engine', 'ejs');
 app.set('views', './src/views');
-
-// Configure Handlebars
 app.engine('.hbs', engine({ extname: '.hbs' }));
 
-// Connect to MongoDB
 connectMongoDB();
-
-// Start cron jobs
 startSeatCleanupJob();
-
-// Use index routes
 indexRoute(app);
+
 const server = http.createServer(app);
+
+const io = new SocketIOServer(server, { cors: corsOptions });
+setIO(io);
+
+io.on('connection', (socket) => {
+    socket.on('join-event', (eventId) => {
+        socket.join(`event:${eventId}`);
+    });
+
+    socket.on('leave-event', (eventId) => {
+        socket.leave(`event:${eventId}`);
+    });
+});
 
 server.listen(port, () => {
     console.log(`Server is running on port http://localhost:${port}`);
+    console.log(`🔌 WebSocket ready on same port`);
 });

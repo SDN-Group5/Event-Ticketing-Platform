@@ -5,7 +5,8 @@ import {
     updateLayout,
     deleteLayout,
     validateLayout,
-    getAllLayouts
+    getAllLayouts,
+    getMyLayouts
 } from '../controllers/layoutController.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -13,6 +14,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/', getAllLayouts); // GET /api/v1/layouts
+router.get('/mine', requireAuth, getMyLayouts); // GET /api/v1/layouts/mine
 router.get('/event/:eventId', getLayoutByEvent);
 
 // Protected routes (Organizer/Admin) - cần token để lấy createdBy

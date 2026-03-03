@@ -168,7 +168,8 @@ export const SeatAPI = {
      * Release a seat reservation
      */
     releaseReservation: async (eventId: string, seatId: string): Promise<SeatData> => {
-        const { data } = await api.delete<SeatData>(`/events/${eventId}/seats/${seatId}/reservation`);
+        // Soft delete: dùng PATCH để chỉ update status về "available"
+        const { data } = await api.patch<SeatData>(`/events/${eventId}/seats/${seatId}/reservation`);
         return data;
     },
 

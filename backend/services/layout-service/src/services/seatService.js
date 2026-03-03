@@ -91,11 +91,26 @@ class SeatService {
      * Reserve seat với timeout
      */
     async reserveSeat(eventId, zoneId, row, seatNumber, userId, timeoutMinutes = 15) {
+        const objectIdEventId = new mongoose.Types.ObjectId(eventId);
+
+        // Check if the user already has reserved or sold seats for this event
+        const existingSeatsCount = await Seat.countDocuments({
+            eventId: objectIdEventId,
+            $or: [
+                { status: 'reserved', reservedBy: userId },
+                { status: 'sold', soldBy: userId }
+            ]
+        });
+
+        if (existingSeatsCount >= 2) {
+            throw new Error('You can only lock and buy up to 2 seats per event.');
+        }
+
         const expiryTime = new Date(Date.now() + timeoutMinutes * 60 * 1000);
 
         const seat = await Seat.findOneAndUpdate(
             {
-                eventId: new mongoose.Types.ObjectId(eventId),
+                eventId: objectIdEventId,
                 zoneId,
                 row,
                 seatNumber,

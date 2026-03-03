@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EventCard } from '../../components/common/Card';
-import eventsData from '../../data/events.json';
+import eventsData from '../../data/events';
 
 const getEventDateParts = (dateString: string) => {
     const date = new Date(dateString);

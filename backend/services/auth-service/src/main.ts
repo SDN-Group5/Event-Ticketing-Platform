@@ -1,4 +1,5 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -14,6 +15,13 @@ import healthRoutes from './routes/health.routes';
 export { default as verifyToken } from './middleware/auth.middleware';
 export { roleCheck } from './middleware/roleCheck.middleware';
 export { User } from './models/user.model';
+
+// ============================================
+// LOAD ENV FROM backend/.env
+// ============================================
+dotenv.config({
+  path: path.resolve(__dirname, '../../../.env'),
+});
 
 // ============================================
 // CONFIGURATION
@@ -44,7 +52,10 @@ app.use(morgan('combined', {
 // ROUTES
 // ============================================
 app.use('/health', healthRoutes);
+// Giữ nguyên prefix /api/auth cho các client hiện có
 app.use('/api/auth', authRoutes);
+// Đồng thời expose các route gốc (/login, /register, ...) để gateway sau khi pathRewrite có thể gọi trực tiếp
+app.use('/', authRoutes);
 app.use('/api/users', userRoutes);
 
 // Root

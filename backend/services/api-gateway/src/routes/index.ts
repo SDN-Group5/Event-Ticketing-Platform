@@ -18,19 +18,31 @@ const createProxy = (target: string, pathRewrite?: Record<string, string>): Opti
   target,
   changeOrigin: true,
   pathRewrite,
-  onError: (err, req, res: any) => {
-    console.error(`[Proxy Error] ${target}:`, err.message);
-    res.status(503).json({
-      success: false,
-      message: `Service unavailable: ${target}`,
-      error: err.message,
-    });
-  },
-  onProxyReq: (proxyReq, req) => {
-    // Forward cookies/headers nếu cần
-    if (req.headers.cookie) {
-      proxyReq.setHeader('Cookie', req.headers.cookie);
-    }
+  /**
+   * Tăng timeout để tránh gateway tự trả 408 trước khi service con xử lý xong.
+   *  - timeout: thời gian chờ response từ upstream (ms)
+   *  - proxyTimeout: thời gian chờ kết nối tới upstream (ms)
+   */
+  timeout: 60_000,
+  proxyTimeout: 60_000,
+  // Đã gom onError và onProxyReq vào trong thuộc tính "on"
+  on: {
+    error: (err, req, res: any) => {
+      console.error(`[Proxy Error] ${target}:`, err.message);
+      if (!res.headersSent) {
+        res.status(503).json({
+          success: false,
+          message: `Service unavailable: ${target}`,
+          error: err.message,
+        });
+      }
+    },
+    proxyReq: (proxyReq, req) => {
+      // Forward cookies/headers nếu cần
+      if (req.headers.cookie) {
+        proxyReq.setHeader('Cookie', req.headers.cookie);
+      }
+    },
   },
 });
 
@@ -76,10 +88,16 @@ export const setupRoutes = (app: Express) => {
   // PROXY TO MICROSERVICES
   // ============================================
 
-  // Auth Service: /api/auth/* -> auth-service:4001/api/auth/*
+// Auth Service: /api/auth/* -> auth-service:4001/login, /register, ...
+//  - Gateway prefix `/api/auth` được bỏ đi trước khi forward,
+//  - Auth-service expose các route `/login`, `/register`, ...
   app.use(
     '/api/auth',
-    createProxyMiddleware(createProxy(AUTH_SERVICE_URL))
+    createProxyMiddleware(
+      createProxy(AUTH_SERVICE_URL, {
+        '^/api/auth': '',
+      }),
+    )
   );
 
   // Event Service: /api/events/*, /api/organizer/*, /api/admin/*

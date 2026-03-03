@@ -4,13 +4,14 @@ import { EventLayoutViewer, PanoramaViewer } from '../../components/seats';
 import { Seat as SeatType, SelectedSeat } from '../../types/seat';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { SeatAPI, SeatData } from '../../services/seatApiService';
-
-import eventsData from '../../data/events.json';
+import eventsData from '../../data/events';
 import { Zone360Viewer } from '../../components/Zone360Viewer';
+import { ROUTES } from '@/constants/routes';
 
 export const ZoneSelectionPage: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+
     const [ticketCount, setTicketCount] = useState(2);
     const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
     const [previewSeat, setPreviewSeat] = useState<SeatType | null>(null);
@@ -72,6 +73,7 @@ export const ZoneSelectionPage: React.FC = () => {
                 seatsPerRow: zone.seatsPerRow || 1,
                 position: zone.position,
                 size: zone.size,
+                rotation: zone.rotation || 0,
                 view360Url: 'https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg'
             }));
     }, [layoutData]);
@@ -93,20 +95,34 @@ export const ZoneSelectionPage: React.FC = () => {
             if (exists) {
                 return prev.filter(s => s.id !== seat.id);
             } else {
+                if (prev.length >= 2) {
+                    return prev;
+                }
                 return [...prev, seat];
             }
         });
     };
 
     const handleCheckout = () => {
+        if (!id || selectedSeats.length === 0) return;
+
+        const zone = selectedZoneData || zones[0];
+
         const checkoutData = {
             eventId: id,
+            eventName: event?.title || layoutData?.eventName || 'Event',
+            eventImage: event?.image || layoutData?.eventImage || '',
+            eventDate: event?.date || layoutData?.eventDate || '',
+            eventLocation: event?.location || layoutData?.eventLocation || '',
+            organizerId: layoutData?.organizerId || event?.organizerId || 'unknown',
+            zone,
             seats: selectedSeats,
-            total,
             ticketCount: selectedSeats.length,
+            total,
         };
-        console.log('Checkout data:', checkoutData);
-        navigate('/checkout');
+
+        console.log('Navigating to checkout with data:', checkoutData);
+        navigate('/checkout', { state: checkoutData });
     };
 
     const handleOpen360 = () => {
@@ -119,7 +135,7 @@ export const ZoneSelectionPage: React.FC = () => {
             <header className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => navigate(`/event/${id}`)}
+                        onClick={() => navigate(ROUTES.HOME)}
                         className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                     >
                         <span className="material-symbols-outlined">arrow_back</span>

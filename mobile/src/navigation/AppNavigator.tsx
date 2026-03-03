@@ -6,8 +6,10 @@ import { useAuth } from '../context/AuthContext';
 import TabNavigator from './TabNavigator';
 
 // Auth Screens
-import Login from '../screens/auth/LoginScreen';
+import LoginScreen from '../screens/auth/LoginScreen';
 import CreateAccount from '../screens/auth/CreateAccount';
+import ForgotPassword from '../screens/auth/ForgotPassword';
+import VerifyEmail from '../screens/auth/VerifyEmail';
 
 // App Screens
 import EventDetail from '../screens/EventDetail';
@@ -20,6 +22,7 @@ import SeatMapDesigner from '../screens/organizer/SeatMapDesigner';
 import EditProfile from '../screens/EditProfile';
 import SecuritySettings from '../screens/auth/SecuritySettings';
 import Notifications from '../screens/Notifications';
+import Explore from '../screens/Explore';
 
 const Stack = createNativeStackNavigator();
 
@@ -42,12 +45,15 @@ export default function AppNavigator() {
           <Stack.Screen name="EditProfile" component={EditProfile} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettings} />
           <Stack.Screen name="Notifications" component={Notifications} />
+          <Stack.Screen name="Explore" component={Explore} />
         </Stack.Group>
       ) : (
         // User is NOT signed in
         <Stack.Group>
-          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="CreateAccount" component={CreateAccount} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+          <Stack.Screen name="VerifyEmail" component={VerifyEmail} />
         </Stack.Group>
       )}
     </Stack.Navigator>

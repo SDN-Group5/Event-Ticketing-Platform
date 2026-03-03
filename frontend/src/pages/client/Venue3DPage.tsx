@@ -4,7 +4,6 @@ import { Venue3DViewer } from '../../components/venue3d';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { SeatAPI } from '../../services/seatApiService';
 import { LayoutZone, EventLayout } from '../../types/layout';
-import eventsData from '../../data/events.json';
 
 // Sample venue data (fallback)
 const sampleZones = [
@@ -138,8 +137,10 @@ export default function Venue3DPage() {
                 }));
                 setSavedLayouts(formattedLayouts);
 
-                // Auto-select first saved layout if available
-                if (formattedLayouts.length > 0) {
+                // Auto-select the layout matching the URL id, or first saved layout
+                if (id && formattedLayouts.some(l => l.id === id)) {
+                    setSelectedLayoutId(id);
+                } else if (formattedLayouts.length > 0) {
                     setSelectedLayoutId(formattedLayouts[0].id);
                 }
             } catch (err) {
@@ -216,12 +217,6 @@ export default function Venue3DPage() {
         }));
     }, [currentZones]);
 
-    // Get event data
-    const event = useMemo(() => {
-        if (!id) return null;
-        return eventsData.find(e => e.id === id);
-    }, [id]);
-
     // Calculate total price
     const totalPrice = useMemo(() => {
         if (!selectedSeat) return 0;
@@ -264,7 +259,7 @@ export default function Venue3DPage() {
             {/* Back Button - Top Left */}
             <div className="absolute top-6 left-6 z-30">
                 <button
-                    onClick={() => id ? navigate(`/event/${id}`) : navigate('/')}
+                    onClick={() => id ? navigate(`/event/${id}/zones`) : navigate('/')}
                     className="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur hover:bg-black/60 transition-colors border border-white/10"
                 >
                     <span className="material-symbols-outlined">arrow_back</span>

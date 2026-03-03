@@ -6,6 +6,7 @@ import Explore from '../screens/Explore';
 import MyTickets from '../screens/MyTickets';
 import MyEvents from '../screens/MyEvents';
 import Profile from '../screens/Profile';
+import UserScreen from '../screens/user/UserHomeScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -15,9 +16,10 @@ export default function TabNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof MaterialIcons.glyphMap = 'explore';
+          let iconName: keyof typeof MaterialIcons.glyphMap = 'home';
 
-          if (route.name === 'Explore') iconName = 'explore';
+          if (route.name === 'Home') iconName = 'home';
+          else if (route.name === 'Explore') iconName = 'explore';
           else if (route.name === 'Tickets') iconName = 'local-activity';
           else if (route.name === 'Manage') iconName = 'event';
           else if (route.name === 'Profile') iconName = 'person';
@@ -35,9 +37,9 @@ export default function TabNavigator() {
         },
       })}
     >
+      <Tab.Screen name="Home" component={UserScreen} />
       <Tab.Screen name="Explore" component={Explore} />
       <Tab.Screen name="Tickets" component={MyTickets} />
-      <Tab.Screen name="Manage" component={MyEvents} />
       <Tab.Screen name="Profile" component={Profile} />
     </Tab.Navigator>
   );

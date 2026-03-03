@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ImageBackground, KeyboardAvoidingView, Platform, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ImageBackground, KeyboardAvoidingView, Platform, StyleSheet, ScrollView } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import Animated, { 
@@ -14,13 +14,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function LoginScreen({ navigation }: any) {
-  const { login, isLoading, error, clearError } = useAuth();
-  
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
+export default function Login({ navigation }: any) {
+  const { signInAsUser, signInAsStaff } = useAuth();
 
   // Animation values
   const fadeAnim = useSharedValue(0);
@@ -44,8 +39,8 @@ export default function LoginScreen({ navigation }: any) {
         withTiming(-20, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
         withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.ease) })
       ),
-      -1,
-      true
+      -1, // infinite
+      true // reverse
     );
 
     float2.value = withRepeat(
@@ -67,17 +62,6 @@ export default function LoginScreen({ navigation }: any) {
     );
   }, []);
 
-  // Clear errors when inputs change
-  useEffect(() => {
-    if (error || localError) {
-      const timer = setTimeout(() => {
-        clearError();
-        setLocalError(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error, localError]);
-
   const animatedFormStyle = useAnimatedStyle(() => {
     return {
       opacity: fadeAnim.value,
@@ -96,61 +80,6 @@ export default function LoginScreen({ navigation }: any) {
   const animatedFloat2 = useAnimatedStyle(() => ({ transform: [{ translateY: float2.value }, { translateX: float2.value }] }));
   const animatedFloat3 = useAnimatedStyle(() => ({ transform: [{ translateY: float3.value }, { translateX: -float3.value }] }));
 
-  const validateForm = (): boolean => {
-    if (!email.trim()) {
-      setLocalError('Vui lòng nhập email');
-      return false;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setLocalError('Email không hợp lệ');
-      return false;
-    }
-
-    if (!password) {
-      setLocalError('Vui lòng nhập mật khẩu');
-      return false;
-    }
-
-    if (password.length < 6) {
-      setLocalError('Mật khẩu phải có ít nhất 6 ký tự');
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleLogin = async () => {
-    setLocalError(null);
-    clearError();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    const success = await login(email.trim(), password);
-    
-    if (success) {
-      // Navigation will be handled by AppNavigator based on auth state
-      // No need to navigate manually
-    } else {
-      // Error is already set in AuthContext
-      // Show alert for important errors
-      if (error?.includes('Email chưa được xác thực')) {
-        Alert.alert(
-          'Email chưa được xác thực',
-          'Vui lòng kiểm tra email để nhập mã xác thực.',
-          [
-            { text: 'OK', style: 'default' },
-          ]
-        );
-      }
-    }
-  };
-
-  const displayError = error || localError;
-
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -168,20 +97,22 @@ export default function LoginScreen({ navigation }: any) {
           <Animated.View style={[animatedFloat3, styles.glowBlob, { bottom: '-10%', left: '20%', backgroundColor: 'rgba(124, 77, 255, 0.3)' }]} />
         </View>
 
-        {/* Dark gradient overlay */}
+        {/* Dark gradient overlay to make text readable but keep background visible */}
         <LinearGradient
           colors={['rgba(10, 0, 20, 0.4)', 'rgba(10, 0, 20, 0.8)', '#0a0014']}
           className="absolute inset-0"
         />
         
-        {/* Top Section: Logo & Title */}
-        <View className="flex-[0.35] justify-center items-center pt-12">
-          <Animated.View style={animatedLogoStyle} className="items-center">
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          {/* Top Section: Logo & Title */}
+          <View className="min-h-[250px] justify-center items-center pt-12">
+            <Animated.View style={animatedLogoStyle} className="items-center">
+            {/* Logo Container with solid background to prevent blurriness */}
             <View className="w-20 h-20 bg-[#1a0033] rounded-3xl items-center justify-center border-2 border-[#d500f9] shadow-[0_0_25px_rgba(213,0,249,0.5)] mb-4">
-              <MaterialIcons name="confirmation-number" size={44} color="#00e5ff" />
+              <MaterialIcons name="graphic-eq" size={44} color="#00e5ff" />
             </View>
             <Text className="text-5xl font-black text-white tracking-widest" style={styles.textGlow}>
-              TicketVibe
+              EVENTIX
             </Text>
             <Text className="text-[#00e5ff] font-bold mt-2 uppercase text-xs" style={{ letterSpacing: 3 }}>
               Live The Moment
@@ -189,23 +120,16 @@ export default function LoginScreen({ navigation }: any) {
           </Animated.View>
         </View>
 
-        {/* Bottom Section: Form */}
-        <Animated.View 
-          style={animatedFormStyle} 
-          className="flex-[0.65] bg-[#1a0033]/80 rounded-t-[40px] px-8 pt-8 border-t border-[#4d0099]/50"
-        >
+          {/* Bottom Section: Form */}
+          <Animated.View 
+            style={animatedFormStyle} 
+            className="flex-1 bg-[#1a0033]/80 rounded-t-[40px] px-8 pt-8 border-t border-[#4d0099]/50"
+          >
           <Text className="text-3xl font-bold text-white mb-2">Welcome Back</Text>
           <Text className="text-sm text-[#b388ff] mb-6">Sign in to discover amazing events near you</Text>
 
-          {/* Error Message */}
-          {displayError && (
-            <View className="mb-4 bg-red-500/20 border border-red-500/50 rounded-xl p-3">
-              <Text className="text-red-400 text-sm text-center">{displayError}</Text>
-            </View>
-          )}
-
           <View className="mb-4">
-            <View className={`flex-row items-center bg-[#0a0014]/90 border h-14 rounded-2xl px-4 ${displayError && email.trim() === '' ? 'border-red-500/50' : 'border-[#4d0099]'}`}>
+            <View className="flex-row items-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl px-4">
               <MaterialIcons name="email" size={22} color="#b388ff" />
               <TextInput 
                 className="flex-1 ml-3 text-base text-white"
@@ -213,60 +137,41 @@ export default function LoginScreen({ navigation }: any) {
                 placeholderTextColor="#6a1b9a"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (localError) setLocalError(null);
-                }}
-                editable={!isLoading}
               />
             </View>
           </View>
 
           <View className="mb-2">
-            <View className={`flex-row items-center bg-[#0a0014]/90 border h-14 rounded-2xl px-4 ${displayError && password === '' ? 'border-red-500/50' : 'border-[#4d0099]'}`}>
+            <View className="flex-row items-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl px-4">
               <MaterialIcons name="lock" size={22} color="#b388ff" />
               <TextInput 
                 className="flex-1 ml-3 text-base text-white"
                 placeholder="Password"
                 placeholderTextColor="#6a1b9a"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (localError) setLocalError(null);
-                }}
-                editable={!isLoading}
+                secureTextEntry
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <MaterialIcons 
-                  name={showPassword ? "visibility-off" : "visibility"} 
-                  size={22} 
-                  color={showPassword ? "#b388ff" : "#6a1b9a"} 
-                />
+              <TouchableOpacity>
+                <MaterialIcons name="visibility-off" size={22} color="#6a1b9a" />
               </TouchableOpacity>
             </View>
           </View>
 
-          <TouchableOpacity 
-            className="items-end mb-6"
-            onPress={() => navigation.navigate('ForgotPassword')}
-            disabled={isLoading}
-          >
+          <TouchableOpacity className="items-end mb-6">
             <Text className="text-sm font-bold text-[#00e5ff]">Forgot Password?</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={handleLogin}
-            disabled={isLoading}
-            className={`w-full h-14 rounded-2xl items-center justify-center mb-6 shadow-[0_0_20px_rgba(213,0,249,0.4)] ${isLoading ? 'bg-[#d500f9]/50' : 'bg-[#d500f9]'}`}
+            onPress={signInAsUser}
+            className="w-full bg-[#d500f9] h-14 rounded-2xl items-center justify-center mb-4 shadow-[0_0_20px_rgba(213,0,249,0.4)]"
           >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-white font-bold text-lg tracking-wide">Sign In</Text>
-            )}
+            <Text className="text-white font-bold text-lg tracking-wide">Sign In as User</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={signInAsStaff}
+            className="w-full bg-[#1a0033] border border-[#d500f9] h-14 rounded-2xl items-center justify-center mb-6"
+          >
+            <Text className="text-[#d500f9] font-bold text-lg tracking-wide">Sign In as Staff</Text>
           </TouchableOpacity>
 
           {/* Social Login Section */}
@@ -277,32 +182,24 @@ export default function LoginScreen({ navigation }: any) {
           </View>
 
           <View className="flex-row justify-between mb-8">
-            <TouchableOpacity 
-              className="flex-1 flex-row items-center justify-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl mr-2"
-              disabled={isLoading}
-            >
+            <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl mr-2">
               <FontAwesome5 name="google" size={18} color="#fff" />
               <Text className="font-bold text-white ml-3">Google</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              className="flex-1 flex-row items-center justify-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl ml-2"
-              disabled={isLoading}
-            >
+            <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl ml-2">
               <FontAwesome5 name="facebook-f" size={18} color="#fff" />
               <Text className="font-bold text-white ml-3">Facebook</Text>
             </TouchableOpacity>
           </View>
 
-          <View className="flex-row justify-center items-center pb-8 mt-auto">
-            <Text className="text-[#b388ff]">Don't have an account? </Text>
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('CreateAccount')}
-              disabled={isLoading}
-            >
-              <Text className="text-[#00e5ff] font-bold">Create an account</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+            <View className="flex-row justify-center items-center pb-8 mt-auto pt-8">
+              <Text className="text-[#b388ff]">Don't have an account? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
+                <Text className="text-[#00e5ff] font-bold">Create an account</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </ScrollView>
       </ImageBackground>
     </KeyboardAvoidingView>
   );
@@ -319,5 +216,6 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
+    filter: 'blur(40px)', // Note: filter blur works on web, on mobile it relies on opacity/gradient
   }
 });

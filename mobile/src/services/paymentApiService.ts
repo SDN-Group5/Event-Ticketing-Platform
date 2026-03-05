@@ -1,0 +1,95 @@
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+
+export type PaymentCreateItem = {
+  zoneName: string;
+  seatId?: string;
+  price: number;
+  quantity: number;
+};
+
+export type CreatePaymentInput = {
+  userId: string;
+  eventId: string;
+  eventName: string;
+  organizerId: string;
+  items: PaymentCreateItem[];
+  channel?: 'mobile' | 'jsp';
+  organizerBank?: {
+    bankAccountName: string;
+    bankAccountNumber: string;
+    bankName?: string;
+    bankCode?: string;
+  };
+  voucherCode?: string;
+};
+
+export type CreatePaymentResult = {
+  orderId: string;
+  orderCode: number;
+  totalAmount: number;
+  commissionAmount: number;
+  organizerAmount: number;
+  checkoutUrl: string;
+  qrCode?: string;
+  paymentLinkId?: string;
+};
+
+export type VerifyPaymentResult = {
+  status: string;
+  payosStatus?: string;
+  order?: any;
+};
+
+export type Order = any;
+
+type ApiResponse<T> = { success: boolean; data: T; message?: string };
+
+async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+
+  const json = (await response.json()) as ApiResponse<T> | any;
+  if (!response.ok) {
+    throw new Error(json?.message || json?.error?.message || `API Error: ${response.status}`);
+  }
+
+  // payment-service trả { success, data }
+  if (json && typeof json === 'object' && 'data' in json) {
+    return json.data as T;
+  }
+  return json as T;
+}
+
+export const PaymentAPI = {
+  async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+    return apiRequest<CreatePaymentResult>('/api/payments/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...input,
+        channel: input.channel || 'mobile',
+      }),
+    });
+  },
+
+  async verifyPayment(orderCode: number): Promise<VerifyPaymentResult> {
+    return apiRequest<VerifyPaymentResult>(`/api/payments/verify/${encodeURIComponent(String(orderCode))}`, {
+      method: 'GET',
+    });
+  },
+
+  async getUserOrders(userId: string): Promise<Order[]> {
+    return apiRequest<Order[]>(`/api/payments/user/${encodeURIComponent(userId)}`, { method: 'GET' });
+  },
+
+  async getOrder(orderCode: number): Promise<Order> {
+    return apiRequest<Order>(`/api/payments/order/${encodeURIComponent(String(orderCode))}`, { method: 'GET' });
+  },
+};
+

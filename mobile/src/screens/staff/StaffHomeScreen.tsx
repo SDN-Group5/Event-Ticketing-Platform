@@ -4,7 +4,7 @@ import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 
 export default function StaffScreen({ navigation }: any) {
-  const { signOut } = useAuth();
+  const { logout } = useAuth();
 
   return (
     <View className="flex-1 bg-[#0a0014]">
@@ -13,7 +13,7 @@ export default function StaffScreen({ navigation }: any) {
           <Text className="text-sm text-[#b388ff]">Welcome back,</Text>
           <Text className="text-xl font-bold text-white">Staff Member</Text>
         </View>
-        <TouchableOpacity onPress={signOut} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
+        <TouchableOpacity onPress={() => void logout()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
           <MaterialIcons name="logout" size={20} color="#ff1744" />
         </TouchableOpacity>
       </View>

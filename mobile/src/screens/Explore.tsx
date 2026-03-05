@@ -1,8 +1,50 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ImageBackground } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ImageBackground, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { EventLayout, LayoutAPI } from '../services/layoutApiService';
 
 export default function Explore({ navigation }: any) {
+  const [events, setEvents] = useState<EventLayout[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function load() {
+      try {
+        setLoading(true);
+        setError(null);
+        const layouts = await LayoutAPI.listLayouts();
+        if (!isMounted) return;
+        setEvents(Array.isArray(layouts) ? layouts : []);
+      } catch (e: any) {
+        if (!isMounted) return;
+        setError(e?.message || 'Không tải được danh sách sự kiện');
+        setEvents([]);
+      } finally {
+        if (!isMounted) return;
+        setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredEvents = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return events;
+    return events.filter((ev) => {
+      const name = (ev.eventName || '').toLowerCase();
+      const loc = (ev.eventLocation || '').toLowerCase();
+      return name.includes(q) || loc.includes(q);
+    });
+  }, [events, query]);
+
   return (
     <View className="flex-1 bg-[#0a0014]">
       <View className="px-4 pt-12 pb-4 bg-[#1a0033] border-b border-[#4d0099]">
@@ -26,6 +68,8 @@ export default function Explore({ navigation }: any) {
             className="flex-1 ml-2 text-base text-white"
             placeholder="Search events, artists, venues..."
             placeholderTextColor="#b388ff"
+            value={query}
+            onChangeText={setQuery}
           />
           <TouchableOpacity className="bg-[#d500f9] p-1 rounded-lg">
             <MaterialIcons name="tune" size={20} color="white" />
@@ -55,47 +99,76 @@ export default function Explore({ navigation }: any) {
         </ScrollView>
 
         <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-lg font-bold text-white">Trending Events</Text>
-          <Text className="text-sm font-bold text-[#d500f9]">See All</Text>
+          <Text className="text-lg font-bold text-white">Events</Text>
+          <Text className="text-sm font-bold text-[#d500f9]">{filteredEvents.length}</Text>
         </View>
 
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('EventDetail')}
-          className="w-full bg-[#1a0033] border border-[#4d0099] rounded-3xl overflow-hidden mb-6"
-        >
-          <ImageBackground
-            source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBkIhUb1GjhsjU5Zm-vIxvNnjKmbajJ24V-McNfx348vGoncZi9ncpXfnJsgJhiNVFC-Cgxbet168ociT-x9-whsxZq_X72CPmSSb-ihTE5cdAkW1gi2_iXwi0PPguTGNGvcpdeD6kwnN3yp54tSNgWI4iXSFjYd_eo8jMi1rNfHps8PZJ6L8xQUG0u_pcRSnWiOJvQ8KbgeauEuGjhEjpmWRlDyQRJ2SIHbQGIsYwh-NEVZzcLWLscaEA-PELe2x7qRNANwJuYJUWM' }}
-            className="w-full h-48 justify-between p-4"
-          >
-            <View className="flex-row justify-between">
-              <View className="bg-[#0a0014]/80 px-3 py-2 rounded-xl items-center justify-center border border-[#d500f9]/50">
-                <Text className="text-[#d500f9] font-bold text-lg leading-5">15</Text>
-                <Text className="text-white text-xs font-bold uppercase">Aug</Text>
-              </View>
-              <View className="bg-[#0a0014]/80 w-10 h-10 rounded-full items-center justify-center border border-[#d500f9]/50">
-                <MaterialIcons name="favorite-border" size={20} color="#d500f9" />
-              </View>
-            </View>
-          </ImageBackground>
-          <View className="p-4">
-            <Text className="text-xl font-bold text-white mb-2">Summer Music Festival 2024</Text>
-            <View className="flex-row items-center mb-2">
-              <MaterialIcons name="location-on" size={16} color="#b388ff" />
-              <Text className="text-sm text-[#b388ff] ml-1">Central Park Arena, NY</Text>
-            </View>
-            <View className="flex-row justify-between items-center mt-2">
-              <View className="flex-row -space-x-2">
-                <View className="w-8 h-8 rounded-full bg-[#d500f9] border-2 border-[#1a0033]" />
-                <View className="w-8 h-8 rounded-full bg-[#00e5ff] border-2 border-[#1a0033]" />
-                <View className="w-8 h-8 rounded-full bg-[#7c4dff] border-2 border-[#1a0033]" />
-                <View className="w-8 h-8 rounded-full bg-[#2a004d] border-2 border-[#1a0033] items-center justify-center">
-                  <Text className="text-xs font-bold text-white">+2k</Text>
+        {loading ? (
+          <View className="py-10 items-center justify-center">
+            <ActivityIndicator />
+            <Text className="text-[#b388ff] mt-3 font-bold">Đang tải sự kiện...</Text>
+          </View>
+        ) : error ? (
+          <View className="py-10 items-center justify-center">
+            <Text className="text-red-400 font-bold mb-3 text-center">{error}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setQuery('');
+                setLoading(true);
+                setError(null);
+                LayoutAPI.listLayouts()
+                  .then((layouts) => setEvents(Array.isArray(layouts) ? layouts : []))
+                  .catch((e: any) => setError(e?.message || 'Không tải được danh sách sự kiện'))
+                  .finally(() => setLoading(false));
+              }}
+              className="bg-[#d500f9] px-5 py-3 rounded-2xl"
+            >
+              <Text className="text-white font-bold">Thử lại</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredEvents.length === 0 ? (
+          <View className="py-10 items-center justify-center">
+            <Text className="text-[#b388ff] font-bold">Không có sự kiện nào</Text>
+          </View>
+        ) : (
+          filteredEvents.map((ev) => (
+            <TouchableOpacity
+              key={String(ev._id || ev.eventId)}
+              onPress={() => navigation.navigate('EventDetail', { eventId: ev.eventId })}
+              className="w-full bg-[#1a0033] border border-[#4d0099] rounded-3xl overflow-hidden mb-6"
+            >
+              <ImageBackground
+                source={{ uri: ev.eventImage || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30' }}
+                className="w-full h-48 justify-between p-4"
+              >
+                <View className="flex-row justify-between">
+                  <View className="bg-[#0a0014]/80 px-3 py-2 rounded-xl items-center justify-center border border-[#d500f9]/50">
+                    <Text className="text-white text-xs font-bold uppercase">From</Text>
+                    <Text className="text-[#00e5ff] font-black text-lg leading-5">
+                      {Number.isFinite(Number(ev.minPrice)) ? `$${Number(ev.minPrice)}` : '--'}
+                    </Text>
+                  </View>
+                  <View className="bg-[#0a0014]/80 w-10 h-10 rounded-full items-center justify-center border border-[#d500f9]/50">
+                    <MaterialIcons name="favorite-border" size={20} color="#d500f9" />
+                  </View>
+                </View>
+              </ImageBackground>
+              <View className="p-4">
+                <Text className="text-xl font-bold text-white mb-2">{ev.eventName || 'Untitled Event'}</Text>
+                <View className="flex-row items-center mb-2">
+                  <MaterialIcons name="location-on" size={16} color="#b388ff" />
+                  <Text className="text-sm text-[#b388ff] ml-1">{ev.eventLocation || 'TBD'}</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <MaterialIcons name="calendar-today" size={14} color="#00e5ff" />
+                  <Text className="text-sm text-[#00e5ff] ml-2 font-bold">
+                    {ev.eventDate ? new Date(ev.eventDate).toLocaleString() : 'TBD'}
+                  </Text>
                 </View>
               </View>
-              <Text className="text-lg font-bold text-[#00e5ff]">$99.00</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
     </View>
   );

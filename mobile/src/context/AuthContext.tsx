@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthAPI } from '../services/authApiService';
-import type { UserRole } from '../../../shared/type';
 
 const AUTH_TOKEN_KEY = 'auth_token';
 const USER_DATA_KEY = 'user_data';
 
-export type UserRoleMobile = 'guest' | 'customer' | 'organizer' | 'staff' | 'admin';
+export type UserRoleMobile = 'guest' | 'user' | 'customer' | 'organizer' | 'staff' | 'admin';
 
 export interface User {
   id: string;
@@ -41,11 +40,6 @@ type AuthContextValue = {
   resetPassword: (email: string, code: string, newPassword: string) => Promise<boolean>;
   logout: () => Promise<void>;
   clearError: () => void;
-  
-  // Legacy methods for compatibility
-  signOut: () => Promise<void>;
-  signInAsUser: () => void;
-  signInAsStaff: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -55,12 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize auth state from storage
-  useEffect(() => {
-    initializeAuth();
-  }, []);
-
-  const initializeAuth = async () => {
+  // Load token + user từ AsyncStorage, validate với backend
+  const initializeAuth = useCallback(async () => {
     try {
       setIsLoading(true);
       const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
@@ -68,21 +58,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (token && userDataStr) {
         try {
-          // Validate token with backend
           const validation = await AuthAPI.validateToken(token);
           const userData = JSON.parse(userDataStr);
-          
-          // Update user data if validation succeeds
+
+          const backendRole = (validation.role as UserRoleMobile) || 'customer';
+          const mappedRole: UserRoleMobile = backendRole === 'customer' ? 'user' : backendRole;
+
           setUser({
             id: validation.userId,
             email: userData.email,
             firstName: userData.firstName,
             lastName: userData.lastName,
-            role: (validation.role as UserRoleMobile) || 'customer',
+            role: mappedRole,
             avatar: userData.avatar,
           });
-        } catch (err) {
-          // Token invalid, clear storage
+        } catch {
           await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, USER_DATA_KEY]);
           setUser(null);
         }
@@ -93,7 +83,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void initializeAuth();
+  }, [initializeAuth]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -104,7 +98,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       setError(null);
 
+      console.log('[AuthContext] login() called with email:', email);
+
       const response = await AuthAPI.login({ email, password });
+
+      console.log('[AuthContext] login() success, response:', response);
+
+      // Map backend role -> mobile role used for navigation
+      const backendRole = response.user.role as UserRoleMobile;
+      const mappedRole: UserRoleMobile =
+        backendRole === 'customer' ? 'user' : backendRole;
 
       // Save token and user data
       await AsyncStorage.setItem(AUTH_TOKEN_KEY, response.token);
@@ -114,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: response.user.email,
         firstName: response.user.firstName,
         lastName: response.user.lastName,
-        role: response.user.role as UserRoleMobile,
+        role: mappedRole,
       };
 
       await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
@@ -122,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return true;
     } catch (err: any) {
+      console.error('[AuthContext] login() failed:', err);
       setError(err.message || 'Đăng nhập thất bại');
       return false;
     } finally {
@@ -236,34 +240,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
-      
-      // Clear storage
+
       await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, USER_DATA_KEY]);
       setUser(null);
-      
-      // Call logout API (optional, token already removed)
+
       try {
         await AuthAPI.logout();
       } catch (err) {
-        // Ignore logout API errors
+        // bỏ qua lỗi logout API, vì token đã xoá local
       }
     } catch (err) {
       console.error('Error during logout:', err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
-
-  // Legacy methods for compatibility
-  const signOut = logout;
-  const signInAsUser = useCallback(() => {
-    // This is a mock method, kept for compatibility
-    // Real login should use the login() method
-    console.warn('signInAsUser is deprecated. Use login() instead.');
-  }, []);
-  const signInAsStaff = useCallback(() => {
-    // This is a mock method, kept for compatibility
-    console.warn('signInAsStaff is deprecated. Use login() instead.');
   }, []);
 
   const authState: AuthState = useMemo(() => ({
@@ -289,11 +279,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       resetPassword,
       logout,
       clearError,
-      signOut,
-      signInAsUser,
-      signInAsStaff,
     }),
-    [authState, user, isLoading, error, login, register, verifyEmail, resendVerification, forgotPassword, verifyResetCode, resetPassword, logout, clearError, signOut, signInAsUser, signInAsStaff]
+    [authState, user, isLoading, error, login, register, verifyEmail, resendVerification, forgotPassword, verifyResetCode, resetPassword, logout, clearError]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

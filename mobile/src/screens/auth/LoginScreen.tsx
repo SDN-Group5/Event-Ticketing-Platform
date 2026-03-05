@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ImageBackground, KeyboardAvoidingView, Platform, StyleSheet, ScrollView } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -15,7 +15,10 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Login({ navigation }: any) {
-  const { signInAsUser, signInAsStaff } = useAuth();
+  const { login } = useAuth();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   // Animation values
   const fadeAnim = useSharedValue(0);
@@ -137,6 +140,8 @@ export default function Login({ navigation }: any) {
                 placeholderTextColor="#6a1b9a"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
               />
             </View>
           </View>
@@ -149,6 +154,8 @@ export default function Login({ navigation }: any) {
                 placeholder="Password"
                 placeholderTextColor="#6a1b9a"
                 secureTextEntry
+                value={password}
+                onChangeText={setPassword}
               />
               <TouchableOpacity>
                 <MaterialIcons name="visibility-off" size={22} color="#6a1b9a" />
@@ -161,17 +168,10 @@ export default function Login({ navigation }: any) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={signInAsUser}
+            onPress={() => login(email, password)}
             className="w-full bg-[#d500f9] h-14 rounded-2xl items-center justify-center mb-4 shadow-[0_0_20px_rgba(213,0,249,0.4)]"
           >
             <Text className="text-white font-bold text-lg tracking-wide">Sign In as User</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={signInAsStaff}
-            className="w-full bg-[#1a0033] border border-[#d500f9] h-14 rounded-2xl items-center justify-center mb-6"
-          >
-            <Text className="text-[#d500f9] font-bold text-lg tracking-wide">Sign In as Staff</Text>
           </TouchableOpacity>
 
           {/* Social Login Section */}

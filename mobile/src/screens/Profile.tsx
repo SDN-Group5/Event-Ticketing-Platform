@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
 export default function Profile({ navigation }: any) {
-  const { signOut } = useAuth();
+  const { logout } = useAuth();
 
   return (
     <View className="flex-1 bg-[#0a0014]">
@@ -69,7 +69,7 @@ export default function Profile({ navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={signOut} className="flex-row items-center justify-center p-4 bg-[#ff1744]/10 rounded-2xl border border-[#ff1744]/30">
+          <TouchableOpacity onPress={() => void logout()} className="flex-row items-center justify-center p-4 bg-[#ff1744]/10 rounded-2xl border border-[#ff1744]/30">
             <MaterialIcons name="logout" size={20} color="#ff1744" />
             <Text className="text-base font-bold text-[#ff1744] ml-2">Log Out</Text>
           </TouchableOpacity>

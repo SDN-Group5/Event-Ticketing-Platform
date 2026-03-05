@@ -85,8 +85,14 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   try {
+    console.log('[AuthAPI] Request:', {
+      url,
+      method: options.method || 'GET',
+      hasBody: !!options.body,
+    });
+
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -97,12 +103,20 @@ async function apiRequest<T>(
 
     const data = await response.json();
 
+    console.log('[AuthAPI] Response:', {
+      url,
+      status: response.status,
+      ok: response.ok,
+      data,
+    });
+
     if (!response.ok) {
       throw new Error(data?.message || `API Error: ${response.status}`);
     }
 
     return data as T;
   } catch (error: any) {
+    console.error('[AuthAPI] Error calling', endpoint, error);
     if (error.message) {
       throw error;
     }

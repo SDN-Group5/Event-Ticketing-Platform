@@ -21,6 +21,7 @@ services:
       - PORT=4000
       - AUTH_SERVICE_URL=http://auth-service:4001
       - EVENT_SERVICE_URL=http://event-service:4002
+      - LAYOUT_SERVICE_URL=http://layout-service:4002 
       - BOOKING_SERVICE_URL=http://booking-service:4003
       - PAYMENT_SERVICE_URL=http://payment-service:4004
       - FRONTEND_URL=http://localhost:3000

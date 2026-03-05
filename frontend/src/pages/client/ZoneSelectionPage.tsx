@@ -255,7 +255,7 @@ export const ZoneSelectionPage: React.FC = () => {
             }
 
             // 2) Tạo payment (ghế đã locked trong DB)
-            await PaymentAPI.createPayment({
+            const result = await PaymentAPI.createPayment({
                 userId: user.id,
                 eventId: id,
                 eventName: event?.title || layoutData?.eventName || 'Event',

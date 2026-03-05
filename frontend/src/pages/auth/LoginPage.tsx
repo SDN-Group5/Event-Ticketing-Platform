@@ -5,7 +5,7 @@ import { Button } from '../../components/common/Button';
 
 export const LoginPage: React.FC = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, error, isLoading, clearError } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -163,6 +163,13 @@ export const LoginPage: React.FC = () => {
                             <p className="text-slate-300 text-sm">Please enter your details to sign in</p>
                         </div>
 
+                        {error && (
+                            <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex items-center gap-2">
+                                <span className="material-symbols-outlined text-lg">error</span>
+                                {error}
+                            </div>
+                        )}
+
                         <form onSubmit={handleLogin} className="space-y-5">
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
@@ -171,7 +178,10 @@ export const LoginPage: React.FC = () => {
                                     <input
                                         type="email"
                                         value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
+                                        onChange={(e) => {
+                                            setEmail(e.target.value);
+                                            if (error) clearError();
+                                        }}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-slate-500 focus:border-[#a855f7] focus:ring-2 focus:ring-[#a855f7]/20 transition-all"
                                         placeholder="name@example.com"
                                     />
@@ -194,7 +204,10 @@ export const LoginPage: React.FC = () => {
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
+                                        onChange={(e) => {
+                                            setPassword(e.target.value);
+                                            if (error) clearError();
+                                        }}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-12 text-white placeholder:text-slate-500 focus:border-[#a855f7] focus:ring-2 focus:ring-[#a855f7]/20 transition-all"
                                         placeholder="••••••••"
                                     />
@@ -210,8 +223,8 @@ export const LoginPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <Button type="submit" fullWidth size="lg" className="bg-gradient-to-r from-[#a855f7] to-[#d946ef] hover:shadow-lg hover:shadow-[#a855f7]/30 font-semibold text-white">
-                                Login
+                            <Button type="submit" fullWidth size="lg" disabled={isLoading} className="bg-gradient-to-r from-[#a855f7] to-[#d946ef] hover:shadow-lg hover:shadow-[#a855f7]/30 font-semibold text-white">
+                                {isLoading ? 'Logging in...' : 'Login'}
                             </Button>
                         </form>
 

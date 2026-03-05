@@ -5,11 +5,11 @@ import bcrypt from "bcryptjs";
 import { sendVerificationEmail, sendResetPasswordEmail } from "../services/email.service";
 
 function generate6DigitCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+    return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 function getOtpExpiryDate(minutes = 1) {
-  return new Date(Date.now() + minutes * 60 * 1000);
+    return new Date(Date.now() + minutes * 60 * 1000);
 }
 
 // ============================================
@@ -34,8 +34,8 @@ export const login = async (req: Request, res: Response) => {
 
         if (user.isActive === false) {
             console.error(`❌ Login failed: User ${email} is inactive`);
-            return res.status(401).json({ 
-                message: "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên." 
+            return res.status(401).json({
+                message: "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên."
             });
         }
 
@@ -57,20 +57,20 @@ export const login = async (req: Request, res: Response) => {
             { userId: user._id },
             process.env.JWT_SECRET_KEY as string,
             {
-              // Thời gian sống của phiên đăng nhập: 7 ngày
-              expiresIn: "7d",
+                // Thời gian sống của phiên đăng nhập: 1 ngày
+                expiresIn: "1d",
             }
-          );
+        );
 
         // Set JWT vào httpOnly cookie để dùng cho web
-        const cookieMaxAgeMs = 7 * 24 * 60 * 60 * 1000; // 7 ngày
+        const cookieMaxAgeMs = 1 * 24 * 60 * 60 * 1000; // 1 ngày
         res.cookie("jwt", token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: cookieMaxAgeMs,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: cookieMaxAgeMs,
         });
-      
+
         console.log(`✅ [LOGIN] Success for user ${email} (role=${user.role})`);
 
         return res.status(200).json({
@@ -78,11 +78,11 @@ export const login = async (req: Request, res: Response) => {
             message: "Login successful",
             token: token,
             user: {
-              id: user._id,
-              email: user.email,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              role: user.role,
+                id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
             },
         });
     } catch (error) {
@@ -90,26 +90,26 @@ export const login = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Something went wrong" });
     }
 };
-      
+
 // ============================================
 // GET /api/auth/validate-token
 export const validateToken = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).userId;
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
+    try {
+        const userId = (req as any).userId;
+        const user = await User.findById(userId);
 
-    res.status(200).json({ 
-      userId: userId,
-      role: user.role 
-    });
-  } catch (error) {
-    console.error("❌ Lỗi validateToken:", error);
-    res.status(500).json({ message: "Something went wrong" });
-  }
+        if (!user) {
+            return res.status(401).json({ message: "User not found" });
+        }
+
+        res.status(200).json({
+            userId: userId,
+            role: user.role
+        });
+    } catch (error) {
+        console.error("❌ Lỗi validateToken:", error);
+        res.status(500).json({ message: "Something went wrong" });
+    }
 };
 
 export const logout = (req: Request, res: Response) => {
@@ -160,7 +160,7 @@ export const register = async (req: Request, res: Response) => {
                 firstName: user.firstName,
                 code: verificationCode,
             });
-            
+
             if (emailResult) {
                 console.log(`✅ [REGISTER] Email verification đã được gửi thành công đến ${user.email}`);
             } else {
@@ -250,7 +250,7 @@ export const resendVerification = async (req: Request, res: Response) => {
                 firstName: user.firstName,
                 code: verificationCode,
             });
-            
+
             if (!emailSent) {
                 console.warn(`⚠️  Email không được gửi, nhưng OTP đã được log ra console`);
             }

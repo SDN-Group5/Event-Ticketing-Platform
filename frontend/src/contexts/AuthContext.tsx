@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import type { UserRole } from '../../../shared/type';
 
 // Constants
 const API_BASE_URL =
-  // cast để tránh lỗi type khi chưa khai báo vite/client trong tsconfig
-  (import.meta as any).env.VITE_API_URL || 'http://localhost:4001';
+    // cast để tránh lỗi type khi chưa khai báo vite/client trong tsconfig
+    (import.meta as any).env.VITE_API_URL || 'http://localhost:4001';
 const AUTH_TOKEN_KEY = 'auth_token';
 
 // User interface dùng cho session phía frontend
@@ -44,9 +44,13 @@ const DEMO_USERS: Partial<Record<UserRole, User>> = {
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
+    isInitializing: boolean;
+    isLoading: boolean;
+    error: string | null;
     login: (email: string, password: string) => Promise<User | null>;
     logout: () => void;
     switchRole: (role: UserRole) => void;
+    clearError: () => void;
 }
 
 // Create context
@@ -61,7 +65,49 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isInitializing, setIsInitializing] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // ============================================
+    // INITIALIZE SESSION
+    // ============================================
+    useEffect(() => {
+        const initializeAuth = async () => {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            if (!token) {
+                setIsInitializing(false);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const userInfo = await response.json();
+                    setUser({
+                        id: userInfo.id || userInfo._id || '',
+                        name: `${userInfo.firstName ?? ''} ${userInfo.lastName ?? ''}`.trim() || userInfo.email,
+                        email: userInfo.email,
+                        role: userInfo.role as UserRole,
+                        avatar: userInfo.avatar ?? null,
+                    });
+                } else {
+                    // Token invalid or expired
+                    localStorage.removeItem(AUTH_TOKEN_KEY);
+                }
+            } catch (err) {
+                console.error("Failed to restore session:", err);
+            } finally {
+                setIsInitializing(false);
+            }
+        };
+
+        initializeAuth();
+    }, []);
 
     const clearError = useCallback(() => {
         setError(null);
@@ -305,8 +351,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     }, []);
 
-    const logout = useCallback(() => {
-        setUser(null);
+    const logout = useCallback(async () => {
+        try {
+            await fetch(`${API_BASE_URL}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error("Logout API failed", error);
+        } finally {
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            setUser(null);
+        }
     }, []);
 
     const switchRole = useCallback((role: UserRole) => {
@@ -319,9 +375,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const value: AuthContextType = {
         user,
         isAuthenticated: user !== null,
+        isInitializing,
+        isLoading,
+        error,
         login,
         logout,
         switchRole,
+        clearError,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

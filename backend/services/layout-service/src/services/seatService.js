@@ -89,6 +89,55 @@ class SeatService {
     }
 
     /**
+     * Bulk reserve seats với timeout
+     * Hỗ trợ Mongo ObjectId (mobile)
+     */
+    async bulkReserveSeats(eventId, seatIds, userId, timeoutMinutes = 15) {
+        if (!seatIds || !seatIds.length) return [];
+        
+        const objectIdEventId = new mongoose.Types.ObjectId(eventId);
+        const expiryTime = new Date(Date.now() + timeoutMinutes * 60 * 1000);
+        
+        const results = [];
+        for (const rawSeatId of seatIds) {
+            if (!mongoose.Types.ObjectId.isValid(rawSeatId)) continue;
+            
+            const seat = await Seat.findOneAndUpdate(
+                {
+                    _id: rawSeatId,
+                    eventId: objectIdEventId,
+                    status: 'available'
+                },
+                {
+                    $set: {
+                        status: 'reserved',
+                        reservedBy: userId,
+                        reservedAt: new Date(),
+                        reservationExpiry: expiryTime
+                    },
+                    $inc: { version: 1 }
+                },
+                { new: true }
+            );
+            
+            if (seat) {
+                results.push(seat);
+                try { await this.updateZoneCache(seat.layoutId, seat.zoneId); } catch (_) { }
+            }
+        }
+
+        if (results.length > 0) {
+            broadcastSeatUpdate(eventId, results.map(s => ({
+                zoneId: s.zoneId, row: s.row, seatNumber: s.seatNumber,
+                status: 'reserved',
+                reservedBy: userId
+            })));
+        }
+
+        return results;
+    }
+
+    /**
      * Reserve seat với timeout (mặc định 15 phút - làm fallback cho order)
      * Không giới hạn số ghế mỗi user, chỉ cần seat còn available.
      */

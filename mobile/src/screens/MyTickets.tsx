@@ -45,10 +45,9 @@ export default function MyTickets({ navigation }: any) {
   }, [authLoading, isAuthenticated, user?.id]);
 
   const visibleOrders = useMemo(() => {
-    // Hiện tại backend chưa trả eventDate để phân loại upcoming/past,
-    // nên tạm thời hiển thị tất cả theo 2 tab (giữ UI).
-    return orders;
-  }, [orders, tab]);
+    // Chỉ hiển thị các đơn đã thanh toán trong màn hình "My Tickets"
+    return orders.filter(o => o.status === 'paid');
+  }, [orders]);
 
   const renderStatus = (status: string) => {
     if (status === 'paid') return { text: 'Paid', cls: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' };
@@ -65,7 +64,7 @@ export default function MyTickets({ navigation }: any) {
             <MaterialIcons name="history" size={24} color="#d500f9" />
           </TouchableOpacity>
         </View>
-        
+
         <View className="flex-row mt-6 bg-[#2a004d] p-1 rounded-xl border border-[#4d0099]">
           <TouchableOpacity
             onPress={() => setTab('upcoming')}

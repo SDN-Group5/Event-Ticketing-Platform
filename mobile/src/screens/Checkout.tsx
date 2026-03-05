@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../context/AuthContext';
 import { PaymentAPI } from '../services/paymentApiService';
@@ -88,17 +88,31 @@ export default function Checkout({ navigation, route }: any) {
         voucherCode: promoCode.trim() ? promoCode.trim() : undefined,
       });
 
-      // Mở PayOS checkout URL
+      // Mở PayOS checkout URL và chờ kết quả
       if (result.checkoutUrl) {
-        await WebBrowser.openBrowserAsync(result.checkoutUrl);
+        const browserResult = await WebBrowser.openBrowserAsync(result.checkoutUrl);
+        
+        // Nếu người dùng đóng browser sau khi thanh toán, chuyển đến trang xác nhận
+        if (browserResult.type === 'dismiss' || browserResult.type === 'cancel') {
+          // Chuyển đến trang xác nhận đơn hàng với trạng thái pending
+          navigation.navigate('OrderConfirmation', {
+            orderCode: result.orderCode,
+            eventName: displayName,
+            quantity: orderDraft.quantity,
+            zoneName: orderDraft.zoneName,
+            paymentStatus: 'pending'
+          });
+        }
+      } else {
+        // Nếu không có checkout URL, chuyển trực tiếp đến trang xác nhận
+        navigation.navigate('OrderConfirmation', {
+          orderCode: result.orderCode,
+          eventName: displayName,
+          quantity: orderDraft.quantity,
+          zoneName: orderDraft.zoneName,
+          paymentStatus: 'pending'
+        });
       }
-
-      navigation.navigate('OrderConfirmation', {
-        orderCode: result.orderCode,
-        eventName: displayName,
-        quantity: orderDraft.quantity,
-        zoneName: orderDraft.zoneName,
-      });
     } catch (e: any) {
       Alert.alert('Thanh toán thất bại', e?.message || 'Không thể tạo thanh toán');
     } finally {
@@ -130,25 +144,17 @@ export default function Checkout({ navigation, route }: any) {
           </View>
         </View>
 
-        <Text className="text-lg font-bold text-white mb-4">Payment Method</Text>
-        <View className="bg-[#1a0033] border border-[#d500f9] rounded-2xl p-4 mb-4 flex-row items-center shadow-[0_0_15px_rgba(213,0,249,0.2)]">
-          <View className="w-12 h-8 bg-[#0a0014] rounded items-center justify-center border border-[#4d0099]">
-            <FontAwesome5 name="cc-visa" size={20} color="#00e5ff" />
+        <Text className="text-lg font-bold text-white mb-4">Hình thức thanh toán</Text>
+        <View className="bg-[#1a0033] border border-[#d500f9] rounded-2xl p-4 mb-6 flex-row items-center shadow-[0_0_15px_rgba(213,0,249,0.2)]">
+          <View className="w-12 h-12 bg-[#2a004d] rounded-xl items-center justify-center border border-[#4d0099]">
+            <MaterialIcons name="payment" size={28} color="#00e5ff" />
           </View>
           <View className="flex-1 ml-4">
-            <Text className="text-white font-bold">•••• •••• •••• 4242</Text>
-            <Text className="text-[#b388ff] text-xs">Expires 12/25</Text>
+            <Text className="text-white font-bold text-base">PayOS</Text>
+            <Text className="text-[#b388ff] text-sm mt-0.5">Thẻ, ví điện tử — chuyển sang trang thanh toán PayOS</Text>
           </View>
           <MaterialIcons name="check-circle" size={24} color="#d500f9" />
         </View>
-
-        <TouchableOpacity className="bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 mb-6 flex-row items-center">
-          <View className="w-12 h-8 bg-[#0a0014] rounded items-center justify-center border border-[#4d0099]">
-            <FontAwesome5 name="apple-pay" size={24} color="white" />
-          </View>
-          <Text className="text-white font-bold ml-4 flex-1">Apple Pay</Text>
-          <MaterialIcons name="radio-button-unchecked" size={24} color="#6a1b9a" />
-        </TouchableOpacity>
 
         <Text className="text-lg font-bold text-white mb-4">Promo Code</Text>
         <View className="flex-row items-center bg-[#1a0033] border border-[#4d0099] h-14 rounded-2xl px-4 mb-8">

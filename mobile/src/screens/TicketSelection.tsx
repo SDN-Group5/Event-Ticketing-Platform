@@ -61,7 +61,7 @@ export default function TicketSelection({ navigation, route }: any) {
     };
   }, [eventId]);
 
-  // Nhận selectedSeats từ SeatMapDesigner
+  // Nhận selectedSeats + zoneId từ SeatMapDesigner (sau khi Confirm) — giữ zone đã chọn để không phải bấm lại
   useEffect(() => {
     const incoming = route?.params?.selectedSeats as
       | {
@@ -73,12 +73,14 @@ export default function TicketSelection({ navigation, route }: any) {
           zoneId: string;
         }[]
       | undefined;
+    const zoneIdFromMap = route?.params?.zoneId as string | undefined;
 
     if (incoming && incoming.length > 0) {
       setSelectedSeats(incoming);
       setQuantity(incoming.length);
+      if (zoneIdFromMap) setSelectedZoneId(zoneIdFromMap);
     }
-  }, [route?.params?.selectedSeats]);
+  }, [route?.params?.selectedSeats, route?.params?.zoneId]);
 
   const sellableZones = useMemo(() => {
     const zones = layout?.zones || [];

@@ -130,10 +130,12 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware(createProxy(BOOKING_SERVICE_URL))
   );
 
-  // Payment Service: /api/payments/*
+  // Payment Service: /api/payments/* — khi proxy gửi path tương đối (vd /create) thì thêm prefix /api/payments/
   app.use(
     '/api/payments',
-    createProxyMiddleware(createProxy(PAYMENT_SERVICE_URL))
+    createProxyMiddleware(
+      createProxy(PAYMENT_SERVICE_URL, { '^/(?!api/payments)': '/api/payments/' })
+    )
   );
 
   // Staff (check-in) -> Booking Service

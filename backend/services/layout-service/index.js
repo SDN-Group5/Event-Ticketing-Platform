@@ -29,7 +29,7 @@ app.set('views', './src/views');
 app.engine('.hbs', engine({ extname: '.hbs' }));
 
 connectMongoDB();
-startSeatCleanupJob();
+// startSeatCleanupJob(); // Disabled for testing payment-service order cleanup
 indexRoute(app);
 
 const server = http.createServer(app);

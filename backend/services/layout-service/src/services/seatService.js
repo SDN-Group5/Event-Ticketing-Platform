@@ -89,10 +89,10 @@ class SeatService {
     }
 
     /**
-     * Reserve seat với timeout (mặc định 5 phút)
+     * Reserve seat với timeout (mặc định 15 phút - làm fallback cho order)
      * Không giới hạn số ghế mỗi user, chỉ cần seat còn available.
      */
-    async reserveSeat(eventId, zoneId, row, seatNumber, userId, timeoutMinutes = 5) {
+    async reserveSeat(eventId, zoneId, row, seatNumber, userId, timeoutMinutes = 15) {
         const objectIdEventId = new mongoose.Types.ObjectId(eventId);
 
         const expiryTime = new Date(Date.now() + timeoutMinutes * 60 * 1000);

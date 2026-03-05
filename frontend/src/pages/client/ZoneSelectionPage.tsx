@@ -266,11 +266,11 @@ export const ZoneSelectionPage: React.FC = () => {
 
             // 3) Mở PayOS ở tab mới, hiện trang chờ đếm ngược
             const url = result.checkoutUrl || result.qrCode || null;
-                if (url) {
-                    window.open(url, '_blank');
-                    setPaymentCheckoutUrl(url);
-                    setShowPaymentWaiting(true);
-                }
+            if (url) {
+                window.open(url, '_blank');
+                setPaymentCheckoutUrl(url);
+                setShowPaymentWaiting(true);
+            }
         } catch (err: any) {
             console.error('Error creating payment from ZoneSelectionPage:', err);
             const msg = err?.response?.data?.message || 'Không thể tạo thanh toán. Vui lòng thử lại.';
@@ -420,8 +420,8 @@ export const ZoneSelectionPage: React.FC = () => {
                                 onClick={handleConfirmPayment}
                                 disabled={selectedSeats.length === 0}
                                 className={`font-bold py-3 px-6 md:px-8 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm md:text-base ${selectedSeats.length > 0
-                                        ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
-                                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                    ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
+                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                     }`}
                             >
                                 <span className="material-symbols-outlined">shopping_cart</span>

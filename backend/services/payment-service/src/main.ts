@@ -11,6 +11,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { connectDB } from './config/db';
 import paymentRoutes from './routes/payment.routes';
+import { startOrderCleanupJob } from './jobs/orderCleanup';
 
 const app = express();
 const PORT = process.env.PAYMENT_SERVICE_PORT || 4004;
@@ -44,6 +45,7 @@ app.use('/api/payments', paymentRoutes);
 
 const start = async () => {
   await connectDB();
+  startOrderCleanupJob();
   app.listen(PORT, () => {
     console.log('💳 ============================================');
     console.log(`✅ payment-service đang chạy tại port: ${PORT}`);

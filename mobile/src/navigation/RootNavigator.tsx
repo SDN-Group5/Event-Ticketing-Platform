@@ -2,9 +2,9 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
-import { LoginScreen } from '../screens/auth/LoginScreen';
-import { UserHomeScreen } from '../screens/user/UserHomeScreen';
-import { StaffHomeScreen } from '../screens/staff/StaffHomeScreen';
+import LoginScreen from '../screens/auth/LoginScreen';
+import UserHomeScreen from '../screens/user/UserHomeScreen';
+import StaffHomeScreen from '../screens/staff/StaffHomeScreen';
 
 export type RootStackParamList = {
   Login: undefined;

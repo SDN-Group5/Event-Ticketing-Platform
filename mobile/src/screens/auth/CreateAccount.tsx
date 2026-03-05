@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ImageBackground, KeyboardAvoidingView, Platform, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ImageBackground, KeyboardAvoidingView, Platform, StyleSheet, ScrollView, Alert } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import Animated, { 
@@ -13,7 +13,10 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function CreateAccount({ navigation }: any) {
-  const { signInAsUser } = useAuth();
+  const { register, isLoading, error, clearError } = useAuth();
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   // Animation values
   const fadeAnim = useSharedValue(0);
@@ -76,6 +79,13 @@ export default function CreateAccount({ navigation }: any) {
           <Text className="text-3xl font-bold text-white mb-2">Create Account</Text>
           <Text className="text-sm text-[#b388ff] mb-6">Join us to discover amazing events near you</Text>
 
+          {!!error && (
+            <TouchableOpacity onPress={clearError} className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 mb-4">
+              <Text className="text-red-300 font-bold">{error}</Text>
+              <Text className="text-red-200 text-xs mt-1">Tap để đóng</Text>
+            </TouchableOpacity>
+          )}
+
           <View className="mb-4">
             <View className="flex-row items-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl px-4">
               <MaterialIcons name="person" size={22} color="#b388ff" />
@@ -83,6 +93,8 @@ export default function CreateAccount({ navigation }: any) {
                 className="flex-1 ml-3 text-base text-white"
                 placeholder="Full Name"
                 placeholderTextColor="#6a1b9a"
+                value={fullName}
+                onChangeText={setFullName}
               />
             </View>
           </View>
@@ -96,6 +108,8 @@ export default function CreateAccount({ navigation }: any) {
                 placeholderTextColor="#6a1b9a"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
               />
             </View>
           </View>
@@ -108,6 +122,8 @@ export default function CreateAccount({ navigation }: any) {
                 placeholder="Password"
                 placeholderTextColor="#6a1b9a"
                 secureTextEntry
+                value={password}
+                onChangeText={setPassword}
               />
               <TouchableOpacity>
                 <MaterialIcons name="visibility-off" size={22} color="#6a1b9a" />
@@ -116,10 +132,27 @@ export default function CreateAccount({ navigation }: any) {
           </View>
 
           <TouchableOpacity
-            onPress={signInAsUser}
-            className="w-full bg-[#d500f9] h-14 rounded-2xl items-center justify-center mb-6 shadow-[0_0_20px_rgba(213,0,249,0.4)]"
+            onPress={async () => {
+              const name = fullName.trim();
+              const parts = name.split(/\s+/).filter(Boolean);
+              const firstName = parts[0] || 'User';
+              const lastName = parts.slice(1).join(' ') || 'Mobile';
+
+              if (!email.trim() || !password) {
+                Alert.alert('Thiếu thông tin', 'Vui lòng nhập email và mật khẩu.');
+                return;
+              }
+
+              const result = await register(firstName, lastName, email.trim(), password);
+              if (result.success) {
+                Alert.alert('Thành công', 'Đăng ký thành công. Hãy đăng nhập để tiếp tục.');
+                navigation.navigate('Login');
+              }
+            }}
+            disabled={isLoading}
+            className={`w-full bg-[#d500f9] h-14 rounded-2xl items-center justify-center mb-6 shadow-[0_0_20px_rgba(213,0,249,0.4)] ${isLoading ? 'opacity-60' : ''}`}
           >
-            <Text className="text-white font-bold text-lg tracking-wide">Sign Up</Text>
+            <Text className="text-white font-bold text-lg tracking-wide">{isLoading ? 'Signing Up...' : 'Sign Up'}</Text>
           </TouchableOpacity>
 
           <View className="flex-row items-center mb-6">

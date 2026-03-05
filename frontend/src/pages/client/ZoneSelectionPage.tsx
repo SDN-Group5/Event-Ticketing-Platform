@@ -264,10 +264,13 @@ export const ZoneSelectionPage: React.FC = () => {
                 voucherCode: voucherCode.trim() || undefined,
             });
 
-            // 3) Luôn mở trang thanh toán PayOS CỐ ĐỊNH do bạn cung cấp
-            window.open(FIXED_PAYOS_CHECKOUT_URL, '_blank');
-            setPaymentCheckoutUrl(FIXED_PAYOS_CHECKOUT_URL);
-            setShowPaymentWaiting(true);
+            // 3) Mở PayOS ở tab mới, hiện trang chờ đếm ngược
+            const url = result.checkoutUrl || result.qrCode || null;
+            if (url) {
+                window.open(url, '_blank');
+                setPaymentCheckoutUrl(url);
+                setShowPaymentWaiting(true);
+            }
         } catch (err: any) {
             console.error('Error creating payment from ZoneSelectionPage:', err);
             const msg = err?.response?.data?.message || 'Không thể tạo thanh toán. Vui lòng thử lại.';

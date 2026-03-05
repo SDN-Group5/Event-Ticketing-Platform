@@ -153,10 +153,13 @@ router.post('/events/:eventId/seats/bulk-release', async (req, res) => {
 
         for (const rawSeatId of seatIds) {
             const parts = rawSeatId.split('-');
-            if (parts.length < 4) continue;
-            const seatNumber = parseInt(parts[parts.length - 1]);
-            const row = parseInt(parts[parts.length - 2]);
-            const zoneId = parts.slice(0, parts.length - 2).join('-');
+            if (parts.length < 3) {
+                console.log(`[bulk-release] Invalid seatId format: ${rawSeatId}`);
+                continue;
+            }
+            const seatNumber = parseInt(parts.pop());
+            const row = parseInt(parts.pop());
+            const zoneId = parts.join('-');
 
             const seat = await Seat.findOneAndUpdate(
                 { eventId: objectIdEventId, zoneId, row, seatNumber, status: { $in: ['reserved', 'sold'] } },
@@ -258,55 +261,5 @@ router.post('/events/:eventId/seats/bulk-sold', async (req, res) => {
     }
 });
 
-// Service-to-service: Bulk release seats (for payment cancellation)
-router.post('/events/:eventId/seats/bulk-release', async (req, res) => {
-    try {
-        const { eventId } = req.params;
-        const { seatIds } = req.body;
-
-        if (!seatIds || !Array.isArray(seatIds)) {
-            return res.status(400).json({ error: 'seatIds array is required' });
-        }
-
-        console.log(`[bulk-release] Releasing ${seatIds.length} seats for event ${eventId}`);
-
-        const results = [];
-        for (const seatId of seatIds) {
-            // Parse composite seatId: "zoneId-row-seatNumber"
-            const parts = seatId.split('-');
-            if (parts.length < 3) {
-                console.log(`[bulk-release] Invalid seatId format: ${seatId}`);
-                continue;
-            }
-
-            const seatNumber = parseInt(parts.pop());
-            const row = parseInt(parts.pop());
-            const zoneId = parts.join('-');
-
-            console.log(`[bulk-release] Releasing seat: zone=${zoneId}, row=${row}, seat=${seatNumber}`);
-
-            // Release the seat
-            const seat = await seatService.releaseReservation(
-                eventId, zoneId, row, seatNumber, null // No userId check for service calls
-            );
-            if (seat) {
-                results.push(seat);
-            }
-        }
-
-        if (results.length > 0) {
-            broadcastSeatUpdate(eventId, results.map(s => ({
-                zoneId: s.zoneId, row: s.row, seatNumber: s.seatNumber,
-                status: 'available',
-            })));
-        }
-
-        console.log(`[bulk-release] Successfully released ${results.length}/${seatIds.length} seats`);
-        res.json({ success: true, released: results.length, seats: results });
-    } catch (error) {
-        console.error('[bulk-release] Error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
 
 export default router;

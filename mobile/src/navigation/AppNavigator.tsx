@@ -15,6 +15,7 @@ import EventDetail from '../screens/EventDetail';
 import TicketSelection from '../screens/TicketSelection';
 import Checkout from '../screens/Checkout';
 import OrderConfirmation from '../screens/OrderConfirmation';
+import OrderHistory from '../screens/OrderHistory';
 import TicketDetail from '../screens/TicketDetail';
 import CreateEvent from '../screens/organizer/CreateEvent';
 import SeatMapDesigner from '../screens/organizer/SeatMapDesigner';
@@ -51,6 +52,7 @@ export default function AppNavigator() {
           <Stack.Screen name="TicketSelection" component={TicketSelection} />
           <Stack.Screen name="Checkout" component={Checkout} />
           <Stack.Screen name="OrderConfirmation" component={OrderConfirmation} />
+          <Stack.Screen name="OrderHistory" component={OrderHistory} />
           <Stack.Screen name="TicketDetail" component={TicketDetail} />
           <Stack.Screen name="CreateEvent" component={CreateEvent} />
           <Stack.Screen name="SeatMapDesigner" component={SeatMapDesigner} />

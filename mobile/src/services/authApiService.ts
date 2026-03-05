@@ -229,4 +229,14 @@ export const AuthAPI = {
       method: 'POST',
     });
   },
+
+  /**
+   * Login with Google ID token
+   */
+  async googleLogin(credential: string): Promise<LoginResponse> {
+    return apiRequest<LoginResponse>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
+    });
+  },
 };

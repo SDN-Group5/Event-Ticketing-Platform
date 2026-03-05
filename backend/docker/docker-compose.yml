@@ -85,6 +85,7 @@ services:
       # Lấy từ file .env hoặc env file
       - MONGODB_URI=${MONGODB_ATLAS_URI}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-me}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     # Không cần depends_on mongodb nữa vì dùng Atlas
     networks:
       - ticketing-network

@@ -5,16 +5,19 @@ import bcrypt from 'bcryptjs';
 // INTERFACE
 // ============================================
 export type UserRole = 'customer' | 'organizer' | 'staff' | 'admin';
+export type AuthProvider = 'local' | 'google';
 
 export interface IUserDocument extends Document {
   companyId?: string;
   email: string;
-  password: string;
+  password?: string | null;
   firstName: string;
   lastName: string;
   phone?: string;
   avatar?: string;
   role: UserRole;
+  authProvider: AuthProvider;
+  googleId?: string | null;
   address?: {
     street?: string;
     city?: string;
@@ -60,9 +63,12 @@ const userSchema = new Schema<IUserDocument>(
     },
     password: {
       type: String,
-      required: [true, 'Password là bắt buộc'],
+      required: function (this: any) {
+        return (this.authProvider ?? 'local') === 'local';
+      },
       minlength: [6, 'Password phải có ít nhất 6 ký tự'],
       select: false,
+      default: null,
     },
     firstName: {
       type: String,
@@ -86,6 +92,17 @@ const userSchema = new Schema<IUserDocument>(
       type: String,
       enum: ['customer', 'organizer', 'staff', 'admin'],
       default: 'customer',
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
+      index: true,
+    },
+    googleId: {
+      type: String,
+      default: null,
+      index: true,
     },
     address: {
       street: String,
@@ -140,6 +157,7 @@ const userSchema = new Schema<IUserDocument>(
 // ============================================
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
+  if (!this.password) return next();
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
@@ -152,6 +170,7 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 

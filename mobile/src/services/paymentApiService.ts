@@ -46,6 +46,7 @@ type ApiResponse<T> = { success: boolean; data: T; message?: string };
 
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
+  console.log('[PaymentAPI] Request', { url, method: options.method || 'GET' });
 
   const response = await fetch(url, {
     ...options,
@@ -55,15 +56,36 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
     },
   });
 
-  const json = (await response.json()) as ApiResponse<T> | any;
+  const rawText = await response.text();
+  let json: ApiResponse<T> | any;
+
+  try {
+    json = rawText ? (JSON.parse(rawText) as ApiResponse<T> | any) : {};
+  } catch (err) {
+    console.error('[PaymentAPI] JSON parse error', {
+      url,
+      status: response.status,
+      rawText: rawText?.slice(0, 300),
+      error: (err as Error).message,
+    });
+    throw new Error(`JSON Parse error: ${(err as Error).message}`);
+  }
+
+  console.log('[PaymentAPI] Response', {
+    url,
+    status: response.status,
+    ok: response.ok,
+    hasDataField: json && typeof json === 'object' && 'data' in json,
+  });
+
   if (!response.ok) {
     throw new Error(json?.message || json?.error?.message || `API Error: ${response.status}`);
   }
 
-  // payment-service trả { success, data }
   if (json && typeof json === 'object' && 'data' in json) {
     return json.data as T;
   }
+
   return json as T;
 }
 

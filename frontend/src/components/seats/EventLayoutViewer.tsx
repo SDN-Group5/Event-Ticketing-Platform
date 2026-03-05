@@ -31,12 +31,21 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
         return letter;
     };
 
-    // Map real seat data from MongoDB to UI format
+    // Map real seat data from MongoDB to UI format.
+    // IMPORTANT: The seat grid uses CSS `grid-template-columns: repeat(seatsPerRow, ...)`.
+    // If a seat document is physically deleted from MongoDB (e.g. by a stale TTL index),
+    // the grid has fewer cells than `seatsPerRow` for that row, causing all subsequent
+    // seats to shift left into the wrong visual position.
+    // FIX: After mapping real seats, we inject "ghost" placeholder cells for any missing
+    // seat numbers (rows × seatsPerRow). Ghost cells render as empty/greyed-out spaces.
     const getSeatsForZone = (zone: any): Seat[] => {
         if (zone.type !== 'seats' || !zone.rows || !zone.seatsPerRow) return [];
         if (seats.length > 0) {
             const zoneSeats = seats.filter(s => s.zoneId === zone.id);
-            return zoneSeats.map(seatData => {
+
+            // Build a lookup: "row-seatNumber" → Seat
+            const seatMap = new Map<string, Seat>();
+            zoneSeats.forEach(seatData => {
                 const isReservedByCurrentUser =
                     currentUserId &&
                     seatData.status === 'reserved' &&
@@ -51,7 +60,7 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                             ? 'blocked'
                             : 'available';
 
-                return {
+                const seat: Seat = {
                     id: `${seatData.zoneId}-${seatData.row}-${seatData.seatNumber}`,
                     row: String(seatData.row),
                     number: seatData.seatNumber,
@@ -60,7 +69,32 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                     status,
                     price: seatData.price,
                 } as Seat;
+                seatMap.set(`${seatData.row}-${seatData.seatNumber}`, seat);
             });
+
+            // Reconstruct the full grid — filling in ghost cells for missing seats
+            const result: Seat[] = [];
+            for (let row = 1; row <= zone.rows; row++) {
+                for (let seatNum = 1; seatNum <= zone.seatsPerRow; seatNum++) {
+                    const key = `${row}-${seatNum}`;
+                    if (seatMap.has(key)) {
+                        result.push(seatMap.get(key)!);
+                    } else {
+                        // Ghost placeholder: seat is missing from DB (deleted)
+                        result.push({
+                            id: `__ghost__${zone.id}-${row}-${seatNum}`,
+                            row: String(row),
+                            number: seatNum,
+                            label: `${getRowLetter(row)}${seatNum}`,
+                            zone: zone.name,
+                            status: 'blocked' as any,
+                            price: zone.price,
+                            _isGhost: true,
+                        } as any);
+                    }
+                }
+            }
+            return result;
         }
         const fallbackSeats: Seat[] = [];
         for (let row = 0; row < zone.rows; row++) {
@@ -230,6 +264,17 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                             style={{ gridTemplateColumns: `repeat(${(openZone as any).seatsPerRow}, minmax(0, 1fr))` }}
                         >
                             {openZoneSeats.map(seat => {
+                                const isGhost = (seat as any)._isGhost === true;
+                                // Ghost seat = invisible spacer to preserve grid column positions
+                                if (isGhost) {
+                                    return (
+                                        <div
+                                            key={seat.id}
+                                            className="aspect-square"
+                                            style={{ backgroundColor: 'transparent' }}
+                                        />
+                                    );
+                                }
                                 const isSelected = selectedSeats.some(s => s.id === seat.id);
                                 const isOccupied = seat.status === 'occupied';
                                 const isBlocked = seat.status === 'blocked';

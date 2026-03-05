@@ -2,14 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
 import { PaymentAPI } from '../../services/paymentApiService';
+import { usePaymentTimer } from '../../contexts/PaymentTimerContext';
 
 export const PaymentCancelPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const orderCode = searchParams.get('orderCode');
   const [message, setMessage] = useState<string | null>(null);
+  const { stopTimer } = usePaymentTimer();
 
   useEffect(() => {
+    // Tắt timer đi nổi dở nếu người dùng vừa huỷ thanh toán
+    stopTimer();
+
     const cleanupOrder = async () => {
       if (!orderCode) return;
       try {
@@ -48,20 +53,7 @@ export const PaymentCancelPage: React.FC = () => {
           </p>
         )}
 
-        <div className="flex gap-4 justify-center">
-          <button
-            onClick={() => navigate(ROUTES.HOME)}
-            className="px-6 py-3 bg-gradient-to-r from-[#8655f6] to-[#d946ef] rounded-xl font-bold hover:shadow-lg hover:shadow-[#8655f6]/30 transition-all"
-          >
-            Về trang chủ
-          </button>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-3 border border-white/20 rounded-xl font-semibold hover:bg-white/5 transition-all"
-          >
-            Quay lại
-          </button>
-        </div>
+
       </div>
     </div>
   );

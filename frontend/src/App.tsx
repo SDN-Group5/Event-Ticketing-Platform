@@ -320,11 +320,17 @@ const AppContent: React.FC = () => {
 };
 
 // Main App Component
+import { PaymentTimerProvider } from './contexts/PaymentTimerContext';
+import { FloatingPaymentTimer } from './components/payment/FloatingPaymentTimer';
+
 const App: React.FC = () => {
   return (
     <Router>
       <AuthProvider>
-        <AppContent />
+        <PaymentTimerProvider>
+          <AppContent />
+          <FloatingPaymentTimer />
+        </PaymentTimerProvider>
       </AuthProvider>
     </Router>
   );

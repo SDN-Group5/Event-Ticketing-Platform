@@ -6,20 +6,18 @@
 
 | Phần | Tái sử dụng | Ghi chú |
 |------|-------------|--------|
-| **users** | ✅ Nguyên bản | Dùng cho mọi app có đăng nhập, role (customer/organizer/admin). Có thể bỏ `pref_*` nếu không cần. |
-| **events** | ✅ Nguyên bản | Chuẩn cho sự kiện: tên, ngày, địa điểm, min_price, created_by. |
-| **event_layouts** | ✅ Nguyên bản | Một event – nhiều layout (canvas), phù hợp vẽ sơ đồ chỗ ngồi. |
-| **layout_zones** | ✅ Nguyên bản | Zone theo loại: seats / standing / stage. Dùng cho bất kỳ venue nào có khu vực. |
-| **seats** | ✅ Nguyên bản | Ghế theo zone, trạng thái (available/reserved/sold), giá, hỗ trợ accessible. |
-| **orders** | ⚠️ Chỉnh chút | Cấu trúc đơn hàng + tiền dùng được. Nếu đổi cổng thanh toán (không dùng PayOS) thì đổi/đổi tên: `payos_*`, `order_code` (theo API cổng mới). |
-| **order_items** | ✅ Nguyên bản | Dòng đơn: zone, seat (nullable), price, quantity — dùng chung được. |
+| **users** | ✅ Nguyên bản | Dùng cho mọi app có đăng nhập, role (customer/organizer/staff/admin). |
+| **event_layouts** | ✅ Nguyên bản | Đã gộp thông tin của Event (name, date, location) trực tiếp vào Layout để dễ truy vấn. |
+| **layout_zones** | ✅ Document nhúng | Nằm trong mảng `zones` của `event_layouts`. |
+| **seats** | ✅ Nguyên bản | Ghế theo zone, trạng thái (available/reserved/sold), lưu độc lập. |
+| **orders** | ⚠️ Chỉnh chút | Đóng vai trò vừa là hoá đơn (payment) vừa là booking. |
+| **order_items** | ✅ Document nhúng | Dòng đơn: zone, seat (nullable), price, qty được nhúng trong Order. |
 
 **Khi đem sang dự án khác:**
 
-1. **Copy file DBML** (đoạn từ `Table users` đến hết `order_items`) → dán vào [dbdiagram.io](https://dbdiagram.io) để xem sơ đồ.
-2. **MongoDB:** Mỗi `Table` = một **collection**. Tên collection có thể đặt trùng tên bảng viết thường (vd: `users`, `events`, `event_layouts`, `layout_zones`, `seats`, `orders`, `order_items`).
-3. **Đổi cổng thanh toán:** Giữ nguyên `orders` / `order_items`, chỉ sửa hoặc thêm cột trong `orders` (vd: `stripe_payment_id`, `vnpay_txn_ref`...) thay cho `payos_*` nếu cần.
-4. **Bỏ bớt field:** Có thể xóa `pref_*`, `company_id`, `org_bank_*`... nếu dự án mới không dùng.
+1. **Copy file DBML** (đoạn từ `Table users` đến hết) → dán vào [dbdiagram.io](https://dbdiagram.io) để xem sơ đồ.
+2. **MongoDB:** Các Table được đánh dấu nhúng (embedded) như `layout_zones` và `order_items` không nằm ở collection riêng mà trong collection cha của chúng.
+3. **Đổi cổng thanh toán:** Giữ nguyên `orders`, chỉ sửa hoặc thêm cột (vd: `stripe_payment_id`).
 
 ---
 
@@ -76,60 +74,67 @@ Table users {
 // EVENTS & LAYOUT SERVICE - SỰ KIỆN & SƠ ĐỒ CHỖ NGỒI
 ///////////////////////////////////////////////////////
 
-Table events {
-  id              string [pk, note: 'Mongo ObjectId (eventId)'] // id sự kiện
-  name            varchar          // tên sự kiện
-  date            datetime         // ngày giờ diễn ra
-  image_url       varchar          // ảnh cover
-  location        varchar          // địa điểm
-  description     text             // mô tả
-  min_price       int              // giá thấp nhất (hiển thị ngoài trang list)
-  created_by      string           // id organizer (user tạo sự kiện)
-  version         int              // version layout/data
-  created_at      datetime
-  updated_at      datetime
-}
-
 Table event_layouts {
-  id             string [pk, note: 'Mongo ObjectId (layoutId)'] // id layout
-  event_id       string [not null, ref: > events.id]            // tham chiếu sự kiện
-  canvas_width   int         // kích thước canvas vẽ sơ đồ (px)
-  canvas_height  int
-  canvas_color   varchar     // màu nền
-  version        int
-  created_by     string      // userId tạo layout
-  created_at     datetime
-  updated_at     datetime
+  id               string [pk, note: 'Mongo ObjectId'] 
+  event_id         string [note: 'ObjectId (tham chiếu logic nếu cần, DB hiện tại đang merge vào Layout)']
+  
+  // Event Info (Merged into Layout in current code)
+  event_name       varchar [not null]
+  event_date       datetime [not null]
+  event_image      varchar
+  event_location   varchar
+  event_description text
+  min_price        int
+  
+  // Canvas Info
+  canvas_width     int         // kích thước canvas vẽ sơ đồ (px)
+  canvas_height    int
+  canvas_color     varchar     // màu nền
+  version          int
+  
+  created_by       string [ref: > users.id] // userId tạo layout
+  created_at       datetime
+  updated_at       datetime
+  
+  Note: 'Layout collection (Gộp cả metadata sự kiện)'
 }
 
 Table layout_zones {
-  id            string [pk, note: 'zoneId (string trong layout.zones.id)'] // id zone (khu vực)
-  layout_id     string [not null, ref: > event_layouts.id]                // layout chứa zone
-  event_id      string [not null, ref: > events.id]                       // sự kiện tương ứng
-
-  name          varchar      // tên zone (VIP, New Seats, Standing,...)
-  type          varchar [note: 'seats|standing|stage|barrier']  // loại khu: ghế / đứng / sân khấu / rào
-  price         int     [note: 'Giá 1 vé trong zone này']       // giá vé theo khu
-  color         varchar      // màu hiển thị trên sơ đồ
-
-  rows          int          // số hàng ghế (nếu type = seats)
-  seats_per_row int          // số ghế mỗi hàng
-
-  // Vị trí & kích thước vẽ trên canvas
-  pos_x         int
-  pos_y         int
-  size_width    int
-  size_height   int
-
-  created_at    datetime
-  updated_at    datetime
+  id               string [pk, note: 'zoneId (dùng mã string thay vì ObjectId)'] 
+  layout_id        string [not null, ref: > event_layouts.id]
+  
+  name             varchar      // tên zone (VIP, New Seats, Standing,...)
+  type             varchar [note: 'seats|standing|stage|exit|barrier']
+  
+  // Layout parameters
+  pos_x            int
+  pos_y            int
+  size_width       int
+  size_height      int
+  color            varchar      // màu hex
+  rotation         int
+  elevation        int
+  display_order    int
+  
+  // Seat Rules
+  rows             int
+  seats_per_row    int
+  price            int
+  
+  // Cache / Metadata
+  total_seats      int
+  available_seats  int
+  reserved_seats   int
+  sold_seats       int
+  
+  Note: 'Khu vực chỗ ngồi (EMBEDDED TRONG mảng event_layouts.zones)'
 }
 
 Table seats {
-  id           string [pk, note: 'Mongo ObjectId']          // id ghế
-  event_id     string [not null, ref: > events.id]          // sự kiện
-  layout_id    string [not null, ref: > event_layouts.id]   // layout
-  zone_id      string [not null, ref: > layout_zones.id]    // khu vực
+  id           string [pk, note: 'Mongo ObjectId']
+  layout_id    string [not null, ref: > event_layouts.id]
+  event_id     string [not null, note: 'Reference to logic Event ID']
+  zone_id      string [not null, ref: > layout_zones.id]
 
   row          int         // số hàng (1,2,3,...)
   seat_number  int         // số ghế trong hàng (1,2,3,...)
@@ -139,9 +144,9 @@ Table seats {
   reserved_by  string      // user giữ ghế
   reserved_at  datetime
   reservation_expiry datetime
-  sold_by      string      // user xử lý bán
+  sold_by      string [ref: > users.id]
   sold_at      datetime
-  booking_id   string      // id booking tương ứng (nếu có)
+  booking_id   string [ref: > orders.id, note: 'Reference to Order ID (booking = order)']
 
   price        int         // giá ghế (có thể trùng hoặc khác zone.price)
   discount     int         // giảm giá (nếu có)
@@ -158,12 +163,12 @@ Table seats {
 ///////////////////////////////////////////////////////
 
 Table orders {
-  id                string [pk, note: 'Mongo ObjectId'] // id đơn hàng
-  order_code        bigint [unique, not null]           // mã orderCode PayOS (số nguyên)
-  user_id           string [not null, ref: > users.id]  // người mua (customer)
-  event_id          string [not null, ref: > events.id] // sự kiện
+  id                string [pk, note: 'Mongo ObjectId (bản chất là Booking)']
+  order_code        bigint [unique, not null]           
+  user_id           string [not null, ref: > users.id]  
+  event_id          string [not null, note: 'Event ID referenced from Layout']
   event_name        varchar [not null]                  // tên sự kiện (snapshot)
-  organizer_id      string [not null, ref: > users.id]  // organizer nhận tiền
+  organizer_id      string [not null, ref: > users.id]
 
   // Thông tin tài khoản ngân hàng của organizer (để payout)
   org_bank_acct_name   varchar
@@ -199,12 +204,13 @@ Table orders {
 }
 
 Table order_items {
-  id          string [pk]                                 // id dòng item
-  order_id    string [not null, ref: > orders.id]         // đơn hàng gốc
-  zone_name   varchar [not null]                          // tên khu (VIP, New Seats,...)
-  seat_id     string [ref: > seats.id]                    // id ghế (null nếu vé đứng/general)
-  price       int    [not null]                           // giá 1 vé của item
-  quantity    int    [not null, default: 1]               // số lượng vé cho item
+  order_id    string [not null, ref: > orders.id]         
+  zone_name   varchar [not null]                          
+  seat_id     string [ref: > seats.id]                    // null nếu vé đứng
+  price       int    [not null]                           
+  quantity    int    [not null, default: 1]               
+  
+  Note: 'Dòng sản phẩm (EMBEDDED TRONG mảng orders.items)'
 }
 
 ///////////////////////////////////////////////////////
@@ -231,7 +237,7 @@ Table vouchers {
   status         varchar [not null, note: 'active|inactive|expired'] // trạng thái
 
   organizer_id   string [ref: > users.id]                      // organizer sở hữu voucher (nếu có)
-  event_id       string [ref: > events.id]                     // chỉ dùng cho 1 event (nếu có)
+  event_id       string [note: 'áp dụng riêng cho Event ID (từ Event Layout)']
   user_id        string [ref: > users.id]                      // voucher cá nhân hoá (huỷ vé thì cấp riêng cho user)
 
   created_at     datetime

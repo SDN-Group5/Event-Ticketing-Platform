@@ -1,9 +1,13 @@
 import axios from 'axios';
 
-const SEAT_API_BASE_URL =
-  process.env.SEAT_API_BASE_URL ||
-  process.env.LAYOUT_SERVICE_URL ||
-  'http://localhost:4002/api/v1';
+const LAYOUT_BASE =
+  (process.env.SEAT_API_BASE_URL ||
+    process.env.LAYOUT_SERVICE_URL ||
+    'http://localhost:4002')
+    .replace(/\/api\/v1\/?$/, ''); // Bỏ /api/v1 nếu có, tránh trùng
+
+const SEAT_API_BASE_URL = `${LAYOUT_BASE}/api/v1`; // Luôn luôn có /api/v1
+
 
 /**
  * Best-effort: gọi sang layout-service bulk-release để trả ghế về trạng thái trống.

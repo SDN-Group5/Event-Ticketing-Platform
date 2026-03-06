@@ -293,50 +293,8 @@ export const createPayment = async (req: Request, res: Response) => {
       status: 'pending',
     });
 
-    // ================== LOCK GHẾ (RESERVE) ==================
-    // Gọi sang layout-service để lock ghế ngay khi tạo order thành công.
-    // Nếu đơn hàng có seatId, ta phải đảm bảo ghế đó được giữ (reserved).
-    const seatIds = items
-      .filter((item: any) => item.seatId)
-      .map((item: any) => item.seatId);
-
-    if (seatIds.length > 0) {
-      try {
-        const reserveUrl = `${LAYOUT_SERVICE_URL}/api/v1/events/${eventId}/seats/bulk-reserve`;
-        const reserveResp = await axios.post(reserveUrl, {
-          seatIds,
-          userId
-        }, { timeout: 5000 });
-
-        const reservedCount = reserveResp.data?.reserved || 0;
-        
-        if (reservedCount < seatIds.length) {
-          // KHÔNG LOCK ĐƯỢC ĐỦ GHẾ -> Phải rollback
-          console.warn(`[createPayment] Only locked ${reservedCount}/${seatIds.length} seats. Rolling back.`);
-          
-          // Release những ghế vừa trót lock (nếu có)
-          if (reservedCount > 0) {
-            const releaseUrl = `${LAYOUT_SERVICE_URL}/api/v1/events/${eventId}/seats/bulk-release`;
-            await axios.post(releaseUrl, { seatIds }).catch(e => console.error('[createPayment] Rollback release failed:', e.message));
-          }
-
-          // Xoá order vừa tạo
-          await Order.deleteOne({ _id: order._id });
-          
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Một số ghế bạn chọn đã có người khác đặt nhanh hơn. Vui lòng quay lại chọn ghế khác.' 
-          });
-        }
-        
-        console.log(`[createPayment] Successfully locked all ${reservedCount} seats for order ${orderCode}`);
-      } catch (err: any) {
-        console.error('[createPayment] Seat locking failed:', err?.message);
-        // Nếu lỗi hệ thống (timeout, 500...), tạm thời xoá order để an toàn
-        await Order.deleteOne({ _id: order._id });
-        return res.status(500).json({ success: false, message: 'Lỗi khi giữ chỗ. Vui lòng thử lại sau.' });
-      }
-    }
+    // NOTE: Ghế đã được frontend reserve từng cái trước khi gọi API này,
+    // nên KHÔNG cần lock lại ở đây. Xem ZoneSelectionPage.tsx step 1.
 
     const payosItems = items.map((item: any) => ({
       name: `${eventName} - ${item.zoneName}`,

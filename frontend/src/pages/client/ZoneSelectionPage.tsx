@@ -212,11 +212,10 @@ export const ZoneSelectionPage: React.FC = () => {
         setVoucherError(null);
 
         const items = selectedSeats.map(seat => {
-            const seatZone = zones.find(z => z.name === seat.zone) || zones[0];
             return {
                 zoneName: seat.zone,
                 seatId: seat.id,
-                price: seatZone ? seatZone.price : seat.price,
+                price: seat.price,
                 quantity: 1,
             };
         });

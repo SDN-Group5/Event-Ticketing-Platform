@@ -144,8 +144,12 @@ export const SeatMap: React.FC<SeatMapProps & {
                             <span className="text-xs text-gray-400">Selected</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded bg-gray-600 opacity-50" />
-                            <span className="text-xs text-gray-400">Occupied</span>
+                            <div className="w-4 h-4 rounded bg-[#4b5563] opacity-60" />
+                            <span className="text-xs text-gray-400">Sold</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-[#9ca3af] opacity-80" />
+                            <span className="text-xs text-gray-400">Reserved</span>
                         </div>
                     </div>
                 )}

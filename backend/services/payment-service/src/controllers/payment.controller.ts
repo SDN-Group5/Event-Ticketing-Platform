@@ -5,11 +5,10 @@ import { Order } from '../models/order.model';
 import { Voucher } from '../models/voucher.model';
 import { transferToOrganizerBank } from '../services/bankTransfer.service';
 import { releaseSeatsForOrder } from '../services/seatRelease.service';
-import { markSeatsSoldForOrder } from '../services/seatPurchase.service';
 
 const COMMISSION_RATE = 0.05; // 5% hoa hồng mặc định cho app
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL || 'http://localhost:3001';
+const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL || 'http://localhost:4002';
 
 const PAYOS_CLIENT_ID = process.env.PAYOS_CLIENT_ID;
 const PAYOS_API_KEY = process.env.PAYOS_API_KEY;
@@ -176,6 +175,9 @@ export const createPayment = async (req: Request, res: Response) => {
 
     // Business rule: không giữ lại các đơn chưa thanh toán.
     // Trước khi tạo order mới, xoá tất cả order cũ của user chưa paid (pending/processing/expired/cancelled...).
+    const oldOrders = await Order.find({ userId, status: { $ne: 'paid' } });
+    // Best-effort: trả ghế về trống trước khi xoá order cũ (tránh kẹt ghế)
+    await Promise.all(oldOrders.map((o) => releaseSeatsForOrder(o)));
     await Order.deleteMany({ userId, status: { $ne: 'paid' } });
 
     const subtotal = items.reduce(
@@ -291,6 +293,51 @@ export const createPayment = async (req: Request, res: Response) => {
       status: 'pending',
     });
 
+    // ================== LOCK GHẾ (RESERVE) ==================
+    // Gọi sang layout-service để lock ghế ngay khi tạo order thành công.
+    // Nếu đơn hàng có seatId, ta phải đảm bảo ghế đó được giữ (reserved).
+    const seatIds = items
+      .filter((item: any) => item.seatId)
+      .map((item: any) => item.seatId);
+
+    if (seatIds.length > 0) {
+      try {
+        const reserveUrl = `${LAYOUT_SERVICE_URL}/api/v1/events/${eventId}/seats/bulk-reserve`;
+        const reserveResp = await axios.post(reserveUrl, {
+          seatIds,
+          userId
+        }, { timeout: 5000 });
+
+        const reservedCount = reserveResp.data?.reserved || 0;
+        
+        if (reservedCount < seatIds.length) {
+          // KHÔNG LOCK ĐƯỢC ĐỦ GHẾ -> Phải rollback
+          console.warn(`[createPayment] Only locked ${reservedCount}/${seatIds.length} seats. Rolling back.`);
+          
+          // Release những ghế vừa trót lock (nếu có)
+          if (reservedCount > 0) {
+            const releaseUrl = `${LAYOUT_SERVICE_URL}/api/v1/events/${eventId}/seats/bulk-release`;
+            await axios.post(releaseUrl, { seatIds }).catch(e => console.error('[createPayment] Rollback release failed:', e.message));
+          }
+
+          // Xoá order vừa tạo
+          await Order.deleteOne({ _id: order._id });
+          
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Một số ghế bạn chọn đã có người khác đặt nhanh hơn. Vui lòng quay lại chọn ghế khác.' 
+          });
+        }
+        
+        console.log(`[createPayment] Successfully locked all ${reservedCount} seats for order ${orderCode}`);
+      } catch (err: any) {
+        console.error('[createPayment] Seat locking failed:', err?.message);
+        // Nếu lỗi hệ thống (timeout, 500...), tạm thời xoá order để an toàn
+        await Order.deleteOne({ _id: order._id });
+        return res.status(500).json({ success: false, message: 'Lỗi khi giữ chỗ. Vui lòng thử lại sau.' });
+      }
+    }
+
     const payosItems = items.map((item: any) => ({
       name: `${eventName} - ${item.zoneName}`,
       quantity: item.quantity || 1,
@@ -365,7 +412,7 @@ export const getUserOrders = async (req: Request, res: Response) => {
     const { userId } = req.params;
     const orders = await Order.find({
       userId,
-      status: { $in: ['paid', 'refunded'] },
+      status: { $in: ['paid', 'refunded', 'cancelled', 'expired', 'pending', 'processing'] },
     }).sort({ createdAt: -1 });
 
     return res.json({ success: true, data: orders });
@@ -410,6 +457,8 @@ export const handleWebhook = async (req: Request, res: Response) => {
         order.status = 'paid';
         order.paidAt = new Date();
 
+        // Quan trọng: đánh dấu ghế đã bán trên layout-service để chặn người khác đặt lại
+        await markSeatsSold(order);
         await runAutoPayout(order);
         await order.save();
       }
@@ -505,6 +554,8 @@ export const verifyPayment = async (req: Request, res: Response) => {
     if (paymentInfo.status === 'PAID' && currentStatus !== 'paid') {
       order.status = 'paid';
       order.paidAt = new Date();
+      // Quan trọng: đánh dấu ghế đã bán trên layout-service để chặn người khác đặt lại
+      await markSeatsSold(order);
       await runAutoPayout(order);
       await order.save();
 

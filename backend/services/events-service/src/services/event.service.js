@@ -1,4 +1,4 @@
-import Event from '../models/Event.js'; // Nhớ thêm đuôi .js khi dùng ES Modules
+import Event from '../models/Event.js';
 
 export const createNewEvent = async (eventData, organizerId) => {
     // Thêm logic nghiệp vụ ở đây (nếu có). VD: Validate thời gian startTime < endTime

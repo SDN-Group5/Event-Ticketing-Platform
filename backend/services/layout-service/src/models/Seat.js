@@ -99,7 +99,8 @@ seatSchema.index({ eventId: 1, zoneId: 1, status: 1 });
 seatSchema.index({ eventId: 1, zoneId: 1, row: 1, seatNumber: 1 }, { unique: true });
 seatSchema.index({ eventId: 1, status: 1 });
 seatSchema.index({ reservationExpiry: 1 }, {
-    expireAfterSeconds: 0,
+    // Không dùng expireAfterSeconds để tránh MongoDB tự động xoá bản ghi
+    // Chỉ dùng index này để tối ưu tốc độ truy vấn tìm ghế hết hạn cho cronjob
     partialFilterExpression: { status: 'reserved' }
 });
 

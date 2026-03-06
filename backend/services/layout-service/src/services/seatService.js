@@ -94,14 +94,14 @@ class SeatService {
      */
     async bulkReserveSeats(eventId, seatIds, userId, timeoutMinutes = 15) {
         if (!seatIds || !seatIds.length) return [];
-        
+
         const objectIdEventId = new mongoose.Types.ObjectId(eventId);
         const expiryTime = new Date(Date.now() + timeoutMinutes * 60 * 1000);
-        
+
         const results = [];
         for (const rawSeatId of seatIds) {
             if (!mongoose.Types.ObjectId.isValid(rawSeatId)) continue;
-            
+
             const seat = await Seat.findOneAndUpdate(
                 {
                     _id: rawSeatId,
@@ -119,7 +119,7 @@ class SeatService {
                 },
                 { new: true }
             );
-            
+
             if (seat) {
                 results.push(seat);
                 try { await this.updateZoneCache(seat.layoutId, seat.zoneId); } catch (_) { }
@@ -333,6 +333,79 @@ class SeatService {
                 pages: Math.ceil(total / limit)
             }
         };
+    }
+
+    /**
+     * Bulk reserve seats by MongoDB ObjectId
+     * Called by payment-service when creating an order.
+     * seatIds: array of MongoDB _id strings
+     */
+    async bulkReserveSeats(eventId, seatIds, userId, timeoutMinutes = 15) {
+        const expiryTime = new Date(Date.now() + timeoutMinutes * 60 * 1000);
+        const objectIdEventId = new mongoose.Types.ObjectId(eventId);
+        const results = [];
+
+        for (const rawSeatId of seatIds) {
+            try {
+                let seat = null;
+
+                // Strategy 1: MongoDB ObjectId
+                if (mongoose.Types.ObjectId.isValid(rawSeatId) && rawSeatId.length === 24) {
+                    seat = await Seat.findOneAndUpdate(
+                        { _id: rawSeatId, eventId: objectIdEventId, status: 'available' },
+                        {
+                            $set: {
+                                status: 'reserved',
+                                reservedBy: userId,
+                                reservedAt: new Date(),
+                                reservationExpiry: expiryTime,
+                            },
+                            $inc: { version: 1 }
+                        },
+                        { new: true }
+                    );
+                }
+
+                // Strategy 2: Composite format "zoneId-row-seatNum"
+                if (!seat) {
+                    const parts = String(rawSeatId).split('-');
+                    if (parts.length >= 3) {
+                        const seatNumber = parseInt(parts.pop());
+                        const row = parseInt(parts.pop());
+                        const zoneId = parts.join('-');
+
+                        if (!isNaN(seatNumber) && !isNaN(row)) {
+                            seat = await Seat.findOneAndUpdate(
+                                { eventId: objectIdEventId, zoneId, row, seatNumber, status: 'available' },
+                                {
+                                    $set: {
+                                        status: 'reserved',
+                                        reservedBy: userId,
+                                        reservedAt: new Date(),
+                                        reservationExpiry: expiryTime,
+                                    },
+                                    $inc: { version: 1 }
+                                },
+                                { new: true }
+                            );
+                        }
+                    }
+                }
+
+                if (seat) {
+                    results.push(seat);
+                    try { await this.updateZoneCache(seat.layoutId, seat.zoneId); } catch (_) { }
+                    broadcastSeatUpdate(eventId, [{
+                        zoneId: seat.zoneId, row: seat.row, seatNumber: seat.seatNumber,
+                        status: 'reserved', reservedBy: userId,
+                    }]);
+                }
+            } catch (err) {
+                console.error(`[bulkReserveSeats] Error reserving seat ${rawSeatId}:`, err.message);
+            }
+        }
+
+        return results;
     }
 }
 

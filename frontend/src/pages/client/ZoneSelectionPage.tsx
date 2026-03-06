@@ -32,7 +32,7 @@ export const ZoneSelectionPage: React.FC = () => {
     const [openPolicy, setOpenPolicy] = useState<'terms' | null>(null);
     const socketRef = useRef<Socket | null>(null);
 
-    const { startTimer } = usePaymentTimer();
+    const { startTimer, isTimerActive, cancelPayment: cancelActivePayment } = usePaymentTimer();
 
     // Load event data
     const event = useMemo(() => eventsData.find(e => e.id === id), [id]);
@@ -223,7 +223,32 @@ export const ZoneSelectionPage: React.FC = () => {
         try {
             setIsProcessingPayment(true);
 
+            // 0) Nếu đang có phiên thanh toán cũ, yêu cầu huỷ đơn cũ trước
+            if (isTimerActive) {
+                setVoucherError('Bạn đang có một đơn hàng chưa thanh toán! Vui lòng huỷ đơn hàng cũ trước khi đặt đơn mới.');
+                setIsProcessingPayment(false);
+                return;
+            }
+
             // 1) Reserve tất cả ghế trong DB (lock) trước khi tạo payment
+            const reservedSeatIds: string[] = [];
+
+            const releaseReservedSeats = async () => {
+                for (const seatId of reservedSeatIds) {
+                    const parts = String(seatId).split('-');
+                    const seatNumber = Number(parts.pop());
+                    const rowNumber = Number(parts.pop());
+                    const zoneId = parts.join('-');
+                    const seatObj = await SeatAPI.getSeatsByZone(id!, zoneId).catch(() => null);
+                    if (!seatObj) continue;
+                    // Lấy seatId Mongo để gọi PATCH release
+                    const found = (seatObj as any)?.seats?.find((s: any) => s.row === rowNumber && s.seatNumber === seatNumber);
+                    if (found?._id) {
+                        await SeatAPI.releaseReservation(id!, found._id).catch(() => { });
+                    }
+                }
+            };
+
             const reserveResults: boolean[] = [];
             for (const seat of selectedSeats) {
                 const parts = String(seat.id).split('-');
@@ -232,6 +257,7 @@ export const ZoneSelectionPage: React.FC = () => {
                 const zoneId = parts.join('-');
                 try {
                     await SeatAPI.reserveSeat(id, zoneId, rowNumber, seatNumber);
+                    reservedSeatIds.push(seat.id);
                     reserveResults.push(true);
                 } catch (err: any) {
                     console.error('Reserve failed for', seat.id, err?.response?.data);
@@ -241,6 +267,8 @@ export const ZoneSelectionPage: React.FC = () => {
 
             const failedCount = reserveResults.filter(r => !r).length;
             if (failedCount > 0) {
+                // Release các ghế đã reserve thành công trước đó để tránh bị kẹt xám
+                await releaseReservedSeats();
                 setVoucherError(`${failedCount} ghế đã bị người khác giữ/mua. Vui lòng chọn lại.`);
                 setIsProcessingPayment(false);
                 return;
@@ -266,10 +294,22 @@ export const ZoneSelectionPage: React.FC = () => {
                 selectedSeats.length
             );
 
-            // Mở tab PayOS (nếu popup bị block thì người dùng vẫn có thể bấm nút từ Floating Component)
+            // Mở tab PayOS
             window.open(result.checkoutUrl, '_blank');
         } catch (err: any) {
             console.error('Error creating payment from ZoneSelectionPage:', err);
+            // Release các ghế đã reserve trước đó để chúng không bị kẹt xám
+            for (const seat of selectedSeats) {
+                const parts = String(seat.id).split('-');
+                const seatNumber = Number(parts.pop());
+                const rowNumber = Number(parts.pop());
+                const zoneId = parts.join('-');
+                const seatObj = await SeatAPI.getSeatsByZone(id!, zoneId).catch(() => null);
+                const found = (seatObj as any)?.seats?.find((s: any) => s.row === rowNumber && s.seatNumber === seatNumber);
+                if (found?._id) {
+                    await SeatAPI.releaseReservation(id!, found._id).catch(() => { });
+                }
+            }
             const msg = err?.response?.data?.message || 'Không thể tạo thanh toán. Vui lòng thử lại.';
             setVoucherError(msg);
         } finally {
@@ -413,17 +453,19 @@ export const ZoneSelectionPage: React.FC = () => {
                                 <span className="material-symbols-outlined">360</span>
                                 View 360°
                             </button>
-                            <button
-                                onClick={handleConfirmPayment}
-                                disabled={selectedSeats.length === 0}
-                                className={`font-bold py-3 px-6 md:px-8 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm md:text-base ${selectedSeats.length > 0
-                                    ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
-                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                    }`}
-                            >
-                                <span className="material-symbols-outlined">shopping_cart</span>
-                                <span>Tiếp tục thanh toán</span>
-                            </button>
+                            {!isTimerActive && (
+                                <button
+                                    onClick={handleConfirmPayment}
+                                    disabled={selectedSeats.length === 0}
+                                    className={`font-bold py-3 px-6 md:px-8 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm md:text-base ${selectedSeats.length > 0
+                                        ? 'bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white hover:brightness-110'
+                                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                        }`}
+                                >
+                                    <span className="material-symbols-outlined">shopping_cart</span>
+                                    <span>Tiếp tục thanh toán</span>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

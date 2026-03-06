@@ -1,16 +1,15 @@
 import axios from 'axios';
 
-// URL của event-service (nếu sau này dùng API Gateway thì đổi port lại)
-const EVENT_API_URL = 'http://localhost:3003/api/events'; 
+// Gọi qua API Gateway (port 4000) thay vì trực tiếp events-service
+const EVENT_API_URL = 'http://localhost:4005/api/events'; 
 
 // Hàm helper để tự động lấy token từ localStorage gán vào header
 const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-        headers: {
-            Authorization: token ? `Bearer ${token}` : ''
-        }
-    };
+    // Đồng bộ với AuthContext (`auth_token`)
+    const token = localStorage.getItem('auth_token');
+    return token
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : { headers: {} };
 };
 
 export const EventAPI = {

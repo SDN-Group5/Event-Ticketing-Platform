@@ -45,9 +45,7 @@ io.on('connection', (socket) => {
         socket.leave(`event:${eventId}`);
     });
 });
-const PORT = process.env.PORT || 4002;
-
-server.listen(PORT, () => {
-    console.log(`Server is running on port http://localhost:${PORT}`);
+server.listen(port, () => {
+    console.log(`Server is running on port http://localhost:${port}`);
     console.log(`🔌 WebSocket ready on same port`);
 });

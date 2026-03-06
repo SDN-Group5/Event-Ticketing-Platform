@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const eventSchema = new mongoose.Schema({
   organizerId: { type: String, required: true }, // Tham chiếu đến bảng User (Auth Service)
@@ -19,4 +19,4 @@ const eventSchema = new mongoose.Schema({
   timestamps: true 
 });
 
-module.exports = mongoose.model('Event', eventSchema);
+export default mongoose.model('Event', eventSchema);

@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { EventAPI } from '../../services/eventApiService';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const CreateEventPage: React.FC = () => {
     const navigate = useNavigate();
+    const { user, isAuthenticated } = useAuth();
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         name: '',
@@ -32,6 +34,18 @@ export const CreateEventPage: React.FC = () => {
             setIsSubmitting(true);
             setError(null);
             try {
+                // Check quyền ngay trên UI cho rõ ràng (backend cũng sẽ check)
+                if (!isAuthenticated) {
+                    setError('Bạn cần đăng nhập để tạo sự kiện');
+                    navigate('/login');
+                    return;
+                }
+                if (user?.role !== 'organizer' && user?.role !== 'admin') {
+                    setError('Tài khoản của bạn không có quyền Organizer/Admin để tạo sự kiện');
+                    navigate('/');
+                    return;
+                }
+
                 // 1. Gộp ngày và giờ thành chuẩn ISO String cho startTime
                 const startTimeString = formData.date && formData.time 
                     ? new Date(`${formData.date}T${formData.time}:00`).toISOString()

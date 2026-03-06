@@ -19,25 +19,26 @@
 
 ## Quick Links
 
-| Purpose | URL |
-|---------|-----|
-| Homepage | http://localhost:5173 |
-| Register | http://localhost:5173/register |
-| Login | http://localhost:5173/login |
-| My Tickets | http://localhost:5173/my-tickets (requires login) |
+| Purpose             | URL                                                       |
+| ------------------- | --------------------------------------------------------- |
+| Homepage            | http://localhost:5173                                     |
+| Register            | http://localhost:5173/register                            |
+| Login               | http://localhost:5173/login                               |
+| My Tickets          | http://localhost:5173/my-tickets (requires login)         |
 | Organizer Dashboard | http://localhost:5173/organizer (requires organizer role) |
-| Admin Dashboard | http://localhost:5173/admin/payouts (requires admin role) |
+| Admin Dashboard     | http://localhost:5173/admin/payouts (requires admin role) |
 
 ## Backend URLs
 
-| Service | URL |
-|---------|-----|
+| Service      | URL                   |
+| ------------ | --------------------- |
 | Auth Service | http://localhost:4001 |
-| API Gateway | http://localhost:4000 |
+| API Gateway  | http://localhost:4000 |
 
 ## Testing Checklist
 
 ### Registration Test
+
 - [ ] Go to `/register`
 - [ ] Fill in form with test data
 - [ ] See "Email verification required" message
@@ -46,6 +47,7 @@
 - [ ] See "Email verified" success message
 
 ### Login Test
+
 - [ ] Go to `/login`
 - [ ] Enter email and password
 - [ ] See redirect to homepage
@@ -54,6 +56,7 @@
 - [ ] Try accessing `/organizer` - should redirect to home
 
 ### Session Test
+
 - [ ] Login to account
 - [ ] Refresh page (`F5` or `Ctrl+R`)
 - [ ] Should still be logged in
@@ -64,6 +67,7 @@
 - [ ] Should still be logged in!
 
 ### Logout Test
+
 - [ ] Login first
 - [ ] Find logout button (likely in profile/settings)
 - [ ] Click logout
@@ -74,11 +78,13 @@
 ## Environment Setup
 
 ### Frontend (.env or .env.local)
+
 ```env
 VITE_API_URL=http://localhost:4001
 ```
 
 ### Backend (.env in auth-service)
+
 ```env
 JWT_SECRET_KEY=your-secret-key-here
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -110,18 +116,19 @@ Backend Auth System:
 
 ## Common Issues & Solutions
 
-| Issue | Solution |
-|-------|----------|
-| "Email already exists" | Register with different email or reset database |
-| "Invalid OTP code" | Check backend logs for correct code, must enter within 1 minute |
-| "User not found on login" | Make sure email is verified first, try registering again |
-| "401 Unauthorized on protected page" | Token expired, need to login again |
-| "Cannot connect to server" | Make sure backend is running on port 4001 |
-| "Email not sending" | Email service not configured, check EMAIL_SETUP.md |
+| Issue                                | Solution                                                        |
+| ------------------------------------ | --------------------------------------------------------------- |
+| "Email already exists"               | Register with different email or reset database                 |
+| "Invalid OTP code"                   | Check backend logs for correct code, must enter within 1 minute |
+| "User not found on login"            | Make sure email is verified first, try registering again        |
+| "401 Unauthorized on protected page" | Token expired, need to login again                              |
+| "Cannot connect to server"           | Make sure backend is running on port 4001                       |
+| "Email not sending"                  | Email service not configured, check EMAIL_SETUP.md              |
 
 ## API Curl Examples
 
 ### Register
+
 ```bash
 curl -X POST http://localhost:4001/api/auth/register \
   -H "Content-Type: application/json" \
@@ -134,6 +141,7 @@ curl -X POST http://localhost:4001/api/auth/register \
 ```
 
 ### Login
+
 ```bash
 curl -X POST http://localhost:4001/api/auth/login \
   -H "Content-Type: application/json" \
@@ -144,6 +152,7 @@ curl -X POST http://localhost:4001/api/auth/login \
 ```
 
 ### Verify Email
+
 ```bash
 curl -X POST http://localhost:4001/api/auth/verify-email \
   -H "Content-Type: application/json" \
@@ -154,12 +163,14 @@ curl -X POST http://localhost:4001/api/auth/verify-email \
 ```
 
 ### Get Current User (with token)
+
 ```bash
 curl -X GET http://localhost:4001/api/users/me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
 ```
 
 ### Logout
+
 ```bash
 curl -X POST http://localhost:4001/api/auth/logout \
   -H "Content-Type: application/json"
@@ -168,20 +179,23 @@ curl -X POST http://localhost:4001/api/auth/logout \
 ## Debugging Tips
 
 ### Check if token is stored
+
 ```javascript
 // In browser console
-localStorage.getItem('auth_token')
+localStorage.getItem("auth_token");
 ```
 
 ### Check if user is authenticated
+
 ```javascript
 // In browser console
 // Look for useAuth hook in component
-const { user, isAuthenticated } = useAuth()
-console.log(user, isAuthenticated)
+const { user, isAuthenticated } = useAuth();
+console.log(user, isAuthenticated);
 ```
 
 ### Check backend logs
+
 ```bash
 # If running with npm
 npm run dev
@@ -203,12 +217,12 @@ npm run dev
 
 ## Role-Based Access
 
-| Role | Home | Profile | My Tickets | Organizer | Admin |
-|------|------|---------|-----------|-----------|-------|
-| Customer | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Organizer | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Not Logged In | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Role          | Home | Profile | My Tickets | Organizer | Admin |
+| ------------- | ---- | ------- | ---------- | --------- | ----- |
+| Customer      | ✅   | ✅      | ✅         | ❌        | ❌    |
+| Organizer     | ✅   | ✅      | ✅         | ✅        | ❌    |
+| Admin         | ✅   | ✅      | ✅         | ✅        | ✅    |
+| Not Logged In | ✅   | ❌      | ❌         | ❌        | ❌    |
 
 ## Performance Tips
 
@@ -239,5 +253,6 @@ npm run dev
 7. 🔄 Add 2FA (optional)
 
 ---
+
 **Last Updated**: 2026-03-06
 **Status**: Production Ready ✨

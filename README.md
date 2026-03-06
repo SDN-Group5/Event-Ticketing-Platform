@@ -1,13 +1,13 @@
 # EVENT-TICKETING-PLATFORM
 
-*Your Gateway to Unforgettable Events*
+_Your Gateway to Unforgettable Events_
 
 ![license](https://img.shields.io/badge/license-ISC-blue)
 ![last commit](https://img.shields.io/badge/last%20commit-today-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.2.2-blue?logo=typescript)
 ![languages](https://img.shields.io/badge/languages-TypeScript%20%7C%20JavaScript-yellow)
 
-*Built with the tools and technologies:*
+_Built with the tools and technologies:_
 
 ![Express](https://img.shields.io/badge/Express-4.18.2-black?logo=express&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-6.2.0-green?logo=mongodb&logoColor=white)
@@ -32,18 +32,21 @@ Hệ thống bán vé sự kiện toàn diện được xây dựng với MERN S
 ### ✨ Tính Năng Chính
 
 #### 🔐 Xác Thực & Quản Lý Người Dùng
+
 - **Đăng ký/Đăng nhập**: Hỗ trợ Local, Google, Facebook OAuth
 - **Quên mật khẩu**: Khôi phục mật khẩu qua OTP/Email
 - **Quản lý hồ sơ**: Cập nhật avatar, thông tin cá nhân, đổi mật khẩu
 - **Ví số dư**: Quản lý ví, lịch sử giao dịch, rút tiền
 
 #### 🔍 Khám Phá Sự Kiện
+
 - **Tìm kiếm & Lọc**: Tìm sự kiện theo tên, ngày, địa điểm, thể loại (hỗ trợ tìm không dấu)
 - **Xem chi tiết**: Thông tin sự kiện, nghệ sĩ, thời gian, sơ đồ ghế
 - **Gợi ý cá nhân hóa**: "Có thể bạn thích" dựa trên lịch sử mua vé
 - **Xem chỗ ngồi 360 độ**: Mô phỏng góc nhìn thực tế từ ghế (VR/AI)
 
 #### 🎫 Đặt Vé & Thanh Toán
+
 - **Chọn & Giữ ghế**: Khóa ghế trong 5-10 phút khi thanh toán (Race Condition handling)
 - **Áp dụng mã giảm giá**: Kiểm tra và trừ tiền theo Voucher
 - **Thêm vào yêu thích**: Lưu sự kiện vào Wishlist
@@ -53,6 +56,7 @@ Hệ thống bán vé sự kiện toàn diện được xây dựng với MERN S
 - **Danh sách chờ**: Đăng ký waitlist, nhận thông báo khi có vé trống
 
 #### 🏢 Quản Lý Sự Kiện (Organizer)
+
 - **Tạo sự kiện**: Nhập thông tin, upload ảnh, chọn thời gian
 - **Thiết lập sơ đồ ghế**: Cấu hình loại vé, số lượng, vị trí và giá tiền
 - **Quản lý Voucher**: Tạo mã giảm giá (% hoặc số tiền cố định)
@@ -64,11 +68,13 @@ Hệ thống bán vé sự kiện toàn diện được xây dựng với MERN S
 - **Gợi ý giá vé (AI)**: Hệ thống gợi ý mức giá dựa trên dữ liệu lịch sử
 
 #### ✅ Check-in & Xác Thực
+
 - **Đăng nhập nhân viên**: Truy cập hệ thống soát vé (chỉ quyền Check-in)
 - **Quét mã QR**: Sử dụng Camera điện thoại để quét vé khách
 - **Xác thực & Check-in**: Kiểm tra thật/giả và cập nhật trạng thái vé
 
 #### 👨‍💼 Quản Lý Sàn (Admin)
+
 - **Phê duyệt sự kiện**: Kiểm duyệt nội dung trước khi hiển thị
 - **Quản lý người dùng**: Quản lý danh sách Organizer và Customer
 - **Đối soát tài chính**: Tính phí sàn (10%) và chuyển tiền cho Organizer
@@ -76,6 +82,7 @@ Hệ thống bán vé sự kiện toàn diện được xây dựng với MERN S
 - **Quản lý Banner**: Cấu hình quảng cáo, sự kiện nổi bật trang chủ
 
 #### 🤖 Tự Động Hóa (System)
+
 - **Gửi thông báo tự động**: Cronjob gửi mail nhắc sự kiện trước 1 ngày
 - **Thanh toán ký quỹ**: Giữ tiền Resell, giải ngân sau khi check-in thành công
 
@@ -170,9 +177,8 @@ EMAIL_SERVICE=sendgrid|nodemailer
 EMAIL_API_KEY=your-email-api-key
 EMAIL_FROM=noreply@eventticketing.com
 
-# OAuth (Optional)
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
+# OAuth (Configured)
+GOOGLE_CLIENT_ID=722499915288-79titkavhpcuh7a6p8b3225l59frl08v.apps.googleusercontent.com
 FACEBOOK_APP_ID=your-facebook-app-id
 FACEBOOK_APP_SECRET=your-facebook-app-secret
 
@@ -184,7 +190,9 @@ FRONTEND_URL=http://localhost:5174
 #### Frontend (.env)
 
 ```env
-VITE_API_BASE_URL=http://localhost:7002
+VITE_API_URL=http://localhost:4001
+VITE_PAYMENT_API_URL=http://localhost:4004
+VITE_GOOGLE_CLIENT_ID=722499915288-79titkavhpcuh7a6p8b3225l59frl08v.apps.googleusercontent.com
 ```
 
 ### 4. Chạy Ứng Dụng
@@ -218,13 +226,15 @@ API documentation có sẵn tại `/api-docs` khi chạy backend server.
 The web application now features a **complete authentication system** with real backend integration (no mock data).
 
 **For detailed information, see:**
+
 - 📖 **[DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md)** - Complete navigation guide
-- 🚀 **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick start & testing guide  
+- 🚀 **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick start & testing guide
 - 📊 **[doc/AUTH_FLOW_DIAGRAMS.md](./doc/AUTH_FLOW_DIAGRAMS.md)** - Flow diagrams
 - 📘 **[doc/WEB_AUTH_GUIDE.md](./doc/WEB_AUTH_GUIDE.md)** - Comprehensive guide
 - ✅ **[FINAL_SUMMARY.md](./FINAL_SUMMARY.md)** - Complete overview
 
 **Key Features:**
+
 - ✅ User registration with email verification
 - ✅ Login/logout with JWT tokens
 - ✅ Password reset functionality
@@ -233,6 +243,7 @@ The web application now features a **complete authentication system** with real 
 - ✅ Protected routes
 
 **Public Routes:**
+
 - `/` - Homepage (browse events publicly)
 - `/search` - Search events
 - `/event/:id` - Event details
@@ -242,6 +253,7 @@ The web application now features a **complete authentication system** with real 
 ### Các Endpoint Chính
 
 #### Authentication
+
 - `POST /api/auth/register` - Đăng ký tài khoản
 - `POST /api/auth/login` - Đăng nhập (Local/Google/Facebook)
 - `POST /api/auth/logout` - Đăng xuất
@@ -253,6 +265,7 @@ The web application now features a **complete authentication system** with real 
 - `POST /api/auth/reset-password` - Đặt lại mật khẩu
 
 #### User Management
+
 - `GET /api/users/me` - Lấy thông tin user hiện tại
 - `PATCH /api/users/me` - Cập nhật hồ sơ
 - `PATCH /api/users/me/password` - Đổi mật khẩu
@@ -260,6 +273,7 @@ The web application now features a **complete authentication system** with real 
 - `POST /api/users/wallet/withdraw` - Rút tiền
 
 #### Event Discovery
+
 - `GET /api/events` - Tìm kiếm sự kiện (tên, ngày, địa điểm, thể loại)
 - `GET /api/events/:eventId` - Xem chi tiết sự kiện
 - `GET /api/events/:eventId/seats` - Xem sơ đồ ghế
@@ -267,6 +281,7 @@ The web application now features a **complete authentication system** with real 
 - `GET /api/events/:eventId/view-360` - Xem chỗ ngồi 360 độ
 
 #### Booking & Payment
+
 - `POST /api/bookings/reserve-seats` - Chọn & giữ ghế (5-10 phút)
 - `POST /api/bookings/apply-voucher` - Áp dụng mã giảm giá
 - `POST /api/bookings` - Tạo đơn hàng
@@ -275,6 +290,7 @@ The web application now features a **complete authentication system** with real 
 - `POST /api/bookings/waitlist` - Đăng ký danh sách chờ
 
 #### Organizer Management
+
 - `POST /api/organizer/events` - Tạo sự kiện mới
 - `GET /api/organizer/events` - Danh sách sự kiện của Organizer
 - `PATCH /api/organizer/events/:eventId` - Cập nhật sự kiện
@@ -286,12 +302,14 @@ The web application now features a **complete authentication system** with real 
 - `GET /api/organizer/events/:eventId/export` - Xuất danh sách khách (Excel)
 
 #### Check-in App (Staff)
+
 - `POST /api/staff/login` - Đăng nhập nhân viên
 - `POST /api/staff/check-in/scan` - Quét mã QR
 - `POST /api/staff/check-in/face` - Check-in bằng FaceID
 - `GET /api/staff/check-in/:bookingId` - Xác thực vé
 
 #### Admin Management
+
 - `GET /api/admin/events/pending` - Danh sách sự kiện chờ phê duyệt
 - `POST /api/admin/events/:eventId/approve` - Phê duyệt sự kiện
 - `GET /api/admin/users` - Quản lý người dùng
@@ -341,18 +359,19 @@ The web application now features a **complete authentication system** with real 
 
 ## 👥 Phân Quyền Người Dùng
 
-| Vai Trò | Quyền Hạn |
-|---------|-----------|
-| **Customer** | Tìm kiếm sự kiện, đặt vé, thanh toán, xem lịch sử mua vé, hủy vé, quản lý ví, đăng ký waitlist, thêm vào yêu thích |
-| **Organizer** | Tạo/quản lý sự kiện, thiết lập sơ đồ ghế, quản lý Voucher, CRUD nhân viên, gửi thông báo, quản lý đơn hàng, xuất danh sách, xem Analytics, nhận gợi ý giá vé AI |
-| **Staff (Check-in)** | Đăng nhập hệ thống soát vé, quét mã QR, xác thực vé |
-| **Admin (Sàn)** | Phê duyệt sự kiện, quản lý người dùng, đối soát tài chính, quản lý khiếu nại, quản lý Banner |
+| Vai Trò              | Quyền Hạn                                                                                                                                                       |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Customer**         | Tìm kiếm sự kiện, đặt vé, thanh toán, xem lịch sử mua vé, hủy vé, quản lý ví, đăng ký waitlist, thêm vào yêu thích                                              |
+| **Organizer**        | Tạo/quản lý sự kiện, thiết lập sơ đồ ghế, quản lý Voucher, CRUD nhân viên, gửi thông báo, quản lý đơn hàng, xuất danh sách, xem Analytics, nhận gợi ý giá vé AI |
+| **Staff (Check-in)** | Đăng nhập hệ thống soát vé, quét mã QR, xác thực vé                                                                                                             |
+| **Admin (Sàn)**      | Phê duyệt sự kiện, quản lý người dùng, đối soát tài chính, quản lý khiếu nại, quản lý Banner                                                                    |
 
 ---
 
 ## 📝 Use Cases (40 Use Cases)
 
 ### Module: Admin (Sàn)
+
 1. **UC-37**: Phê duyệt sự kiện
 2. **UC-38**: Quản lý người dùng
 3. **UC-39**: Đối soát tài chính (Phí sàn 10%)
@@ -360,22 +379,26 @@ The web application now features a **complete authentication system** with real 
 5. **UC-41**: Quản lý Banner
 
 ### Module: Auth
+
 6. **UC-01**: Đăng ký tài khoản (OTP/Email)
 7. **UC-02**: Đăng nhập/Logout (Local, Google, Facebook)
 8. **UC-03**: Quên mật khẩu
 
 ### Module: User Management
+
 9. **UC-04**: Cập nhật hồ sơ (Avatar, thông tin cá nhân)
 10. **UC-05**: Đổi mật khẩu
 11. **UC-44**: Quản lý ví số dư
 
 ### Module: Discovery
+
 12. **UC-06**: Tìm kiếm & Lọc (Tên, ngày, địa điểm, thể loại - hỗ trợ không dấu)
 13. **UC-07**: Xem chi tiết sự kiện
 14. **UC-08**: Gợi ý cá nhân hóa
 15. **UC-36**: Xem chỗ ngồi 360 độ
 
 ### Module: Booking
+
 16. **UC-09**: Chọn & Giữ ghế (Khóa 5-10 phút, Race Condition)
 17. **UC-11**: Áp dụng mã giảm giá
 18. **UC-12**: Thêm vào yêu thích
@@ -383,16 +406,20 @@ The web application now features a **complete authentication system** with real 
 20. **UC-16**: Đăng ký danh sách chờ (Waitlist)
 
 ### Module: Payment
+
 21. **UC-17**: Thanh toán trực tuyến (PayOS)
 22. **UC-18**: Xuất vé & Gửi QR (Email)
 
 ### Module: Customer Management
+
 23. **UC-19**: Lịch sử mua vé
 
 ### Module: Event View
+
 24. **UC-36**: Xem chỗ ngồi 360 độ
 
 ### Module: Organizer
+
 25. **UC-21**: Đăng ký/Đăng nhập Organizer
 26. **UC-22**: Tạo mới sự kiện
 27. **UC-23**: Thiết lập sơ đồ ghế
@@ -405,11 +432,13 @@ The web application now features a **complete authentication system** with real 
 34. **UC-30**: Gợi ý giá vé (AI)
 
 ### Module: Check-in App
+
 35. **UC-31**: Đăng nhập nhân viên
 36. **UC-32**: Quét mã QR (Scan)
 37. **UC-33**: Xác thực & Check-in
 
 ### Module: System
+
 38. **UC-42**: Gửi thông báo tự động (Cronjob)
 39. **UC-43**: Thanh toán ký quỹ
 
@@ -422,11 +451,11 @@ The web application now features a **complete authentication system** with real 
 ### 1. Phân chia service (logical)
 
 - **API Gateway (4000)**: Route, auth JWT, RBAC, logging, rate limit.
-- **Auth-Service (4001)**: UC-01, UC-02, UC-03, UC-04, UC-05, UC-21, UC-31  
+- **Auth-Service (4001)**: UC-01, UC-02, UC-03, UC-04, UC-05, UC-21, UC-31
   - Collections: `users`, `staffs`, `organizers`, `refreshTokens`, `otpTokens`.
-- **Event-Service (4002)**: UC-06, UC-07, UC-08, UC-22, UC-23, UC-24, UC-27, UC-28, UC-29, UC-30, UC-36, UC-41  
+- **Event-Service (4002)**: UC-06, UC-07, UC-08, UC-22, UC-23, UC-24, UC-27, UC-28, UC-29, UC-30, UC-36, UC-41
   - Collections: `events`, `seatingPlans`, `vouchers`, `banners`, `analyticsSnapshots`, `priceSuggestions`.
-- **Booking-Service (4003)**: UC-09, UC-11, UC-12, UC-15, UC-16, UC-18 (tạo ticket record), UC-19, UC-31–33, UC-36 (map ghế với ticket)  
+- **Booking-Service (4003)**: UC-09, UC-11, UC-12, UC-15, UC-16, UC-18 (tạo ticket record), UC-19, UC-31–33, UC-36 (map ghế với ticket)
   - Collections: `bookings`, `seatHolds`, `tickets`, `favorites`, `waitlists`, `refundRequests`.
 - **Payment-Service (4004)**: UC-17, UC-39, UC-40 (liên quan tiền), UC-42, UC-43, UC-44 (ví)
   - Collections: `wallets`, `transactions`, `payouts`, `escrows`, `paymentIntents`.
@@ -500,7 +529,11 @@ EventSchema.pre("save", function (next) {
 export const searchEvents = async (req, res) => {
   const { q, date, location, category } = req.query;
   const filter: any = {};
-  if (q) filter.nameNormalized = { $regex: removeVietnameseTones(q as string), $options: "i" };
+  if (q)
+    filter.nameNormalized = {
+      $regex: removeVietnameseTones(q as string),
+      $options: "i",
+    };
   if (date) filter.date = { $gte: startOfDay(date), $lte: endOfDay(date) };
   if (location) filter.location = location;
   if (category) filter.category = category;
@@ -626,9 +659,9 @@ export const searchEvents = async (req, res) => {
 #### UC-39 – Đối soát tài chính (phí sàn 10%)
 
 - Công thức:
-  - Với mỗi booking `PAID`:  
-    - `gross = totalAmount`  
-    - `platformFee = gross * 0.10`  
+  - Với mỗi booking `PAID`:
+    - `gross = totalAmount`
+    - `platformFee = gross * 0.10`
     - `organizerShare = gross - platformFee`
 - Thiết kế:
   - Mỗi `transaction` trong `payment-service` lưu:
@@ -770,4 +803,4 @@ ISC
 
 ---
 
-*Built with ❤️ using MERN Stack*
+_Built with ❤️ using MERN Stack_

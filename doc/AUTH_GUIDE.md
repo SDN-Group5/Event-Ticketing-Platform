@@ -7,6 +7,7 @@
 The web application now features a **complete authentication system** with real backend integration (no mock data).
 
 **What You Got:**
+
 - ✅ User registration with email verification
 - ✅ Real login system (email + password)
 - ✅ Session persistence via JWT tokens
@@ -18,15 +19,15 @@ The web application now features a **complete authentication system** with real 
 
 ## Requirements Met ✅
 
-| Requirement | Status |
-|-------------|--------|
-| Remove mock data | ✅ Removed DEMO_USERS & switchRole() |
-| Real authentication | ✅ Backend API integrated |
-| Keep homepage public | ✅ `/` accessible without login |
-| User registration | ✅ Email verification included |
-| Login system | ✅ Real password validation |
-| Session persistence | ✅ localStorage token storage |
-| Role-based access | ✅ Different dashboards per role |
+| Requirement          | Status                               |
+| -------------------- | ------------------------------------ |
+| Remove mock data     | ✅ Removed DEMO_USERS & switchRole() |
+| Real authentication  | ✅ Backend API integrated            |
+| Keep homepage public | ✅ `/` accessible without login      |
+| User registration    | ✅ Email verification included       |
+| Login system         | ✅ Real password validation          |
+| Session persistence  | ✅ localStorage token storage        |
+| Role-based access    | ✅ Different dashboards per role     |
 
 ---
 
@@ -35,7 +36,7 @@ The web application now features a **complete authentication system** with real 
 ### Code Files Modified (5 total)
 
 1. **AuthContext.tsx** - Removed hardcoded users, kept real auth
-2. **LoginPage.tsx** - Removed role selection UI  
+2. **LoginPage.tsx** - Removed role selection UI
 3. **RegisterPage.tsx** - NEW registration form
 4. **pages/auth/index.ts** - Export RegisterPage
 5. **App.tsx** - Added `/register` route
@@ -43,6 +44,7 @@ The web application now features a **complete authentication system** with real 
 ### Public vs Protected Routes
 
 **Public Routes (No Login Needed):**
+
 - `/` - Homepage (browse events)
 - `/search` - Search events
 - `/event/:id` - Event details
@@ -51,6 +53,7 @@ The web application now features a **complete authentication system** with real 
 - `/reset-password` - Password reset
 
 **Protected Routes (Login Required):**
+
 - `/profile` - Customer profile
 - `/my-tickets` - View tickets
 - `/wishlist` - Saved events
@@ -62,6 +65,7 @@ The web application now features a **complete authentication system** with real 
 ## Authentication Flow
 
 ### 1. Registration Flow
+
 ```
 User → /register
   ↓
@@ -81,6 +85,7 @@ Success → Can now login!
 ```
 
 ### 2. Login Flow
+
 ```
 User → /login
   ↓
@@ -103,6 +108,7 @@ User logged in! ✅
 ```
 
 ### 3. Session Restoration
+
 ```
 Page loads
   ↓
@@ -122,6 +128,7 @@ User stays logged in! ✅
 ## API Endpoints Used
 
 ### Authentication
+
 ```
 POST   /api/auth/register              Create account
 POST   /api/auth/login                 Login with email/password
@@ -135,6 +142,7 @@ GET    /api/auth/validate-token        Validate JWT token
 ```
 
 ### User Management
+
 ```
 GET    /api/users/me                   Get current user info
 PATCH  /api/users/me                   Update profile
@@ -150,7 +158,7 @@ PATCH  /api/users/me                   Update profile
 # 1. Start backend
 docker-compose up -d
 
-# 2. Start frontend  
+# 2. Start frontend
 npm run dev
 
 # 3. Open browser
@@ -160,10 +168,12 @@ http://localhost:5173
 ### Test Scenarios
 
 **Test 1: Browse Without Login**
+
 1. Go to `/` → See events (public access ✅)
 2. Try `/my-tickets` → Redirect to `/login` (protected ✅)
 
 **Test 2: Register New Account**
+
 1. Go to `/register`
 2. Fill form with test data
 3. Submit → Backend creates user
@@ -172,6 +182,7 @@ http://localhost:5173
 6. Success → Can now login!
 
 **Test 3: Login**
+
 1. Go to `/login`
 2. Enter email + password
 3. Submit → Redirected to homepage (logged in!)
@@ -179,6 +190,7 @@ http://localhost:5173
 5. Try `/my-tickets` → Now accessible! ✅
 
 **Test 4: Session Persistence**
+
 1. Login to account
 2. Refresh page → Still logged in ✅
 3. Close browser completely
@@ -189,11 +201,13 @@ http://localhost:5173
 ## Environment Setup
 
 ### Frontend (.env or .env.local)
+
 ```env
 VITE_API_URL=http://localhost:4001
 ```
 
 ### Backend (.env in auth-service)
+
 ```env
 JWT_SECRET_KEY=your-secret-key
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -209,12 +223,14 @@ SMTP_PASS=your-app-password
 ## Key Technical Details
 
 ### Token Management
+
 - **Type**: JWT (JSON Web Token)
 - **Storage**: localStorage (key: `auth_token`) + httpOnly cookie
 - **Expiry**: 1 day
 - **Usage**: Every API request includes `Authorization: Bearer TOKEN`
 
 ### Security Features
+
 - ✅ Password hashing with bcrypt
 - ✅ JWT token signing
 - ✅ httpOnly cookies prevent XSS
@@ -225,16 +241,17 @@ SMTP_PASS=your-app-password
 - ✅ Input validation
 
 ### State Management
+
 ```typescript
 interface AuthContextType {
-  user: User | null;                          // Current user or null
-  isAuthenticated: boolean;                   // Is user logged in?
-  isInitializing: boolean;                    // App initializing?
-  isLoading: boolean;                         // API request in progress?
-  error: string | null;                       // Error message if any
-  login: (email, password) => Promise<User>;  // Login function
-  logout: () => void;                         // Logout function
-  clearError: () => void;                     // Clear error message
+  user: User | null; // Current user or null
+  isAuthenticated: boolean; // Is user logged in?
+  isInitializing: boolean; // App initializing?
+  isLoading: boolean; // API request in progress?
+  error: string | null; // Error message if any
+  login: (email, password) => Promise<User>; // Login function
+  logout: () => void; // Logout function
+  clearError: () => void; // Clear error message
 }
 ```
 
@@ -243,6 +260,7 @@ interface AuthContextType {
 ## User Roles
 
 ### Customer
+
 - Browse and search events
 - View event details
 - Purchase tickets
@@ -251,6 +269,7 @@ interface AuthContextType {
 - Save events to wishlist
 
 ### Organizer
+
 - Create and manage events
 - Configure seat layouts
 - Create discount vouchers
@@ -260,6 +279,7 @@ interface AuthContextType {
 - View analytics
 
 ### Admin
+
 - Approve/reject events
 - Manage users (block/unblock)
 - View all transactions
@@ -271,34 +291,37 @@ interface AuthContextType {
 
 ## Common Issues & Solutions
 
-| Issue | Solution |
-|-------|----------|
-| "Email already exists" | Register with different email or reset database |
-| "Invalid OTP code" | Check backend logs for correct code, must enter within 1 minute |
-| "User not found on login" | Make sure email is verified first, register again |
-| "401 Unauthorized on protected page" | Token expired, login again |
-| "Cannot connect to server" | Ensure backend running on port 4001 |
-| "Email not sending" | Configure email service (see EMAIL_SETUP.md) |
-| "Still logged in after logout" | Clear localStorage manually, check browser storage |
+| Issue                                | Solution                                                        |
+| ------------------------------------ | --------------------------------------------------------------- |
+| "Email already exists"               | Register with different email or reset database                 |
+| "Invalid OTP code"                   | Check backend logs for correct code, must enter within 1 minute |
+| "User not found on login"            | Make sure email is verified first, register again               |
+| "401 Unauthorized on protected page" | Token expired, login again                                      |
+| "Cannot connect to server"           | Ensure backend running on port 4001                             |
+| "Email not sending"                  | Configure email service (see EMAIL_SETUP.md)                    |
+| "Still logged in after logout"       | Clear localStorage manually, check browser storage              |
 
 ---
 
 ## Debugging Tips
 
 ### Check Token Storage
+
 ```javascript
 // In browser console
-localStorage.getItem('auth_token')  // Should show JWT
+localStorage.getItem("auth_token"); // Should show JWT
 ```
 
 ### Check Auth State
+
 ```javascript
 // In any component using useAuth()
-const { user, isAuthenticated } = useAuth()
-console.log(user, isAuthenticated)
+const { user, isAuthenticated } = useAuth();
+console.log(user, isAuthenticated);
 ```
 
 ### Check Backend Logs
+
 ```
 Auth service shows messages like:
 🔐 [LOGIN] Incoming request...
@@ -308,6 +331,7 @@ Auth service shows messages like:
 ```
 
 ### Test API with Curl
+
 ```bash
 # Register
 curl -X POST http://localhost:4001/api/auth/register \
@@ -328,16 +352,16 @@ curl -X GET http://localhost:4001/api/users/me \
 
 ## Before vs After
 
-| Aspect | Before ❌ | After ✅ |
-|--------|-----------|---------|
-| User Data | Hardcoded DEMO_USERS | Backend Database |
-| Login | Click button to switch role | Real email/password |
-| Registration | Not available | Full registration form |
-| Email | Skipped | OTP verification required |
-| Token | N/A | JWT stored in localStorage |
-| Session | Only while browser open | Persistent via token |
-| Validation | None (instant) | Real backend validation |
-| Homepage | N/A | Public access (no login) |
+| Aspect       | Before ❌                   | After ✅                   |
+| ------------ | --------------------------- | -------------------------- |
+| User Data    | Hardcoded DEMO_USERS        | Backend Database           |
+| Login        | Click button to switch role | Real email/password        |
+| Registration | Not available               | Full registration form     |
+| Email        | Skipped                     | OTP verification required  |
+| Token        | N/A                         | JWT stored in localStorage |
+| Session      | Only while browser open     | Persistent via token       |
+| Validation   | None (instant)              | Real backend validation    |
+| Homepage     | N/A                         | Public access (no login)   |
 
 ---
 
@@ -430,4 +454,4 @@ b55592d docs: Add quick reference card for authentication
 
 ---
 
-*For flow diagrams, see [doc/AUTH_FLOW_DIAGRAMS.md](./doc/AUTH_FLOW_DIAGRAMS.md)*
+_For flow diagrams, see [doc/AUTH_FLOW_DIAGRAMS.md](./doc/AUTH_FLOW_DIAGRAMS.md)_

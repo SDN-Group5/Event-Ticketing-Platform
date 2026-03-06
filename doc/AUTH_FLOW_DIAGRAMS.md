@@ -166,7 +166,7 @@ User tries to access: /my-tickets
       │ /login       │  │ / (or based  │
       │              │  │ on role)     │
       └──────────────┘  └──────────────┘
-            
+
        Logged In + Authorized
             │
             ▼

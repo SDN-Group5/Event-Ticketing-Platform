@@ -11,13 +11,17 @@ You requested: **Real authentication system WITHOUT mock data, keeping homepage 
 ## Where to Start?
 
 ### 🎯 I want to TEST the system NOW
+
 **→ Go to [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)**
+
 - 5-minute quick start
 - Testing checklist
 - Common issues & fixes
 
 ### 📖 I want to UNDERSTAND everything
+
 **→ Go to [AUTH_GUIDE.md](./AUTH_GUIDE.md)**
+
 - Complete authentication guide
 - API endpoints
 - Environment setup
@@ -25,14 +29,18 @@ You requested: **Real authentication system WITHOUT mock data, keeping homepage 
 - Production checklist
 
 ### 📊 I want DIAGRAMS
+
 **→ Go to [doc/AUTH_FLOW_DIAGRAMS.md](./doc/AUTH_FLOW_DIAGRAMS.md)**
+
 - Registration flow
 - Login flow
 - Session restoration
 - Protected routes
 
 ### 💻 I want CODE details
+
 **→ Check these files:**
+
 - `frontend/src/contexts/AuthContext.tsx` - Auth logic
 - `frontend/src/pages/auth/RegisterPage.tsx` - NEW registration form
 - `frontend/src/pages/auth/LoginPage.tsx` - Updated login
@@ -43,12 +51,14 @@ You requested: **Real authentication system WITHOUT mock data, keeping homepage 
 ## The Super Quick Version
 
 ### What Changed?
+
 ```
 ❌ Before: DEMO_USERS hardcoded button to switch roles instantly
 ✅ After:  Real registration → Email verification → Real login
 ```
 
 ### What Works Now?
+
 ```
 ✅ Homepage - Public (no login needed to browse events)
 ✅ Register - New users create account with email verification
@@ -59,6 +69,7 @@ You requested: **Real authentication system WITHOUT mock data, keeping homepage 
 ```
 
 ### How to Test?
+
 ```
 1. Start backend:  docker-compose up -d
 2. Start frontend: npm run dev
@@ -72,20 +83,22 @@ You requested: **Real authentication system WITHOUT mock data, keeping homepage 
 ## Quick Links
 
 ### 📚 Documentation
-| Document | Purpose |
-|----------|---------|
-| [START_HERE.md](./START_HERE.md) | This file - entry point ⭐ |
-| [AUTH_GUIDE.md](./AUTH_GUIDE.md) | Complete auth guide |
-| [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) | Quick testing guide |
-| [doc/AUTH_FLOW_DIAGRAMS.md](./doc/AUTH_FLOW_DIAGRAMS.md) | Flow diagrams |
+
+| Document                                                 | Purpose                    |
+| -------------------------------------------------------- | -------------------------- |
+| [START_HERE.md](./START_HERE.md)                         | This file - entry point ⭐ |
+| [AUTH_GUIDE.md](./AUTH_GUIDE.md)                         | Complete auth guide        |
+| [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)               | Quick testing guide        |
+| [doc/AUTH_FLOW_DIAGRAMS.md](./doc/AUTH_FLOW_DIAGRAMS.md) | Flow diagrams              |
 
 ### 💻 Code Files
-| File | Purpose |
-|------|---------|
-| [frontend/src/contexts/AuthContext.tsx](./frontend/src/contexts/AuthContext.tsx) | Auth logic |
+
+| File                                                                                   | Purpose             |
+| -------------------------------------------------------------------------------------- | ------------------- |
+| [frontend/src/contexts/AuthContext.tsx](./frontend/src/contexts/AuthContext.tsx)       | Auth logic          |
 | [frontend/src/pages/auth/RegisterPage.tsx](./frontend/src/pages/auth/RegisterPage.tsx) | Register form (NEW) |
-| [frontend/src/pages/auth/LoginPage.tsx](./frontend/src/pages/auth/LoginPage.tsx) | Login form |
-| [frontend/src/App.tsx](./frontend/src/App.tsx) | Routes & protection |
+| [frontend/src/pages/auth/LoginPage.tsx](./frontend/src/pages/auth/LoginPage.tsx)       | Login form          |
+| [frontend/src/App.tsx](./frontend/src/App.tsx)                                         | Routes & protection |
 
 ---
 
@@ -107,6 +120,7 @@ b55592d docs: Add quick reference card for authentication
 ## Key Features
 
 ### ✅ Authentication
+
 - User registration with email verification
 - Login with email & password
 - JWT token management
@@ -114,19 +128,22 @@ b55592d docs: Add quick reference card for authentication
 - Password reset via OTP
 
 ### ✅ Public Routes
+
 - `/` - Homepage (browse events)
-- `/search` - Search events  
+- `/search` - Search events
 - `/event/:id` - Event details
 - `/login` - Login page
 - `/register` - Registration page
 
 ### ✅ Protected Routes
+
 - `/profile` - User profile
 - `/my-tickets` - My tickets
 - `/organizer/*` - Organizer dashboard
 - `/admin/*` - Admin dashboard
 
 ### ✅ Role-Based Access
+
 - **Customer** - Browse, buy, view tickets
 - **Organizer** - Create events, manage attendees
 - **Admin** - System management
@@ -136,6 +153,7 @@ b55592d docs: Add quick reference card for authentication
 ## What You Need to Know
 
 ### No Mock Data Anymore
+
 - ❌ Removed `DEMO_USERS` constant
 - ❌ Removed role switching button
 - ✅ All users from backend database
@@ -143,12 +161,14 @@ b55592d docs: Add quick reference card for authentication
 - ✅ Real password validation
 
 ### Homepage Still Public
+
 - ✅ Anyone can visit `/`
 - ✅ Browse and search events
 - ✅ View event details
 - ❌ Need login for purchase
 
 ### Real Backend Integration
+
 - ✅ All API calls to backend
 - ✅ User data persisted in MongoDB
 - ✅ JWT tokens generated by backend
@@ -202,5 +222,5 @@ A: Register accounts, then set their role in database for testing.
 
 ---
 
-*Last Updated: March 6, 2026*
-*Status: Production Ready* ✨
+_Last Updated: March 6, 2026_
+_Status: Production Ready_ ✨

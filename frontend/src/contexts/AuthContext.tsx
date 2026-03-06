@@ -25,6 +25,7 @@ interface AuthContextType {
     isLoading: boolean;
     error: string | null;
     login: (email: string, password: string) => Promise<User | null>;
+    loginWithGoogle: (credential: string) => Promise<User | null>;
     logout: () => void;
     clearError: () => void;
 }
@@ -327,6 +328,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     }, []);
 
+    // ============================================
+    // LOGIN WITH GOOGLE
+    // ============================================
+    const loginWithGoogle = useCallback(async (credential: string): Promise<User | null> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credential }),
+                credentials: 'include',
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data?.message || 'Đăng nhập Google thất bại');
+                return null;
+            }
+
+            const token = data?.token;
+            const userInfo = data?.user;
+
+            if (!token || !userInfo) {
+                setError('Phản hồi không hợp lệ từ server');
+                return null;
+            }
+
+            localStorage.setItem(AUTH_TOKEN_KEY, token);
+
+            const loggedInUser: User = {
+                id: userInfo.id || userInfo._id || '',
+                name: `${userInfo.firstName ?? ''} ${userInfo.lastName ?? ''}`.trim() || userInfo.email,
+                email: userInfo.email,
+                role: userInfo.role as UserRole,
+                avatar: userInfo.avatar ?? null,
+            };
+
+            setUser(loggedInUser);
+            return loggedInUser;
+        } catch (err) {
+            console.error(err);
+            setError('Không thể kết nối server');
+            return null;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     const logout = useCallback(async () => {
         try {
             await fetch(`${API_BASE_URL}/api/auth/logout`, {
@@ -348,6 +400,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isLoading,
         error,
         login,
+        loginWithGoogle,
         logout,
         clearError,
     };

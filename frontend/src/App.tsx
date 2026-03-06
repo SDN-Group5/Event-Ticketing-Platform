@@ -27,7 +27,7 @@ import {
 import Venue3DPage from './pages/client/Venue3DPage';
 
 // Auth Pages
-import { LoginPage, OTPPage, ResetPasswordPage } from './pages/auth';
+import { LoginPage, RegisterPage, OTPPage, ResetPasswordPage } from './pages/auth';
 
 // Organizer Pages
 import {
@@ -137,6 +137,14 @@ const AppRoutes: React.FC = () => {
           isAuthenticated
             ? <Navigate to={ROUTES.HOME} replace />
             : <AuthLayout><LoginPage /></AuthLayout>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          isAuthenticated
+            ? <Navigate to={ROUTES.HOME} replace />
+            : <AuthLayout><RegisterPage /></AuthLayout>
         }
       />
       <Route path={ROUTES.OTP} element={<AuthLayout><OTPPage /></AuthLayout>} />

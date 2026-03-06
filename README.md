@@ -213,14 +213,43 @@ npm run dev
 
 API documentation có sẵn tại `/api-docs` khi chạy backend server.
 
+### 🔐 Web Authentication System (NEW)
+
+The web application now features a **complete authentication system** with real backend integration (no mock data).
+
+**For detailed information, see:**
+- 📖 **[DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md)** - Complete navigation guide
+- 🚀 **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick start & testing guide  
+- 📊 **[doc/AUTH_FLOW_DIAGRAMS.md](./doc/AUTH_FLOW_DIAGRAMS.md)** - Flow diagrams
+- 📘 **[doc/WEB_AUTH_GUIDE.md](./doc/WEB_AUTH_GUIDE.md)** - Comprehensive guide
+- ✅ **[FINAL_SUMMARY.md](./FINAL_SUMMARY.md)** - Complete overview
+
+**Key Features:**
+- ✅ User registration with email verification
+- ✅ Login/logout with JWT tokens
+- ✅ Password reset functionality
+- ✅ Session persistence
+- ✅ Role-based access control (Customer, Organizer, Admin)
+- ✅ Protected routes
+
+**Public Routes:**
+- `/` - Homepage (browse events publicly)
+- `/search` - Search events
+- `/event/:id` - Event details
+- `/login` - Login page
+- `/register` - Registration page
+
 ### Các Endpoint Chính
 
 #### Authentication
 - `POST /api/auth/register` - Đăng ký tài khoản
 - `POST /api/auth/login` - Đăng nhập (Local/Google/Facebook)
 - `POST /api/auth/logout` - Đăng xuất
+- `POST /api/auth/verify-email` - Xác thực email bằng OTP
+- `POST /api/auth/resend-verification` - Gửi lại mã OTP
 - `GET /api/auth/validate-token` - Xác thực token
 - `POST /api/auth/forgot-password` - Quên mật khẩu
+- `POST /api/auth/verify-reset-code` - Xác thực mã reset
 - `POST /api/auth/reset-password` - Đặt lại mật khẩu
 
 #### User Management

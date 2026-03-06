@@ -29,11 +29,19 @@ export const Seat: React.FC<SeatProps> = ({
                 cursor: isEditMode ? 'pointer' : 'default'
             };
         }
-        if (seat.status === 'occupied') {
+        if (seat.status === 'sold' || seat.status === 'occupied') {
             return {
-                backgroundColor: '#374151',
+                backgroundColor: '#4b5563', // Same as EventLayoutViewer Dark Gray
                 cursor: 'not-allowed',
-                opacity: 0.5
+                opacity: 0.6
+            };
+        }
+        if (seat.status === 'reserved') {
+            return {
+                backgroundColor: '#9ca3af', // Gray 400
+                color: '#1f2937',
+                cursor: 'not-allowed',
+                opacity: 0.8
             };
         }
         if (isSelected) {
@@ -54,7 +62,7 @@ export const Seat: React.FC<SeatProps> = ({
             onSelect(seat);
             return;
         }
-        if (seat.status !== 'occupied' && seat.status !== 'blocked') {
+        if (seat.status === 'available') {
             onSelect(seat);
         }
     };
@@ -71,11 +79,11 @@ export const Seat: React.FC<SeatProps> = ({
         >
             <button
                 onClick={handleClick}
-                disabled={!isEditMode && seat.status === 'occupied'}
+                disabled={!isEditMode && seat.status !== 'available' && seat.status !== 'blocked'}
                 className={`
           w-8 h-8 rounded-md flex items-center justify-center text-[10px] font-bold
           transition-all duration-200 hover:scale-110
-          ${(seat.status === 'occupied' && !isEditMode) ? 'cursor-not-allowed' : 'cursor-pointer'}
+          ${(seat.status !== 'available' && seat.status !== 'blocked' && !isEditMode) ? 'cursor-not-allowed' : 'cursor-pointer'}
         `}
                 style={getStatusStyle()}
             >
@@ -83,7 +91,7 @@ export const Seat: React.FC<SeatProps> = ({
             </button>
 
             {/* Tooltip */}
-            {showTooltip && seat.status !== 'blocked' && seat.status !== 'occupied' && !isEditMode && (
+            {showTooltip && seat.status === 'available' && !isEditMode && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-fade-in">
                     <div className="bg-[#1e1a29] border border-white/10 rounded-xl p-3 shadow-2xl min-w-[140px]">
                         <p className="text-white font-bold text-sm mb-1">

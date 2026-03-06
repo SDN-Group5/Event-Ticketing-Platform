@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
+import { EventAPI } from '../../services/eventApiService';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const CreateEventPage: React.FC = () => {
     const navigate = useNavigate();
+    const { user, isAuthenticated } = useAuth();
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         name: '',
@@ -31,14 +34,44 @@ export const CreateEventPage: React.FC = () => {
             setIsSubmitting(true);
             setError(null);
             try {
-                // Use the valid ObjectId for temp eventId
-                const tempEventId = Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+                // Check quyền ngay trên UI cho rõ ràng (backend cũng sẽ check)
+                if (!isAuthenticated) {
+                    setError('Bạn cần đăng nhập để tạo sự kiện');
+                    navigate('/login');
+                    return;
+                }
+                if (user?.role !== 'organizer' && user?.role !== 'admin') {
+                    setError('Tài khoản của bạn không có quyền Organizer/Admin để tạo sự kiện');
+                    navigate('/');
+                    return;
+                }
+
+                // 1. Gộp ngày và giờ thành chuẩn ISO String cho startTime
+                const startTimeString = formData.date && formData.time 
+                    ? new Date(`${formData.date}T${formData.time}:00`).toISOString()
+                    : new Date().toISOString();
+
+                // 2. Map dữ liệu form sang format của event-service
+                const newEventPayload = {
+                    title: formData.name,
+                    description: formData.description,
+                    category: formData.category,
+                    location: formData.venue,
+                    startTime: startTimeString,
+                    // endTime có thể để trống hoặc code thêm UI để chọn
+                };
+
+                // 3. Gọi API tạo Event
+                const eventResponse = await EventAPI.createEvent(newEventPayload);
+                
+                // Lấy ID thật sự vừa được tạo từ MongoDB
+                const realEventId = eventResponse.data._id;
 
                 // We don't need to create zones during event creation, pass empty array
                 await LayoutAPI.createLayout({
-                    eventId: tempEventId,
+                    eventId: realEventId,
                     eventName: formData.name,
-                    eventDate: formData.date ? new Date(`${formData.date}T${formData.time || '00:00'}`).toISOString() : undefined,
+                    eventDate: startTimeString,
                     eventLocation: formData.venue,
                     eventDescription: formData.description,
                     zones: [],
@@ -50,7 +83,11 @@ export const CreateEventPage: React.FC = () => {
                 navigate('/organizer');
             } catch (err: any) {
                 console.error("Failed to create event:", err);
-                setError(err.response?.data?.error?.message || err.message || "Failed to create event");
+                const errorMessage = err.response?.data?.error?.message 
+                                  || err.response?.data?.message 
+                                  || err.message 
+                                  || "Failed to create event";
+                setError(errorMessage);
             } finally {
                 setIsSubmitting(false);
             }

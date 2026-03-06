@@ -27,6 +27,26 @@ services:
       - FRONTEND_URL=http://localhost:3000
     depends_on:
       - auth-service
+      - event-service
+    networks:
+      - ticketing-network
+    restart: unless-stopped
+
+  # ============================================
+  # EVENT SERVICE (Port 4005 trên host, 4002 trong container)
+  # ============================================
+  event-service:
+    build:
+      context: ../services/events-service
+      dockerfile: Dockerfile
+    ports:
+      - "4005:4002"
+    env_file:
+      - ../.env
+    environment:
+      - PORT=4002
+      - MONGODB_URI=${MONGODB_ATLAS_URI:-mongodb://host.docker.internal:27017/Ticket}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-me}
     networks:
       - ticketing-network
     restart: unless-stopped

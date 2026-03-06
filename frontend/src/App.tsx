@@ -329,6 +329,9 @@ const AppContent: React.FC = () => {
 };
 
 // Main App Component
+import { PaymentTimerProvider } from './contexts/PaymentTimerContext';
+import { FloatingPaymentTimer } from './components/payment/FloatingPaymentTimer';
+
 const App: React.FC = () => {
   const googleClientId = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID;
   
@@ -340,6 +343,14 @@ const App: React.FC = () => {
         </AuthProvider>
       </Router>
     </GoogleOAuthProvider>
+    <Router>
+      <AuthProvider>
+        <PaymentTimerProvider>
+          <AppContent />
+          <FloatingPaymentTimer />
+        </PaymentTimerProvider>
+      </AuthProvider>
+    </Router>
   );
 };
 

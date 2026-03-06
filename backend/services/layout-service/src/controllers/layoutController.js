@@ -213,7 +213,7 @@ export const updateLayout = async (req, res) => {
         const oldSeatZoneMap = new Map(
             layout.zones
                 .filter(z => z.type === 'seats')
-                .map(z => [z.id, z])
+                .map(z => [z.id, typeof z.toObject === 'function' ? z.toObject() : z])
         );
 
         layout.zones = zones;
@@ -258,8 +258,21 @@ export const updateLayout = async (req, res) => {
                 } catch (seatError) {
                     console.error(`[Layout] Error generating seats for zone ${newZone.name}:`, seatError);
                 }
+            } else if (oldZone && Number(oldZone.price) !== Number(newZone.price)) {
+                // Zone size is the same, but price changed. Update prices of existing seats.
+                console.log(`[Layout] Zone "${newZone.name}" price changed from ${oldZone.price} to ${newZone.price} - updating existing seats`);
+                try {
+                    const Seat = (await import('../models/Seat.js')).default;
+                    const updateResult = await Seat.updateMany(
+                        { layoutId: layout._id, zoneId: newZone.id },
+                        { $set: { price: Number(newZone.price) || 0 } }
+                    );
+                    console.log(`[Layout] Updated price for ${updateResult.modifiedCount} seats in zone: ${newZone.name}`);
+                } catch (priceUpdateError) {
+                    console.error(`[Layout] Error updating seat prices for zone ${newZone.name}:`, priceUpdateError);
+                }
             } else {
-                console.log(`[Layout] Zone "${newZone.name}" unchanged - skipping seat generation`);
+                console.log(`[Layout] Zone "${newZone.name}" unchanged (including price: ${oldZone?.price} vs ${newZone.price}) - skipping seat generation/update`);
             }
         }
 

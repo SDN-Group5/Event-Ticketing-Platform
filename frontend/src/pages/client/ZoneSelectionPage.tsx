@@ -6,6 +6,7 @@ import { LayoutAPI } from '../../services/layoutApiService';
 import { SeatAPI, SeatData } from '../../services/seatApiService';
 import { PaymentAPI } from '../../services/paymentApiService';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePaymentTimer } from '../../contexts/PaymentTimerContext';
 import { ROUTES } from '../../constants/routes';
 import eventsData from '../../data/events';
 import { Zone360Viewer } from '../../components/Zone360Viewer';
@@ -28,11 +29,10 @@ export const ZoneSelectionPage: React.FC = () => {
     const [voucherError, setVoucherError] = useState<string | null>(null);
     const [agreePreviewTerms, setAgreePreviewTerms] = useState(false);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-    const [timeLeft, setTimeLeft] = useState<number | null>(null); // countdown (seconds)
     const [openPolicy, setOpenPolicy] = useState<'terms' | null>(null);
-    const [showPaymentWaiting, setShowPaymentWaiting] = useState(false);
-    const [paymentCheckoutUrl, setPaymentCheckoutUrl] = useState<string | null>(null);
     const socketRef = useRef<Socket | null>(null);
+
+    const { startTimer } = usePaymentTimer();
 
     // Load event data
     const event = useMemo(() => eventsData.find(e => e.id === id), [id]);
@@ -171,31 +171,24 @@ export const ZoneSelectionPage: React.FC = () => {
         });
     };
 
-    // Đếm ngược 5 phút khi đang chờ thanh toán PayOS
+    // Lắng nghe sự kiện huỷ/hết giờ từ timer toàn cục (FloatingPaymentTimer)
     useEffect(() => {
-        if (!showPaymentWaiting) {
-            setTimeLeft(null);
-            return;
-        }
+        const handleCancel = () => {
+            setSelectedSeats([]);
+        };
+        const handleExpire = () => {
+            setSelectedSeats([]);
+            setError('Hết thời gian giữ ghế (5 phút). Ghế đã được trả lại. Vui lòng chọn lại.');
+        };
 
-        setTimeLeft(300);
-        const intervalId = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev === null) return prev;
-                if (prev <= 1) {
-                    clearInterval(intervalId);
-                    setShowPaymentWaiting(false);
-                    setPaymentCheckoutUrl(null);
-                    setSelectedSeats([]);
-                    setError('Hết thời gian giữ ghế (5 phút). Ghế đã được trả lại. Vui lòng chọn lại.');
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
+        window.addEventListener('payment-timer-cancelled', handleCancel);
+        window.addEventListener('payment-timer-expired', handleExpire);
 
-        return () => clearInterval(intervalId);
-    }, [showPaymentWaiting]);
+        return () => {
+            window.removeEventListener('payment-timer-cancelled', handleCancel);
+            window.removeEventListener('payment-timer-expired', handleExpire);
+        };
+    }, []);
 
     const handleConfirmPayment = useCallback(async () => {
         if (!id || isProcessingPayment) return;
@@ -219,11 +212,10 @@ export const ZoneSelectionPage: React.FC = () => {
         setVoucherError(null);
 
         const items = selectedSeats.map(seat => {
-            const seatZone = zones.find(z => z.name === seat.zone) || zones[0];
             return {
                 zoneName: seat.zone,
                 seatId: seat.id,
-                price: seatZone ? seatZone.price : seat.price,
+                price: seat.price,
                 quantity: 1,
             };
         });
@@ -255,7 +247,7 @@ export const ZoneSelectionPage: React.FC = () => {
             }
 
             // 2) Tạo payment (ghế đã locked trong DB)
-            await PaymentAPI.createPayment({
+            const result = await PaymentAPI.createPayment({
                 userId: user.id,
                 eventId: id,
                 eventName: event?.title || layoutData?.eventName || 'Event',
@@ -264,13 +256,18 @@ export const ZoneSelectionPage: React.FC = () => {
                 voucherCode: voucherCode.trim() || undefined,
             });
 
-            // 3) Mở PayOS ở tab mới, hiện trang chờ đếm ngược
-            const url = result.checkoutUrl || result.qrCode || null;
-            if (url) {
-                window.open(url, '_blank');
-                setPaymentCheckoutUrl(url);
-                setShowPaymentWaiting(true);
-            }
+            // 3) Gọi global timer và mở trang PayOS
+            startTimer(
+                5 * 60, // 5 minutes
+                result.checkoutUrl,
+                result.orderCode,
+                { eventId: id, title: event?.title || layoutData?.eventName || 'Event' },
+                total,
+                selectedSeats.length
+            );
+
+            // Mở tab PayOS (nếu popup bị block thì người dùng vẫn có thể bấm nút từ Floating Component)
+            window.open(result.checkoutUrl, '_blank');
         } catch (err: any) {
             console.error('Error creating payment from ZoneSelectionPage:', err);
             const msg = err?.response?.data?.message || 'Không thể tạo thanh toán. Vui lòng thử lại.';
@@ -439,72 +436,6 @@ export const ZoneSelectionPage: React.FC = () => {
                 onClose={() => setIs360ViewerOpen(false)}
                 zoneName={selectedZoneData ? `${selectedZoneData.name} (${selectedZoneData.type})` : ''}
             />
-
-            {/* Trang chờ thanh toán PayOS - đếm ngược 5 phút */}
-            {showPaymentWaiting && (
-                <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex items-center justify-center px-4">
-                    <div className="bg-[#1e1828] border border-[#3a3447] rounded-2xl w-full max-w-md text-center p-8">
-                        <div className="mb-6">
-                            <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/20 flex items-center justify-center mb-4">
-                                <span className="material-symbols-outlined text-3xl text-amber-400">hourglass_top</span>
-                            </div>
-                            <h2 className="text-2xl font-bold text-white mb-2">Đang chờ thanh toán</h2>
-                            <p className="text-sm text-gray-400">
-                                Ghế của bạn đã được giữ. Vui lòng hoàn tất thanh toán trên trang PayOS.
-                            </p>
-                        </div>
-
-                        {timeLeft !== null && (
-                            <div className="mb-6">
-                                <p className="text-xs text-gray-400 uppercase font-bold mb-1">Thời gian còn lại</p>
-                                <p className={`text-5xl font-mono font-black ${timeLeft <= 60 ? 'text-red-400 animate-pulse' : 'text-amber-300'}`}>
-                                    {String(Math.floor(timeLeft / 60)).padStart(2, '0')}:{String(timeLeft % 60).padStart(2, '0')}
-                                </p>
-                                <div className="mt-3 w-full bg-gray-700 rounded-full h-1.5">
-                                    <div
-                                        className={`h-1.5 rounded-full transition-all duration-1000 ${timeLeft <= 60 ? 'bg-red-500' : 'bg-amber-400'}`}
-                                        style={{ width: `${((timeLeft) / 300) * 100}%` }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="bg-[#261b3a] rounded-xl p-4 border border-[#3a3447] mb-6 text-left">
-                            <p className="text-sm font-semibold text-white mb-1">
-                                {event?.title || layoutData?.eventName || 'Event'}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                                {selectedSeats.length} ghế · Tổng: <span className="font-semibold text-white">{total.toLocaleString()} đ</span>
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col gap-3">
-                            {paymentCheckoutUrl && (
-                                <a
-                                    href={paymentCheckoutUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full bg-gradient-to-r from-[#8655f6] to-[#a855f7] text-white font-bold py-3 px-6 rounded-xl hover:brightness-110 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <span className="material-symbols-outlined">open_in_new</span>
-                                    Mở lại trang thanh toán
-                                </a>
-                            )}
-                            <button
-                                onClick={() => {
-                                    setShowPaymentWaiting(false);
-                                    setPaymentCheckoutUrl(null);
-                                    setSelectedSeats([]);
-                                    setError(null);
-                                }}
-                                className="w-full bg-[#3a3447] text-gray-200 font-medium py-3 px-6 rounded-xl hover:bg-[#4a3e5a] transition-all"
-                            >
-                                Huỷ & chọn lại ghế
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Policy doc modal (điều khoản & bảo mật) */}
             {openPolicy && (

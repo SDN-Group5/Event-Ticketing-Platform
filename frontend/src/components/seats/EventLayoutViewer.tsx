@@ -31,36 +31,65 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
         return letter;
     };
 
-    // Map real seat data from MongoDB to UI format
+    // Map real seat data from MongoDB to UI format.
+    // IMPORTANT: The seat grid uses CSS `grid-template-columns: repeat(seatsPerRow, ...)`.
+    // If a seat document is physically deleted from MongoDB (e.g. by a stale TTL index),
+    // the grid has fewer cells than `seatsPerRow` for that row, causing all subsequent
+    // seats to shift left into the wrong visual position.
+    // FIX: After mapping real seats, we inject "ghost" placeholder cells for any missing
+    // seat numbers (rows × seatsPerRow). Ghost cells render as empty/greyed-out spaces.
     const getSeatsForZone = (zone: any): Seat[] => {
         if (zone.type !== 'seats' || !zone.rows || !zone.seatsPerRow) return [];
         if (seats.length > 0) {
             const zoneSeats = seats.filter(s => s.zoneId === zone.id);
-            return zoneSeats.map(seatData => {
-                const isReservedByCurrentUser =
-                    currentUserId &&
-                    seatData.status === 'reserved' &&
-                    typeof seatData.reservedBy === 'string' &&
-                    seatData.reservedBy === currentUserId;
 
+            // Build a lookup: "row-seatNumber" → Seat
+            const seatMap = new Map<string, Seat>();
+            zoneSeats.forEach(seatData => {
                 const status =
-                    seatData.status === 'sold' ||
-                        (seatData.status === 'reserved' && !isReservedByCurrentUser)
-                        ? 'occupied'
-                        : seatData.status === 'blocked'
-                            ? 'blocked'
-                            : 'available';
+                    seatData.status === 'sold'
+                        ? 'sold'
+                        : seatData.status === 'reserved'
+                            ? 'reserved'
+                            : seatData.status === 'blocked'
+                                ? 'blocked'
+                                : 'available';
 
-                return {
+                const seat: Seat = {
                     id: `${seatData.zoneId}-${seatData.row}-${seatData.seatNumber}`,
                     row: String(seatData.row),
                     number: seatData.seatNumber,
                     label: `${getRowLetter(seatData.row)}${seatData.seatNumber}`,
-                    zone: zone.name,
+                    zone: zone.id,
                     status,
-                    price: seatData.price,
+                    price: zone.price || seatData.price,
                 } as Seat;
+                seatMap.set(`${seatData.row}-${seatData.seatNumber}`, seat);
             });
+
+            // Reconstruct the full grid — filling in ghost cells for missing seats
+            const result: Seat[] = [];
+            for (let row = 1; row <= zone.rows; row++) {
+                for (let seatNum = 1; seatNum <= zone.seatsPerRow; seatNum++) {
+                    const key = `${row}-${seatNum}`;
+                    if (seatMap.has(key)) {
+                        result.push(seatMap.get(key)!);
+                    } else {
+                        // Ghost placeholder: seat is missing from DB (deleted)
+                        result.push({
+                            id: `__ghost__${zone.id}-${row}-${seatNum}`,
+                            row: String(row),
+                            number: seatNum,
+                            label: `${getRowLetter(row)}${seatNum}`,
+                            zone: zone.id,
+                            status: 'blocked' as any,
+                            price: zone.price,
+                            _isGhost: true,
+                        } as any);
+                    }
+                }
+            }
+            return result;
         }
         const fallbackSeats: Seat[] = [];
         for (let row = 0; row < zone.rows; row++) {
@@ -70,7 +99,7 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                     row: String(row + 1),
                     number: num + 1,
                     label: `${getRowLetter(row + 1)}${num + 1}`,
-                    zone: zone.name,
+                    zone: zone.id,
                     status: 'available',
                     price: zone.price,
                 });
@@ -108,7 +137,7 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                     const w = zone.size?.width ?? 150;
                     const h = zone.size?.height ?? 150;
                     const isSeats = zone.type === 'seats';
-                    const selectedInZone = selectedSeats.filter(s => s.id.startsWith(zone.id + '-')).length;
+                    const selectedInZone = selectedSeats.filter(s => s.zone === zone.id).length;
 
                     return (
                         <div
@@ -220,7 +249,11 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                             </span>
                             <span className="flex items-center gap-1.5">
                                 <span className="w-3 h-3 rounded-sm inline-block bg-[#4b5563]"></span>
-                                Occupied
+                                Sold
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <span className="w-3 h-3 rounded-sm inline-block bg-[#9ca3af]"></span>
+                                Reserved
                             </span>
                         </div>
 
@@ -230,8 +263,21 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                             style={{ gridTemplateColumns: `repeat(${(openZone as any).seatsPerRow}, minmax(0, 1fr))` }}
                         >
                             {openZoneSeats.map(seat => {
+                                const isGhost = (seat as any)._isGhost === true;
+                                // Ghost seat = invisible spacer to preserve grid column positions
+                                if (isGhost) {
+                                    return (
+                                        <div
+                                            key={seat.id}
+                                            className="aspect-square"
+                                            style={{ backgroundColor: 'transparent' }}
+                                        />
+                                    );
+                                }
                                 const isSelected = selectedSeats.some(s => s.id === seat.id);
-                                const isOccupied = seat.status === 'occupied';
+                                const isOccupied = seat.status === 'occupied' || seat.status === 'sold' || seat.status === 'reserved';
+                                const isSold = seat.status === 'sold' || seat.status === 'occupied';
+                                const isReserved = seat.status === 'reserved';
                                 const isBlocked = seat.status === 'blocked';
                                 const isInteractive = !isOccupied && !isBlocked;
 
@@ -240,20 +286,16 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                                         key={seat.id}
                                         onClick={() => {
                                             if (isInteractive) {
-                                                onSeatToggle({
-                                                    ...seat,
-                                                    price: (openZone as any).price,
-                                                    zone: (openZone as any).name,
-                                                } as unknown as SelectedSeat);
+                                                onSeatToggle(seat as unknown as SelectedSeat);
                                             }
                                         }}
                                         className={`
                                             aspect-square rounded-t-lg rounded-b-sm flex items-center justify-center text-[11px] font-bold select-none transition-all
-                                            ${isInteractive ? 'cursor-pointer hover:brightness-125 hover:scale-110' : 'cursor-not-allowed opacity-40'}
+                                            ${isInteractive ? 'cursor-pointer hover:brightness-125 hover:scale-110' : 'cursor-not-allowed opacity-60'}
                                             ${isSelected ? 'scale-110 shadow-lg' : ''}
                                         `}
                                         style={{
-                                            backgroundColor: isSelected ? '#ffffff' : isOccupied ? '#4b5563' : isBlocked ? '#f59e0b' : (openZone as any).color,
+                                            backgroundColor: isSelected ? '#ffffff' : isSold ? '#4b5563' : isReserved ? '#9ca3af' : isBlocked ? '#f59e0b' : (openZone as any).color,
                                             color: isSelected ? (openZone as any).color : 'white',
                                             boxShadow: isSelected ? `0 0 10px ${(openZone as any).color}` : 'none',
                                         }}

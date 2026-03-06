@@ -1,6 +1,6 @@
 // Shared seat-related types for frontend layout & booking flows
 
-export type SeatStatus = 'available' | 'occupied' | 'blocked';
+export type SeatStatus = 'available' | 'occupied' | 'blocked' | 'sold' | 'reserved';
 
 export interface Seat {
   id: string;

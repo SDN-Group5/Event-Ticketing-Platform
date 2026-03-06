@@ -94,7 +94,11 @@ export const login = async (req: Request, res: Response) => {
         }
 
         const token = jwt.sign(
-            { userId: user._id },
+            {
+                userId: user._id.toString(),
+                role: user.role,
+                email: user.email,
+            },
             process.env.JWT_SECRET_KEY as string,
             {
                 // Thời gian sống của phiên đăng nhập: 1 ngày

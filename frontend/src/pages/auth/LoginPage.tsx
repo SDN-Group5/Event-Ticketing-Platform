@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/common/Button';
 
@@ -12,7 +12,6 @@ export const LoginPage: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const [localError, setLocalError] = useState<string | null>(null);
-    const googleBtnRef = useRef<HTMLDivElement>(null);
 
     const redirectByRole = (role: string) => {
         if (role === 'admin') navigate('/admin/payouts');
@@ -37,22 +36,22 @@ export const LoginPage: React.FC = () => {
         if (loggedInUser) redirectByRole(loggedInUser.role);
     };
 
-    const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
-        if (!credentialResponse.credential) return;
-        setIsGoogleLoading(true);
-        try {
-            const loggedInUser = await loginWithGoogle(credentialResponse.credential);
-            if (loggedInUser) redirectByRole(loggedInUser.role);
-        } finally {
+    const googleLogin = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            setIsGoogleLoading(true);
+            try {
+                const loggedInUser = await loginWithGoogle(tokenResponse.access_token);
+                if (loggedInUser) redirectByRole(loggedInUser.role);
+            } finally {
+                setIsGoogleLoading(false);
+            }
+        },
+        onError: () => {
             setIsGoogleLoading(false);
-        }
-    };
-
-    const triggerGoogleLogin = () => {
-        const btn = googleBtnRef.current?.querySelector('div[role="button"]') as HTMLElement;
-        btn?.click();
-    };
-
+            setLocalError('Đăng nhập Google thất bại. Vui lòng thử lại.');
+        },
+        flow: 'implicit',
+    });
 
     return (
         <div className="min-h-screen w-full flex flex-col relative overflow-hidden">
@@ -234,19 +233,9 @@ export const LoginPage: React.FC = () => {
                             </div>
 
                             <div>
-                                {/* GoogleLogin component ẩn - xử lý OAuth thực sự */}
-                                <div ref={googleBtnRef} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1, overflow: 'hidden' }}>
-                                    <GoogleLogin
-                                        onSuccess={handleGoogleSuccess}
-                                        onError={() => setIsGoogleLoading(false)}
-                                        theme="filled_black"
-                                        size="large"
-                                    />
-                                </div>
-                                {/* Nút custom hiển thị cho user */}
                                 <button
                                     type="button"
-                                    onClick={triggerGoogleLogin}
+                                    onClick={() => googleLogin()}
                                     disabled={isGoogleLoading || isLoading}
                                     className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 hover:border-white/20 active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
@@ -292,4 +281,3 @@ export const LoginPage: React.FC = () => {
         </div>
     );
 };
-

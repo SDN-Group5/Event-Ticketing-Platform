@@ -3,7 +3,6 @@ import { User } from "../models/user.model";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { sendVerificationEmail, sendResetPasswordEmail } from "../services/email.service";
-import { OAuth2Client } from "google-auth-library";
 
 function generate6DigitCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -11,39 +10,6 @@ function generate6DigitCode() {
 
 function getOtpExpiryDate(minutes = 1) {
     return new Date(Date.now() + minutes * 60 * 1000);
-}
-
-function getGoogleClient() {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    if (!clientId) {
-        throw new Error("Missing GOOGLE_CLIENT_ID");
-    }
-    return new OAuth2Client(clientId);
-}
-
-function buildNamesFromGooglePayload(payload: any) {
-    const given = (payload?.given_name ?? "").trim();
-    const family = (payload?.family_name ?? "").trim();
-    if (given || family) {
-        return {
-            firstName: given || (family ? "" : "User"),
-            lastName: family || "",
-        };
-    }
-
-    const name = (payload?.name ?? "").trim();
-    if (name) {
-        const parts = name.split(/\s+/).filter(Boolean);
-        if (parts.length === 1) return { firstName: parts[0], lastName: "" };
-        return { firstName: parts.slice(0, -1).join(" "), lastName: parts.at(-1) ?? "" };
-    }
-
-    const email = (payload?.email ?? "").trim();
-    if (email && email.includes("@")) {
-        return { firstName: email.split("@")[0], lastName: "" };
-    }
-
-    return { firstName: "User", lastName: "" };
 }
 
 // ============================================
@@ -64,12 +30,6 @@ export const login = async (req: Request, res: Response) => {
         if (!user) {
             console.warn(`❌ [LOGIN] User not found for email: ${email}`);
             return res.status(404).json({ message: "Không tìm thấy User" });
-        }
-
-        if (!user.password) {
-            return res.status(400).json({
-                message: "Tài khoản này đăng nhập bằng Google. Vui lòng đăng nhập bằng Google.",
-            });
         }
 
         if (user.isActive === false) {
@@ -134,135 +94,6 @@ export const login = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Something went wrong" });
     }
 };
-
-// ============================================
-// POST /api/auth/google
-// Body: { credential: string } (Google ID token hoặc access token)
-export const googleLogin = async (req: Request, res: Response) => {
-    try {
-        const credential = req.body?.credential;
-        if (!credential || typeof credential !== "string") {
-            return res.status(400).json({ message: "Google credential is required" });
-        }
-
-        let payload: any;
-
-        // Thử xác thực như ID token trước
-        try {
-            const ticket = await getGoogleClient().verifyIdToken({
-                idToken: credential,
-                audience: process.env.GOOGLE_CLIENT_ID,
-            });
-            payload = ticket.getPayload();
-        } catch (idTokenErr) {
-            // Nếu không phải ID token, thử dùng như access token để gọi Google userinfo
-            try {
-                const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-                    headers: { Authorization: `Bearer ${credential}` },
-                });
-
-                if (!userInfoRes.ok) {
-                    console.error("❌ [GOOGLE LOGIN] Google userinfo failed:", await userInfoRes.text());
-                    return res.status(401).json({ message: "Google token không hợp lệ" });
-                }
-
-                payload = await userInfoRes.json();
-            } catch (accessTokenErr) {
-                console.error("❌ [GOOGLE LOGIN] Both token methods failed:", accessTokenErr);
-                return res.status(401).json({ message: "Google token không hợp lệ" });
-            }
-        }
-
-        const email = (payload?.email ?? "").toLowerCase().trim();
-        const emailVerified = payload?.email_verified === true;
-        const googleId = (payload?.sub ?? "").trim();
-
-        if (!email || !googleId) {
-            return res.status(400).json({ message: "Google payload thiếu email/sub" });
-        }
-        if (!emailVerified) {
-            return res.status(401).json({ message: "Email Google chưa được xác thực" });
-        }
-
-        const names = buildNamesFromGooglePayload(payload);
-        const avatar = payload?.picture ?? null;
-
-        let user = await User.findOne({ email });
-        if (!user) {
-            user = await User.create({
-                email,
-                password: null,
-                firstName: names.firstName,
-                lastName: names.lastName,
-                role: "customer",
-                authProvider: "google",
-                googleId,
-                avatar,
-                emailVerified: true,
-                emailVerificationCode: null,
-                emailVerificationExpires: null,
-                isActive: true,
-                lastLogin: new Date(),
-            } as any);
-        } else {
-            if (user.isActive === false) {
-                return res.status(401).json({
-                    message: "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên."
-                });
-            }
-
-            if (user.emailVerified !== true) {
-                user.emailVerified = true;
-                user.emailVerificationCode = null as any;
-                user.emailVerificationExpires = null as any;
-            }
-
-            if ((user as any).authProvider !== "google") {
-                (user as any).authProvider = "google";
-            }
-            if (!(user as any).googleId) {
-                (user as any).googleId = googleId;
-            }
-            if (avatar && !user.avatar) {
-                user.avatar = avatar;
-            }
-            user.lastLogin = new Date();
-            await user.save();
-        }
-
-        const token = jwt.sign(
-            { userId: user._id },
-            process.env.JWT_SECRET_KEY as string,
-            { expiresIn: "1d" }
-        );
-
-        const cookieMaxAgeMs = 1 * 24 * 60 * 60 * 1000;
-        res.cookie("jwt", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            maxAge: cookieMaxAgeMs,
-        });
-
-        return res.status(200).json({
-            userId: user._id,
-            message: "Login successful",
-            token: token,
-            user: {
-                id: user._id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                role: user.role,
-                avatar: user.avatar ?? null,
-            },
-        });
-    } catch (error) {
-        console.error("❌ Lỗi googleLogin:", error);
-        return res.status(500).json({ message: "Something went wrong" });
-    }
-};
-
 
 // ============================================
 // GET /api/auth/validate-token
@@ -554,6 +385,113 @@ export const resetPassword = async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error("❌ Lỗi resetPassword:", error);
+        return res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+// ============================================
+// POST /api/auth/google
+export const googleLogin = async (req: Request, res: Response) => {
+    try {
+        const { credential, access_token } = req.body;
+        const token = access_token || credential;
+
+        if (!token) {
+            return res.status(400).json({ message: "Google token không hợp lệ" });
+        }
+
+        // Fetch user info from Google using access_token
+        let googleUser: any;
+        try {
+            const googleRes = await fetch(
+                `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`
+            );
+            if (!googleRes.ok) {
+                throw new Error("Failed to fetch Google user info");
+            }
+            googleUser = await googleRes.json();
+        } catch (fetchError) {
+            // Try as ID token (credential) via tokeninfo endpoint
+            try {
+                const tokenInfoRes = await fetch(
+                    `https://oauth2.googleapis.com/tokeninfo?id_token=${token}`
+                );
+                if (!tokenInfoRes.ok) throw new Error("Invalid token");
+                googleUser = await tokenInfoRes.json();
+                // Map fields
+                googleUser.given_name = googleUser.given_name;
+                googleUser.family_name = googleUser.family_name;
+            } catch {
+                console.error("❌ [GOOGLE] Token verification failed:", fetchError);
+                return res.status(401).json({ message: "Google token không hợp lệ" });
+            }
+        }
+
+        const email = googleUser.email;
+        const given_name = googleUser.given_name || googleUser.name || '';
+        const family_name = googleUser.family_name || '';
+        const picture = googleUser.picture || null;
+
+        if (!email) {
+            return res.status(401).json({ message: "Không thể lấy thông tin từ Google" });
+        }
+
+        // Find or create user
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            user = await User.create({
+                firstName: given_name || email.split("@")[0],
+                lastName: family_name || "",
+                email,
+                password: `google_oauth_${Math.random().toString(36)}_${Date.now()}`,
+                role: "customer",
+                emailVerified: true,
+                isActive: true,
+                avatar: picture,
+            });
+            console.log(`✅ [GOOGLE] New user created: ${email}`);
+        } else {
+            if (picture && !user.avatar) {
+                user.avatar = picture;
+                await user.save();
+            }
+            console.log(`✅ [GOOGLE] Existing user logged in: ${email}`);
+        }
+
+        if (user.isActive === false) {
+            return res.status(401).json({
+                message: "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
+            });
+        }
+
+        const jwtToken = jwt.sign(
+            { userId: user._id.toString(), role: user.role, email: user.email },
+            process.env.JWT_SECRET_KEY as string,
+            { expiresIn: "1d" }
+        );
+
+        res.cookie("jwt", jwtToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 1 * 24 * 60 * 60 * 1000,
+        });
+
+        return res.status(200).json({
+            message: "Google login successful",
+            token: jwtToken,
+            user: {
+                id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                avatar: user.avatar || null,
+            },
+        });
+    } catch (error) {
+        console.error("❌ Lỗi googleLogin:", error);
         return res.status(500).json({ message: "Something went wrong" });
     }
 };

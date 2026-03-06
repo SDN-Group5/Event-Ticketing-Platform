@@ -32,7 +32,6 @@ type AuthContextValue = {
   
   // Auth actions
   login: (email: string, password: string) => Promise<boolean>;
-  loginWithGoogle: (credential: string) => Promise<boolean>;
   register: (firstName: string, lastName: string, email: string, password: string) => Promise<{ success: boolean; requiresVerification?: boolean; email?: string }>;
   verifyEmail: (email: string, code: string) => Promise<boolean>;
   resendVerification: (email: string) => Promise<boolean>;
@@ -119,7 +118,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         firstName: response.user.firstName,
         lastName: response.user.lastName,
         role: mappedRole,
-        avatar: (response.user as any).avatar,
       };
 
       await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
@@ -127,49 +125,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return true;
     } catch (err: any) {
-      console.error('[AuthContext] loginWithGoogle() failed raw:', err);
-      console.error('[AuthContext] loginWithGoogle() failed JSON:', JSON.stringify(err));
-      setError(err.message || 'Đăng nhập Google thất bại');
+      console.error('[AuthContext] login() failed:', err);
+      setError(err.message || 'Đăng nhập thất bại');
       return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const loginWithGoogle = useCallback(async (credential: string): Promise<boolean> => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      console.log('[AuthContext] loginWithGoogle() credential prefix:', credential.slice(0, 20), '...');
-
-      const response = await AuthAPI.googleLogin(credential);
-
-      console.log('[AuthContext] loginWithGoogle() success, response:', response);
-
-      const backendRole = response.user.role as UserRoleMobile;
-      const mappedRole: UserRoleMobile =
-        backendRole === 'customer' ? 'user' : backendRole;
-
-      await AsyncStorage.setItem(AUTH_TOKEN_KEY, response.token);
-
-      const userData: User = {
-        id: response.user.id,
-        email: response.user.email,
-        firstName: response.user.firstName,
-        lastName: response.user.lastName,
-        role: mappedRole,
-        avatar: (response.user as any).avatar,
-      };
-
-      await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-      setUser(userData);
-
-      return true;
-    } catch (err: any) {
-      console.error('[AuthContext] loginWithGoogle() failed raw:', err);
-    console.error('[AuthContext] loginWithGoogle() failed message:', err?.message);
-    setError(err?.message || 'Đăng nhập Google thất bại');
-    return false;
     } finally {
       setIsLoading(false);
     }
@@ -313,7 +271,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading,
       error,
       login,
-      loginWithGoogle,
       register,
       verifyEmail,
       resendVerification,
@@ -323,7 +280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       clearError,
     }),
-    [authState, user, isLoading, error, login, loginWithGoogle, register, verifyEmail, resendVerification, forgotPassword, verifyResetCode, resetPassword, logout, clearError]
+    [authState, user, isLoading, error, login, register, verifyEmail, resendVerification, forgotPassword, verifyResetCode, resetPassword, logout, clearError]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

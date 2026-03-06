@@ -8,7 +8,6 @@ import TabNavigator from './TabNavigator';
 // Auth Screens
 import Login from '../screens/auth/LoginScreen';
 import CreateAccount from '../screens/auth/CreateAccount';
-import ForgotPassword from '../screens/auth/ForgotPassword';
 
 // App Screens
 import EventDetail from '../screens/EventDetail';
@@ -65,7 +64,6 @@ export default function AppNavigator() {
         <Stack.Group>
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="CreateAccount" component={CreateAccount} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
         </Stack.Group>
       )}
     </Stack.Navigator>

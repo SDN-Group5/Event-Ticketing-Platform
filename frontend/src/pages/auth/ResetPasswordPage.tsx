@@ -150,10 +150,10 @@ export const ResetPasswordPage: React.FC = () => {
                             <React.Fragment key={s.key}>
                                 <div className="flex items-center gap-1.5">
                                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${idx < currentStepIdx
-                                            ? 'bg-[#a855f7] text-white'
-                                            : idx === currentStepIdx
-                                                ? 'bg-gradient-to-br from-[#a855f7] to-[#d946ef] text-white shadow-[0_0_12px_rgba(168,85,247,0.5)]'
-                                                : 'bg-white/10 text-slate-500'
+                                        ? 'bg-[#a855f7] text-white'
+                                        : idx === currentStepIdx
+                                            ? 'bg-gradient-to-br from-[#a855f7] to-[#d946ef] text-white shadow-[0_0_12px_rgba(168,85,247,0.5)]'
+                                            : 'bg-white/10 text-slate-500'
                                         }`}>
                                         {idx < currentStepIdx
                                             ? <span className="material-symbols-outlined text-[14px]">check</span>

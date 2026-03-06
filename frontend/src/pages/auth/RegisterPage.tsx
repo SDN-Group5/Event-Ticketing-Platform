@@ -25,7 +25,7 @@ export const RegisterPage: React.FC = () => {
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Validation
         if (!formData.firstName.trim()) {
             setValidationError('First name is required');
@@ -49,9 +49,9 @@ export const RegisterPage: React.FC = () => {
         }
 
         // Call register from AuthContext
-        // For now, we'll use a simple API call - update AuthContext if you have a register method
         try {
-            const response = await fetch((import.meta as any).env.VITE_API_URL + '/api/auth/register' || 'http://localhost:4001/api/auth/register', {
+            const apiUrl = (import.meta as any).env.VITE_API_URL || 'http://localhost:4001';
+            const response = await fetch(`${apiUrl}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

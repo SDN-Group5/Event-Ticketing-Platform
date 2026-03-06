@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -143,7 +144,7 @@ const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/register"
+        path={ROUTES.REGISTER}
         element={
           isAuthenticated
             ? <Navigate to={ROUTES.HOME} replace />
@@ -332,7 +333,7 @@ const AppContent: React.FC = () => {
 
 // Main App Component
 const App: React.FC = () => {
-  const googleClientId = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID;
+  const googleClientId = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '';
 
   return (
     <GoogleOAuthProvider clientId={googleClientId}>

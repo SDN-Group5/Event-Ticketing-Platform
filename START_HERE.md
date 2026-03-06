@@ -17,17 +17,12 @@ You requested: **Real authentication system WITHOUT mock data, keeping homepage 
 - Common issues & fixes
 
 ### 📖 I want to UNDERSTAND everything
-**→ Go to [DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md)**
-- Complete navigation guide
-- Links to all docs
-- Task-based reference
-
-### 💻 I want CODE details
-**→ Check these files:**
-- `frontend/src/contexts/AuthContext.tsx` - Auth logic
-- `frontend/src/pages/auth/RegisterPage.tsx` - NEW registration form
-- `frontend/src/pages/auth/LoginPage.tsx` - Updated login
-- `frontend/src/App.tsx` - Routes & protection
+**→ Go to [AUTH_GUIDE.md](./AUTH_GUIDE.md)**
+- Complete authentication guide
+- API endpoints
+- Environment setup
+- Debugging tips
+- Production checklist
 
 ### 📊 I want DIAGRAMS
 **→ Go to [doc/AUTH_FLOW_DIAGRAMS.md](./doc/AUTH_FLOW_DIAGRAMS.md)**
@@ -36,12 +31,12 @@ You requested: **Real authentication system WITHOUT mock data, keeping homepage 
 - Session restoration
 - Protected routes
 
-### ✅ I want IMPLEMENTATION DETAILS
-**→ Go to [FINAL_SUMMARY.md](./FINAL_SUMMARY.md)**
-- Complete overview
-- What changed
-- Success criteria checklist
-- Production readiness
+### 💻 I want CODE details
+**→ Check these files:**
+- `frontend/src/contexts/AuthContext.tsx` - Auth logic
+- `frontend/src/pages/auth/RegisterPage.tsx` - NEW registration form
+- `frontend/src/pages/auth/LoginPage.tsx` - Updated login
+- `frontend/src/App.tsx` - Routes & protection
 
 ---
 
@@ -79,11 +74,9 @@ You requested: **Real authentication system WITHOUT mock data, keeping homepage 
 ### 📚 Documentation
 | Document | Purpose |
 |----------|---------|
-| [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) | Quick testing guide ⭐ |
-| [DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md) | Navigation guide |
-| [FINAL_SUMMARY.md](./FINAL_SUMMARY.md) | Complete overview |
-| [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) | Implementation checklist |
-| [doc/WEB_AUTH_GUIDE.md](./doc/WEB_AUTH_GUIDE.md) | Comprehensive guide |
+| [START_HERE.md](./START_HERE.md) | This file - entry point ⭐ |
+| [AUTH_GUIDE.md](./AUTH_GUIDE.md) | Complete auth guide |
+| [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) | Quick testing guide |
 | [doc/AUTH_FLOW_DIAGRAMS.md](./doc/AUTH_FLOW_DIAGRAMS.md) | Flow diagrams |
 
 ### 💻 Code Files
@@ -163,12 +156,11 @@ b55592d docs: Add quick reference card for authentication
 
 ---
 
-## Next Steps
+### 🎯 Quick Links
 
-1. **Read** [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
-2. **Test** the registration & login flow
-3. **Verify** role-based access works
-4. **Check** production checklist in [FINAL_SUMMARY.md](./FINAL_SUMMARY.md)
+**Start testing:** [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
+**Learn everything:** [AUTH_GUIDE.md](./AUTH_GUIDE.md)
+**See diagrams:** [doc/AUTH_FLOW_DIAGRAMS.md](./doc/AUTH_FLOW_DIAGRAMS.md)
 
 ---
 

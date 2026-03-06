@@ -162,7 +162,9 @@ router.delete('/events/:eventId/seats/:seatId/reservation', requireAuth, async (
  * POST /api/v1/events/:eventId/seats/bulk-release
  * Body: { seatIds: string[] }
  * Service-to-service: payment-service gọi khi huỷ thanh toán.
- * seatId format: "zoneId-row-seatNum"
+ * Hỗ trợ 2 format seatId:
+ *   1. MongoDB ObjectId (format cũ): "69a6df013d5766af133a40a4"
+ *   2. Composite key (format mới): "zoneId-row-seatNum"
  */
 router.post('/events/:eventId/seats/bulk-release', async (req, res) => {
     try {
@@ -177,42 +179,61 @@ router.post('/events/:eventId/seats/bulk-release', async (req, res) => {
         const objectIdEventId = new mongoose.Types.ObjectId(eventId);
         const results = [];
 
-        for (const rawSeatId of seatIds) {
-            let query = null;
+        const releaseUpdate = {
+            $set: {
+                status: 'available',
+                reservedBy: null,
+                reservedAt: null,
+                reservationExpiry: null,
+                soldBy: null,
+                soldAt: null,
+                bookingId: null,
+            },
+            $inc: { version: 1 }
+        };
 
-            // Support 2 formats:
-            // 1) Mongo ObjectId string (mobile đang dùng _id)
-            // 2) Composite "zoneId-row-seatNumber" (bulk routes cũ)
-            if (mongoose.Types.ObjectId.isValid(rawSeatId)) {
-                query = { _id: rawSeatId, eventId: objectIdEventId, status: { $in: ['reserved', 'sold'] } };
-            } else {
-                const parts = String(rawSeatId).split('-');
+        for (const rawSeatId of seatIds) {
+            let seat = null;
+
+            // Strategy 1: MongoDB ObjectId format (old orders)
+            if (mongoose.Types.ObjectId.isValid(rawSeatId) && rawSeatId.length === 24) {
+                try {
+                    seat = await Seat.findOneAndUpdate(
+                        { _id: new mongoose.Types.ObjectId(rawSeatId), status: { $in: ['reserved', 'sold'] } },
+                        releaseUpdate,
+                        { new: true }
+                    );
+                    if (seat) {
+                        console.log(`[bulk-release] Released seat by ObjectId: ${rawSeatId}`);
+                    }
+                } catch (err) {
+                    console.log(`[bulk-release] ObjectId lookup failed for ${rawSeatId}: ${err.message}`);
+                }
+            }
+
+            // Strategy 2: Composite format "zoneId-row-seatNum"
+            if (!seat) {
+                const parts = rawSeatId.split('-');
                 if (parts.length < 3) {
-                    console.log(`[bulk-release] Invalid seatId format: ${rawSeatId}`);
+                    console.log(`[bulk-release] Invalid seatId format (skipping): ${rawSeatId}`);
                     continue;
                 }
                 const seatNumber = parseInt(parts.pop());
                 const row = parseInt(parts.pop());
                 const zoneId = parts.join('-');
-                query = { eventId: objectIdEventId, zoneId, row, seatNumber, status: { $in: ['reserved', 'sold'] } };
+
+                if (isNaN(seatNumber) || isNaN(row)) {
+                    console.log(`[bulk-release] Cannot parse row/seatNumber from: ${rawSeatId}`);
+                    continue;
+                }
+
+                seat = await Seat.findOneAndUpdate(
+                    { eventId: objectIdEventId, zoneId, row, seatNumber, status: { $in: ['reserved', 'sold'] } },
+                    releaseUpdate,
+                    { new: true }
+                );
             }
 
-            const seat = await Seat.findOneAndUpdate(
-                query,
-                {
-                    $set: {
-                        status: 'available',
-                        reservedBy: null,
-                        reservedAt: null,
-                        reservationExpiry: null,
-                        soldBy: null,
-                        soldAt: null,
-                        bookingId: null,
-                    },
-                    $inc: { version: 1 }
-                },
-                { new: true }
-            );
             if (seat) {
                 results.push(seat);
                 try { await seatService.updateZoneCache(seat.layoutId, seat.zoneId); } catch (_) { }
@@ -226,6 +247,7 @@ router.post('/events/:eventId/seats/bulk-release', async (req, res) => {
             })));
         }
 
+        console.log(`[bulk-release] Released ${results.length}/${seatIds.length} seats for event ${eventId}`);
         res.json({ success: true, released: results.length, seats: results });
     } catch (error) {
         res.status(500).json({ error: error.message });

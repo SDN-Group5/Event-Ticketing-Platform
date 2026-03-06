@@ -98,8 +98,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "4001:4001"
-    env_file:
-      - ../.env
     environment:
       - NODE_ENV=development
       - PORT=4001
@@ -107,12 +105,10 @@ services:
       # Lấy từ file .env hoặc env file
       - MONGODB_URI=${MONGODB_ATLAS_URI}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-me}
-      - GOOGLE_CLIENT_ID=722499915288-79titkavhpcuh7a6p8b3225l59frl08v.apps.googleusercontent.com
     # Không cần depends_on mongodb nữa vì dùng Atlas
     networks:
       - ticketing-network
     restart: unless-stopped
-
 
   # ============================================
   # MONGODB (ĐÃ TẮT - Dùng MongoDB Atlas thay thế)

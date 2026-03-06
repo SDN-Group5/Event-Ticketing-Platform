@@ -24,30 +24,11 @@ Tạo file `.env` trong thư mục `mobile/` với nội dung:
 EXPO_PUBLIC_API_URL=http://localhost:4000
 ```
 
-Hoặc nếu backend chạy trên IP khác (ví dụ test trên thiết bị thật):
+Hoặc nếu backend chạy trên IP khác:
 
 ```
 EXPO_PUBLIC_API_URL=http://192.168.1.100:4000
 ```
-
-## 🔐 Cấu hình Google Sign-In
-
-Để dùng **Login bằng Google**:
-
-1. Vào [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
-2. Tạo **OAuth 2.0 Client IDs**:
-   - **Web application** (cho Expo Go / trình duyệt): dùng làm `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
-   - **Android** (cho build APK): thêm `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
-   - **iOS** (cho build IPA): thêm `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
-3. Thêm vào `.env`:
-
-```
-EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
-EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=your-android-client-id.apps.googleusercontent.com  # (tùy chọn, cho build APK)
-EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your-ios-client-id.apps.googleusercontent.com          # (tùy chọn, cho build iOS)
-```
-
-4. **Backend** cũng cần `GOOGLE_CLIENT_ID` (dùng **Web client ID** vì backend verify id_token từ OAuth web flow)
 
 ## ✅ Đã Implement
 
@@ -77,7 +58,7 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your-ios-client-id.apps.googleusercontent.com  
 - ✅ Error handling và display
 - ✅ Loading states
 - ✅ Navigation đến CreateAccount và ForgotPassword
-- ✅ **Google Sign-In** (expo-auth-session + useIdTokenAuthRequest)
+- ✅ Social login buttons (UI only)
 
 #### **CreateAccount** (`src/screens/auth/CreateAccount.tsx`)
 - ✅ Form validation (firstName, lastName, email, password, confirmPassword)
@@ -187,4 +168,4 @@ const handleLogout = async () => {
    - Login → Use App → Logout
    - Forgot Password → Reset Password → Login
 4. Tùy chỉnh UI/UX nếu cần
-5. Cấu hình Google Sign-In (xem mục Cấu hình Google Sign-In ở trên)
+5. Thêm social login integration (Google, Facebook) nếu cần

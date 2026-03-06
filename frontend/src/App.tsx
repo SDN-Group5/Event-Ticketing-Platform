@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import type { UserRole } from '../../shared/type';
 import { ROUTES } from './constants/routes';
@@ -28,7 +27,7 @@ import {
 import Venue3DPage from './pages/client/Venue3DPage';
 
 // Auth Pages
-import { LoginPage, RegisterPage, OTPPage, ResetPasswordPage } from './pages/auth';
+import { LoginPage, OTPPage, ResetPasswordPage } from './pages/auth';
 
 // Organizer Pages
 import {
@@ -138,14 +137,6 @@ const AppRoutes: React.FC = () => {
           isAuthenticated
             ? <Navigate to={ROUTES.HOME} replace />
             : <AuthLayout><LoginPage /></AuthLayout>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          isAuthenticated
-            ? <Navigate to={ROUTES.HOME} replace />
-            : <AuthLayout><RegisterPage /></AuthLayout>
         }
       />
       <Route path={ROUTES.OTP} element={<AuthLayout><OTPPage /></AuthLayout>} />
@@ -333,16 +324,7 @@ import { PaymentTimerProvider } from './contexts/PaymentTimerContext';
 import { FloatingPaymentTimer } from './components/payment/FloatingPaymentTimer';
 
 const App: React.FC = () => {
-  const googleClientId = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID;
-  
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
-      <Router>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </Router>
-    </GoogleOAuthProvider>
     <Router>
       <AuthProvider>
         <PaymentTimerProvider>

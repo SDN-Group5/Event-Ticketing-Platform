@@ -118,6 +118,32 @@ router.patch('/events/:eventId/seats/:seatId/reservation', requireAuth, async (r
     }
 });
 
+/**
+ * POST /api/v1/events/:eventId/seats/bulk-reserve
+ * Body: { seatIds: string[], userId }
+ * Service-to-service hoặc từ client (nếu có user).
+ */
+router.post('/events/:eventId/seats/bulk-reserve', async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { seatIds, userId } = req.body;
+
+        if (!seatIds || !seatIds.length) {
+            return res.status(400).json({ error: 'seatIds is required' });
+        }
+
+        const results = await seatService.bulkReserveSeats(eventId, seatIds, userId);
+
+        res.json({
+            success: true,
+            reserved: results.length,
+            seats: results
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Backwards compatibility: giữ DELETE nếu có chỗ nào còn gọi
 router.delete('/events/:eventId/seats/:seatId/reservation', requireAuth, async (req, res) => {
     try {
@@ -242,23 +268,52 @@ router.post('/events/:eventId/seats/bulk-sold', async (req, res) => {
             return res.status(400).json({ error: 'seatIds is required' });
         }
 
-        // Parse zoneId, row, seatNumber from seatId string like "zone-1772464570867-3miaaphot-3-4"
+        // Support 2 formats:
+        // 1) Mongo ObjectId string (mobile đang dùng _id)
+        // 2) Composite "zoneId-row-seatNumber"
+        const byObjectIds = seatIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+        const byComposite = seatIds.filter((id) => !mongoose.Types.ObjectId.isValid(id));
+
+        // Parse zoneId, row, seatNumber from composite seatId string like "zone-...-3-4"
         // Last two segments are row and seatNumber; everything before is zoneId
-        const updates = [];
-        for (const rawSeatId of seatIds) {
-            const parts = rawSeatId.split('-');
+        const compositeUpdates = [];
+        for (const rawSeatId of byComposite) {
+            const parts = String(rawSeatId).split('-');
             if (parts.length < 4) continue;
             const seatNumber = parseInt(parts[parts.length - 1]);
             const row = parseInt(parts[parts.length - 2]);
             const zoneId = parts.slice(0, parts.length - 2).join('-');
-            updates.push({ zoneId, row, seatNumber });
+            compositeUpdates.push({ zoneId, row, seatNumber });
         }
 
         const mongoose = (await import('mongoose')).default;
         const objectIdEventId = new mongoose.Types.ObjectId(eventId);
         const results = [];
 
-        for (const { zoneId, row, seatNumber } of updates) {
+        // Update by Mongo _id (mobile)
+        for (const rawSeatId of byObjectIds) {
+            const seat = await Seat.findOneAndUpdate(
+                { _id: rawSeatId, eventId: objectIdEventId, status: { $ne: 'sold' } },
+                {
+                    $set: {
+                        status: 'sold',
+                        soldBy: userId || null,
+                        soldAt: new Date(),
+                        ...(mongoose.Types.ObjectId.isValid(bookingId) ? { bookingId } : {}),
+                        reservationExpiry: null,
+                    },
+                    $inc: { version: 1 }
+                },
+                { new: true }
+            );
+            if (seat) {
+                results.push(seat);
+                try { await seatService.updateZoneCache(seat.layoutId, seat.zoneId); } catch (_) { }
+            }
+        }
+
+        // Update by composite id
+        for (const { zoneId, row, seatNumber } of compositeUpdates) {
             const seat = await Seat.findOneAndUpdate(
                 { eventId: objectIdEventId, zoneId, row, seatNumber, status: { $ne: 'sold' } },
                 {
@@ -275,7 +330,6 @@ router.post('/events/:eventId/seats/bulk-sold', async (req, res) => {
             );
             if (seat) {
                 results.push(seat);
-                // Update zone cache
                 try { await seatService.updateZoneCache(seat.layoutId, zoneId); } catch (_) { }
             }
         }

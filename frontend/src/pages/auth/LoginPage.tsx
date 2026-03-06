@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,46 +10,49 @@ export const LoginPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    const [localError, setLocalError] = useState<string | null>(null);
+    const googleBtnRef = useRef<HTMLDivElement>(null);
+
+    const redirectByRole = (role: string) => {
+        if (role === 'admin') navigate('/admin/payouts');
+        else if (role === 'organizer') navigate('/organizer');
+        else navigate('/');
+    };
+
+    const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        const loggedInUser = await login(email, password);
-
-        if (loggedInUser) {
-            // Redirect based on role
-            if (loggedInUser.role === 'admin') {
-                navigate('/admin/payouts');
-            } else if (loggedInUser.role === 'organizer') {
-                navigate('/organizer');
-            } else {
-                navigate('/');
-            }
+        setLocalError(null);
+        if (!email.trim()) {
+            setLocalError('Vui lòng nhập địa chỉ email.');
+            return;
         }
+        if (!isValidEmail(email)) {
+            setLocalError('Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại.');
+            return;
+        }
+        const loggedInUser = await login(email, password);
+        if (loggedInUser) redirectByRole(loggedInUser.role);
     };
 
     const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
-        if (!credentialResponse.credential) {
-            console.error('No credential received');
-            return;
-        }
-
-        const loggedInUser = await loginWithGoogle(credentialResponse.credential);
-        if (loggedInUser) {
-            // Redirect based on role
-            if (loggedInUser.role === 'admin') {
-                navigate('/admin/payouts');
-            } else if (loggedInUser.role === 'organizer') {
-                navigate('/organizer');
-            } else {
-                navigate('/');
-            }
+        if (!credentialResponse.credential) return;
+        setIsGoogleLoading(true);
+        try {
+            const loggedInUser = await loginWithGoogle(credentialResponse.credential);
+            if (loggedInUser) redirectByRole(loggedInUser.role);
+        } finally {
+            setIsGoogleLoading(false);
         }
     };
 
-    const handleGoogleError = () => {
-        console.error('Google login failed');
+    const triggerGoogleLogin = () => {
+        const btn = googleBtnRef.current?.querySelector('div[role="button"]') as HTMLElement;
+        btn?.click();
     };
+
 
     return (
         <div className="min-h-screen w-full flex flex-col relative overflow-hidden">
@@ -153,24 +156,25 @@ export const LoginPage: React.FC = () => {
                             <p className="text-slate-300 text-sm">Please enter your details to sign in</p>
                         </div>
 
-                        {error && (
+                        {(localError || error) && (
                             <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex items-center gap-2">
                                 <span className="material-symbols-outlined text-lg">error</span>
-                                {error}
+                                {localError || error}
                             </div>
                         )}
 
-                        <form onSubmit={handleLogin} className="space-y-5">
+                        <form onSubmit={handleLogin} className="space-y-5" noValidate>
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
                                 <div className="relative">
                                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl">mail</span>
                                     <input
-                                        type="email"
+                                        type="text"
                                         value={email}
                                         onChange={(e) => {
                                             setEmail(e.target.value);
                                             if (error) clearError();
+                                            if (localError) setLocalError(null);
                                         }}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-slate-500 focus:border-[#a855f7] focus:ring-2 focus:ring-[#a855f7]/20 transition-all"
                                         placeholder="name@example.com"
@@ -229,26 +233,39 @@ export const LoginPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="flex justify-center">
+                            <div>
+                                {/* GoogleLogin component ẩn - xử lý OAuth thực sự */}
+                                <div ref={googleBtnRef} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1, overflow: 'hidden' }}>
                                     <GoogleLogin
                                         onSuccess={handleGoogleSuccess}
-                                        onError={handleGoogleError}
-                                        theme="dark"
+                                        onError={() => setIsGoogleLoading(false)}
+                                        theme="filled_black"
                                         size="large"
-                                        width="100"
                                     />
                                 </div>
+                                {/* Nút custom hiển thị cho user */}
                                 <button
                                     type="button"
-                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-all"
+                                    onClick={triggerGoogleLogin}
+                                    disabled={isGoogleLoading || isLoading}
+                                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 hover:border-white/20 active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
-                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M17.05 13.5c0-1.3-.97-2.4-2.25-2.4-.6 0-1.17.23-1.6.65.02-1.8-.95-3.37-2.5-4.12C9.2 6.5 7.37 7.47 6.85 9.3c-.16.54-.24 1.1-.24 1.7 0 3.05 2.47 5.52 5.52 5.52 1.58 0 3-1.1 4.2-2.75 1.3-1.9 1.72-4.18 1.72-4.18zm-4.05 3.35c-1.08 0-1.95-.87-1.95-1.95s.87-1.95 1.95-1.95 1.95.87 1.95 1.95-.87 1.95-1.95 1.95z" />
-                                    </svg>
-                                    <span className="text-sm font-medium">Apple</span>
+                                    {isGoogleLoading ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+                                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                                        </svg>
+                                    )}
+                                    <span className="text-sm font-semibold">
+                                        {isGoogleLoading ? 'Đang đăng nhập...' : 'Tiếp tục với Google'}
+                                    </span>
                                 </button>
                             </div>
+
                         </div>
 
                         {/* Sign Up Link */}

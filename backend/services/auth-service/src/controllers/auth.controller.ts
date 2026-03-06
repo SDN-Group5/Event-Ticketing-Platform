@@ -133,7 +133,7 @@ export const login = async (req: Request, res: Response) => {
 
 // ============================================
 // POST /api/auth/google
-// Body: { credential: string } (Google ID token)
+// Body: { credential: string } (Google ID token hoặc access token)
 export const googleLogin = async (req: Request, res: Response) => {
     try {
         const credential = req.body?.credential;
@@ -142,15 +142,31 @@ export const googleLogin = async (req: Request, res: Response) => {
         }
 
         let payload: any;
+
+        // Thử xác thực như ID token trước
         try {
             const ticket = await getGoogleClient().verifyIdToken({
                 idToken: credential,
                 audience: process.env.GOOGLE_CLIENT_ID,
             });
             payload = ticket.getPayload();
-        } catch (e) {
-            console.error("❌ [GOOGLE LOGIN] verifyIdToken failed:", e);
-            return res.status(401).json({ message: "Google token không hợp lệ" });
+        } catch (idTokenErr) {
+            // Nếu không phải ID token, thử dùng như access token để gọi Google userinfo
+            try {
+                const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                    headers: { Authorization: `Bearer ${credential}` },
+                });
+
+                if (!userInfoRes.ok) {
+                    console.error("❌ [GOOGLE LOGIN] Google userinfo failed:", await userInfoRes.text());
+                    return res.status(401).json({ message: "Google token không hợp lệ" });
+                }
+
+                payload = await userInfoRes.json();
+            } catch (accessTokenErr) {
+                console.error("❌ [GOOGLE LOGIN] Both token methods failed:", accessTokenErr);
+                return res.status(401).json({ message: "Google token không hợp lệ" });
+            }
         }
 
         const email = (payload?.email ?? "").toLowerCase().trim();
@@ -191,7 +207,6 @@ export const googleLogin = async (req: Request, res: Response) => {
                 });
             }
 
-            // Đồng bộ trạng thái xác thực email nếu user cũ chưa verify
             if (user.emailVerified !== true) {
                 user.emailVerified = true;
                 user.emailVerificationCode = null as any;
@@ -243,6 +258,7 @@ export const googleLogin = async (req: Request, res: Response) => {
         return res.status(500).json({ message: "Something went wrong" });
     }
 };
+
 
 // ============================================
 // GET /api/auth/validate-token

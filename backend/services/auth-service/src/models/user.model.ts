@@ -77,8 +77,9 @@ const userSchema = new Schema<IUserDocument>(
     },
     lastName: {
       type: String,
-      required: [true, 'Tên là bắt buộc'],
+      required: false,
       trim: true,
+      default: '',
     },
     phone: {
       type: String,

@@ -102,7 +102,7 @@ export const setupRoutes = (app: Express) => {
     '/api/events',
     createProxyMiddleware(
       createProxy(EVENT_SERVICE_URL, {
-        '^/api/events': '/api/events',
+        '^/api/events': '',
       })
     )
   );
@@ -126,14 +126,20 @@ export const setupRoutes = (app: Express) => {
   // Layout Service
   app.use(
     '/api/v1/layouts',
-    createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL))
+    createProxyMiddleware(
+      createProxy(LAYOUT_SERVICE_URL, {
+        '^/api/v1/layouts': '',
+      })
+    )
   );
 
-  // Payment Service: /api/payments/* — khi proxy gửi path tương đối (vd /create) thì thêm prefix /api/payments/
+  // Payment Service: /api/payments/*
   app.use(
     '/api/payments',
     createProxyMiddleware(
-      createProxy(PAYMENT_SERVICE_URL, { '^/(?!api/payments)': '/api/payments/' })
+      createProxy(PAYMENT_SERVICE_URL, {
+        '^/api/payments': '/api/payments',
+      })
     )
   );
 

@@ -13,10 +13,24 @@ const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost
 // ============================================
 // PROXY OPTIONS
 // ============================================
+const applyPathRewrite = (
+  originalPath: string,
+  pathRewrite?: Record<string, string>
+): string => {
+  if (!pathRewrite) return originalPath;
+
+  let out = originalPath;
+  for (const [pattern, replacement] of Object.entries(pathRewrite)) {
+    out = out.replace(new RegExp(pattern), replacement);
+  }
+  return out;
+};
+
 const createProxy = (target: string, pathRewrite?: Record<string, string>): Options => ({
   target,
   changeOrigin: true,
   pathRewrite,
+
   /**
    * Tăng timeout để tránh gateway tự trả 408 trước khi service con xử lý xong.
    *  - timeout: thời gian chờ response từ upstream (ms)
@@ -37,10 +51,15 @@ const createProxy = (target: string, pathRewrite?: Record<string, string>): Opti
       });
     }
   },
-  onProxyReq: (proxyReq, req) => {
+  onProxyReq: (proxyReq, req: any) => {
+    const originalUrl = (req as any).originalUrl || req.url || '';
+    const rawPath = (req as any).path || (req.url ? req.url.split('?')[0] : '') || '';
+    const rewrittenPath = applyPathRewrite(rawPath, pathRewrite);
+    console.log(`[proxy] ${req.method} ${originalUrl} -> ${target}${rewrittenPath}`);
+
     // Forward cookies/headers nếu cần
-    if (req.headers.cookie) {
-      proxyReq.setHeader('Cookie', req.headers.cookie);
+    if ((req as any).headers?.cookie) {
+      proxyReq.setHeader('Cookie', (req as any).headers.cookie);
     }
   },
 } as Options);

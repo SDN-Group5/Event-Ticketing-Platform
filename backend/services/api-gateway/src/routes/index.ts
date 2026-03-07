@@ -100,15 +100,27 @@ export const setupRoutes = (app: Express) => {
   // Event Service: /api/events/*, /api/organizer/*, /api/admin/*
   app.use(
     '/api/events',
-    createProxyMiddleware(createProxy(EVENT_SERVICE_URL))
+    createProxyMiddleware(
+      createProxy(EVENT_SERVICE_URL, {
+        '^/api/events': '/api/events',
+      })
+    )
   );
   app.use(
     '/api/organizer',
-    createProxyMiddleware(createProxy(EVENT_SERVICE_URL))
+    createProxyMiddleware(
+      createProxy(EVENT_SERVICE_URL, {
+        '^/api/organizer': '',
+      })
+    )
   );
   app.use(
     '/api/admin',
-    createProxyMiddleware(createProxy(EVENT_SERVICE_URL))
+    createProxyMiddleware(
+      createProxy(EVENT_SERVICE_URL, {
+        '^/api/admin': '/api/events',
+      })
+    )
   );
 
   // Layout Service

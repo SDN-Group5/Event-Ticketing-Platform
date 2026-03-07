@@ -33,4 +33,6 @@ router.delete(
 // File index.js của bạn đang dùng eventRoutes(app), nên mình export hàm này:
 export default function eventRoutes(app) {
     app.use('/api/events', router);
+    // When Railway path-based routing strips /api/events, requests arrive at /
+    app.use('/', router);
 }

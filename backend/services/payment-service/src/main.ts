@@ -42,6 +42,8 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/payments', paymentRoutes);
+// When Railway path-based routing strips /api/payments, requests arrive at /
+app.use('/', paymentRoutes);
 
 const start = async () => {
   await connectDB();

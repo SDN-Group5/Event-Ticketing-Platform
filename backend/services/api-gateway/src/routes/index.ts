@@ -62,6 +62,7 @@ const createProxy = (target: string, pathRewrite?: Record<string, string>): Opti
       proxyReq.setHeader('Cookie', (req as any).headers.cookie);
     }
   },
+  ws: true, // Enable WebSocket proxying
 } as Options);
 
 // ============================================
@@ -139,8 +140,16 @@ export const setupRoutes = (app: Express) => {
   );
 
   // Layout Service
+  // This proxy handles both the regular layout definitions AND the seat endpoints (e.g. /api/v1/events/:eventId/seats)
   app.use(
-    '/api/v1/layouts',
+    ['/api/v1/layouts', '/api/v1/events'],
+    createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL))
+  );
+
+  // WebSocket for Seat Reservation (Socket.IO default path /socket.io)
+  // We attach this via createProxyMiddleware and pass `ws: true` through options
+  app.use(
+    '/socket.io',
     createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL))
   );
 

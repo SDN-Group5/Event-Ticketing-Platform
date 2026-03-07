@@ -388,3 +388,110 @@ export const resetPassword = async (req: Request, res: Response) => {
         return res.status(500).json({ message: "Something went wrong" });
     }
 };
+
+// ============================================
+// POST /api/auth/google
+export const googleLogin = async (req: Request, res: Response) => {
+    try {
+        const { credential, access_token } = req.body;
+        const token = access_token || credential;
+
+        if (!token) {
+            return res.status(400).json({ message: "Google token không hợp lệ" });
+        }
+
+        // Fetch user info from Google using access_token
+        let googleUser: any;
+        try {
+            const googleRes = await fetch(
+                `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`
+            );
+            if (!googleRes.ok) {
+                throw new Error("Failed to fetch Google user info");
+            }
+            googleUser = await googleRes.json();
+        } catch (fetchError) {
+            // Try as ID token (credential) via tokeninfo endpoint
+            try {
+                const tokenInfoRes = await fetch(
+                    `https://oauth2.googleapis.com/tokeninfo?id_token=${token}`
+                );
+                if (!tokenInfoRes.ok) throw new Error("Invalid token");
+                googleUser = await tokenInfoRes.json();
+                // Map fields
+                googleUser.given_name = googleUser.given_name;
+                googleUser.family_name = googleUser.family_name;
+            } catch {
+                console.error("❌ [GOOGLE] Token verification failed:", fetchError);
+                return res.status(401).json({ message: "Google token không hợp lệ" });
+            }
+        }
+
+        const email = googleUser.email;
+        const given_name = googleUser.given_name || googleUser.name || '';
+        const family_name = googleUser.family_name || '';
+        const picture = googleUser.picture || null;
+
+        if (!email) {
+            return res.status(401).json({ message: "Không thể lấy thông tin từ Google" });
+        }
+
+        // Find or create user
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            user = await User.create({
+                firstName: given_name || email.split("@")[0],
+                lastName: family_name || "",
+                email,
+                password: `google_oauth_${Math.random().toString(36)}_${Date.now()}`,
+                role: "customer",
+                emailVerified: true,
+                isActive: true,
+                avatar: picture,
+            });
+            console.log(`✅ [GOOGLE] New user created: ${email}`);
+        } else {
+            if (picture && !user.avatar) {
+                user.avatar = picture;
+                await user.save();
+            }
+            console.log(`✅ [GOOGLE] Existing user logged in: ${email}`);
+        }
+
+        if (user.isActive === false) {
+            return res.status(401).json({
+                message: "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
+            });
+        }
+
+        const jwtToken = jwt.sign(
+            { userId: user._id.toString(), role: user.role, email: user.email },
+            process.env.JWT_SECRET_KEY as string,
+            { expiresIn: "1d" }
+        );
+
+        res.cookie("jwt", jwtToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 1 * 24 * 60 * 60 * 1000,
+        });
+
+        return res.status(200).json({
+            message: "Google login successful",
+            token: jwtToken,
+            user: {
+                id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                avatar: user.avatar || null,
+            },
+        });
+    } catch (error) {
+        console.error("❌ Lỗi googleLogin:", error);
+        return res.status(500).json({ message: "Something went wrong" });
+    }
+};

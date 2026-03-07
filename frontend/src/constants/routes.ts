@@ -16,6 +16,7 @@ export const ROUTES = {
 
   // Auth routes
   LOGIN: '/login',
+  REGISTER: '/register',
   OTP: '/otp',
   RESET_PASSWORD: '/reset-password',
 

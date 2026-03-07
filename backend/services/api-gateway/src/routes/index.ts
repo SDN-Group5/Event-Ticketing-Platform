@@ -93,24 +93,20 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware(
       createProxy(AUTH_SERVICE_URL, {
         '^/api/auth': '',
-      }),
+      })
     )
   );
 
   // Event Service: /api/events/*, /api/organizer/*, /api/admin/*
   app.use(
     '/api/events',
-    createProxyMiddleware(
-      createProxy(EVENT_SERVICE_URL, {
-        '^/api/events': '',
-      })
-    )
+    createProxyMiddleware(createProxy(EVENT_SERVICE_URL))
   );
   app.use(
     '/api/organizer',
     createProxyMiddleware(
       createProxy(EVENT_SERVICE_URL, {
-        '^/api/organizer': '',
+        '^/api/organizer': '/api/organizer',
       })
     )
   );
@@ -118,7 +114,7 @@ export const setupRoutes = (app: Express) => {
     '/api/admin',
     createProxyMiddleware(
       createProxy(EVENT_SERVICE_URL, {
-        '^/api/admin': '/api/events',
+        '^/api/admin': '/api/admin',
       })
     )
   );
@@ -126,21 +122,13 @@ export const setupRoutes = (app: Express) => {
   // Layout Service
   app.use(
     '/api/v1/layouts',
-    createProxyMiddleware(
-      createProxy(LAYOUT_SERVICE_URL, {
-        '^/api/v1/layouts': '',
-      })
-    )
+    createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL))
   );
 
   // Payment Service: /api/payments/*
   app.use(
     '/api/payments',
-    createProxyMiddleware(
-      createProxy(PAYMENT_SERVICE_URL, {
-        '^/api/payments': '/api/payments',
-      })
-    )
+    createProxyMiddleware(createProxy(PAYMENT_SERVICE_URL))
   );
 
   // 404 handler

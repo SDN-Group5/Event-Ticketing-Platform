@@ -46,7 +46,7 @@ export interface SeatsResponse {
 
 // Setup axios instance
 const api = axios.create({
-    baseURL: `${(import.meta as any).env.VITE_API_URL || 'http://localhost:4000'}/api/v1`,
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4002/api/v1',
     headers: {
         'Content-Type': 'application/json',
     },

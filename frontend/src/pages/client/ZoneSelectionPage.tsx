@@ -74,8 +74,7 @@ export const ZoneSelectionPage: React.FC = () => {
     useEffect(() => {
         if (!id) return;
 
-        const socketUrl = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
-        const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+        const socket = io('http://localhost:4002', { transports: ['websocket', 'polling'] });
         socketRef.current = socket;
 
         socket.on('connect', () => {

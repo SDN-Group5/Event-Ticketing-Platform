@@ -5,8 +5,6 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cors from 'cors';
 import { setupRoutes } from './routes/index';
-// Add http server creation for websockets
-import http from 'http';
 
 // Load env from backend/.env
 dotenv.config({
@@ -14,10 +12,9 @@ dotenv.config({
 });
 
 const app = express();
-const server = http.createServer(app);
 const PORT = process.env.PORT || 4000;
 
-app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(helmet());
 app.use(
   cors({
     origin: true,
@@ -32,11 +29,10 @@ app.use(
 
 setupRoutes(app);
 
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log('🚀 ============================================');
   console.log(`✅ api-gateway đang chạy tại port: ${PORT}`);
   console.log(`🌐 Health: http://localhost:${PORT}/health`);
   console.log('🚀 ============================================');
 });
-
 

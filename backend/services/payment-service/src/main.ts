@@ -16,7 +16,7 @@ import { startOrderCleanupJob } from './jobs/orderCleanup';
 const app = express();
 const PORT = process.env.PAYMENT_SERVICE_PORT || 4004;
 
-app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(helmet());
 app.use(
   cors({
     origin: true,

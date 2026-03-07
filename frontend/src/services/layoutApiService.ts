@@ -24,7 +24,7 @@ export interface SeatMetadata {
 
 // Setup axios instance
 const api = axios.create({
-    baseURL: `${(import.meta as any).env.VITE_API_URL || 'http://localhost:4000'}/api/v1/layouts`,
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4002/api/v1',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -113,8 +113,8 @@ export const LayoutAPI = {
 
     /** Validate layout before saving */
     validateLayout: async (layoutData: Partial<EventLayout>): Promise<{ valid: boolean; errors?: any[]; warnings?: any[] }> => {
-        const { data } = await api.post<any>('/validate', { items: layoutData }); // Assuming 'layouts' was a typo and should be 'layoutData'
-        return data.data || { valid: false };
+        const { data } = await api.post<ApiResponse<any>>('/layouts/validate', layoutData);
+        return data;
     },
 
     // --- Test/Debug Methods ---

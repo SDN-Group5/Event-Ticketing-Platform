@@ -50,7 +50,7 @@ export const RegisterPage: React.FC = () => {
 
         // Call register from AuthContext
         try {
-            const apiUrl = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+            const apiUrl = (import.meta as any).env.VITE_API_URL || 'http://localhost:4001';
             const response = await fetch(`${apiUrl}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

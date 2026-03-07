@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const PAYMENT_API = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+const PAYMENT_API = (import.meta as any).env.VITE_PAYMENT_API_URL || 'http://localhost:4004';
 const PAYMENT_CHANNEL: 'jsp' | 'mobile' = 'jsp'; // Web hiện tại dùng kênh JSP/SERVLET (tài khoản A)
 
 const paymentClient = axios.create({

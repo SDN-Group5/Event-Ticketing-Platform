@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express, { Request, Response } from "express";
 import mongoose from "mongoose";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import authRoutes from "./src/routes/auth";
 import userRoutes from "./src/routes/users";
 import cookieParser from "cookie-parser";
@@ -172,6 +173,25 @@ app.use("/api/admin", adminRoutes);                                             
 app.use("/api/organizer", organizerRoutes);                                     // Organizer routes (RBAC: organizer only)
 app.use("/api/staff", staffRoutes);                                             // Staff routes (RBAC: staff only)
 app.use("/api/customer", customerRoutes);                                       // Customer routes (RBAC: customer only)
+
+// Layout/Seat proxy - forward /api/v1/* to layout-service when LAYOUT_SERVICE_URL is set (Railway deploy)
+const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL;
+if (LAYOUT_SERVICE_URL) {
+  app.use(
+    "/api/v1",
+    createProxyMiddleware({
+      target: LAYOUT_SERVICE_URL,
+      changeOrigin: true,
+      pathRewrite: { "^/api/v1": "/api/v1" },
+      onError: (err, req, res: any) => {
+        console.error("[Layout Proxy Error]:", err.message);
+        if (!res.headersSent) {
+          res.status(503).json({ success: false, message: "Layout service unavailable" });
+        }
+      },
+    })
+  );
+}
 
 //=======================================================================
 // --- TÀI LIỆU API (SWAGGER) ---

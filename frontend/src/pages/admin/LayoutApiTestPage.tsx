@@ -51,7 +51,7 @@ export const LayoutApiTestPage: React.FC = () => {
                     <div className="space-y-2 text-sm">
                         <div className="flex gap-2">
                             <span className="text-slate-500">Base URL:</span>
-                            <code className="text-[#8655f6]">{process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4002/api/v1'}</code>
+                            <code className="text-[#8655f6]">{`${(import.meta as any).env.VITE_API_URL || 'http://localhost:4000'}/api/v1/layouts`}</code>
                         </div>
                         <div className="flex gap-2 items-center">
                             <span className="text-slate-500">Status:</span>

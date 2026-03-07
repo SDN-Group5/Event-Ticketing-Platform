@@ -39,7 +39,7 @@ const app = express();
 // ============================================
 // MIDDLEWARE
 // ============================================
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 app.use(express.json());

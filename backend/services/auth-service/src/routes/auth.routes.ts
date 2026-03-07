@@ -150,4 +150,18 @@ router.post(
   authController.resetPassword
 );
 
+// POST /api/auth/google — Google OAuth login/register
+router.post(
+  "/google",
+  [check("credential", "Google credential is required").isString().notEmpty()],
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array() });
+    }
+    next();
+  },
+  authController.googleLogin
+);
+
 export default router;

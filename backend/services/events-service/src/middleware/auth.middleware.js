@@ -28,6 +28,8 @@ export const verifyToken = (req, res, next) => {
             email: decoded.email
         };
 
+        console.log('[Auth Middleware] Decoded User:', req.user);
+
         if (!req.user.id) {
             return res.status(401).json({
                 success: false,
@@ -55,6 +57,7 @@ export const verifyToken = (req, res, next) => {
 export const authorizeRoles = (...allowedRoles) => {
     return (req, res, next) => {
         // Kiểm tra xem role của user hiện tại có nằm trong danh sách cho phép không
+        console.log(`[Auth Middleware] Checking Roles. User Role: ${req.user?.role}, Allowed Roles: ${allowedRoles}`);
         if (!req.user || !allowedRoles.includes(req.user.role)) {
             return res.status(403).json({
                 success: false,

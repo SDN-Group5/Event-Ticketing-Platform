@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { PaymentAPI } from '../services/paymentApiService';
 
 export interface PaymentTimerState {
@@ -25,77 +25,97 @@ interface PaymentTimerContextType extends PaymentTimerState {
     ) => void;
     stopTimer: () => void;
     cancelPayment: () => Promise<void>;
-    timeLeft: number | null; // Calculated value exposed for UI
+    timeLeft: number | null;
 }
+
+const STORAGE_KEY = 'payment_timer_state';
 
 const PaymentTimerContext = createContext<PaymentTimerContextType | undefined>(undefined);
 
 export const PaymentTimerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, setState] = useState<PaymentTimerState>(() => {
         // Khôi phục state từ localStorage phòng khi user F5
-        const saved = localStorage.getItem('payment_timer_state');
+        const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                // Nếu đã hết hạn thì không restore nữa
-                if (parsed.endTime && Date.now() < parsed.endTime) {
-                    return parsed;
-                }
-            } catch (e) {
-                console.error('Failed to parse payment timer state from local storage');
-            }
+                if (parsed.endTime && Date.now() < parsed.endTime) return parsed;
+            } catch { /* ignored */ }
         }
         return {
-            isTimerActive: false,
-            endTime: null,
-            paymentUrl: null,
-            orderCode: null,
-            eventInfo: null,
-            totalAmount: 0,
-            seatCount: 0,
+            isTimerActive: false, endTime: null, paymentUrl: null,
+            orderCode: null, eventInfo: null, totalAmount: 0, seatCount: 0,
         };
     });
 
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Persist state to localStorage
+    // ─── Persist state → localStorage ──────────────────────────────────────
     useEffect(() => {
         if (state.isTimerActive) {
-            localStorage.setItem('payment_timer_state', JSON.stringify(state));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         } else {
-            localStorage.removeItem('payment_timer_state');
+            localStorage.removeItem(STORAGE_KEY);
         }
     }, [state]);
 
-    // Timer logic
+    // ─── Cross-tab Cancel Detection via storage event ───────────────────────
+    // Khi PaymentCancelPage mở trong tab mới xoá STORAGE_KEY,
+    // tab gốc lắng nghe 'storage' event để tự tắt timer.
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === STORAGE_KEY && e.newValue === null && state.isTimerActive) {
+                setState(prev => ({ ...prev, isTimerActive: false }));
+                window.dispatchEvent(new CustomEvent('payment-timer-cancelled'));
+            }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, [state.isTimerActive]);
+
+    // ─── Polling fallback (mỗi 10s) ────────────────────────────────────────
+    // Backup check: poll API để phát hiện nếu order đã cancelled/paid
+    useEffect(() => {
+        if (pollRef.current) clearInterval(pollRef.current);
+        if (!state.isTimerActive || !state.orderCode) return;
+
+        pollRef.current = setInterval(async () => {
+            try {
+                const result = await PaymentAPI.verifyPayment(state.orderCode!);
+                if (result.status === 'cancelled' || result.status === 'deleted') {
+                    setState(prev => ({ ...prev, isTimerActive: false }));
+                    window.dispatchEvent(new CustomEvent('payment-timer-cancelled'));
+                } else if (result.status === 'paid') {
+                    setState(prev => ({ ...prev, isTimerActive: false }));
+                }
+            } catch { /* ignore poll errors */ }
+        }, 10_000);
+
+        return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    }, [state.isTimerActive, state.orderCode]);
+
+    // ─── Countdown Timer ────────────────────────────────────────────────────
     useEffect(() => {
         if (!state.isTimerActive || !state.endTime) {
             setTimeLeft(null);
             return;
         }
 
-        const intervalId = setInterval(() => {
-            const now = Date.now();
-            const remaining = Math.max(0, Math.floor((state.endTime! - now) / 1000));
-
+        const tick = () => {
+            const remaining = Math.max(0, Math.floor((state.endTime! - Date.now()) / 1000));
             setTimeLeft(remaining);
-
             if (remaining === 0) {
-                clearInterval(intervalId);
                 window.dispatchEvent(new CustomEvent('payment-timer-expired'));
             }
-        }, 1000);
+        };
 
-        // Chạy lần đầu ngay lập tức để không bị delay 1s
-        const remaining = Math.max(0, Math.floor((state.endTime - Date.now()) / 1000));
-        setTimeLeft(remaining);
-        if (remaining === 0) {
-            window.dispatchEvent(new CustomEvent('payment-timer-expired'));
-        }
-
-        return () => clearInterval(intervalId);
+        tick(); // Chạy ngay lập tức, không delay 1s
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
     }, [state.isTimerActive, state.endTime]);
 
+    // ─── Actions ────────────────────────────────────────────────────────────
     const startTimer = (
         durationSeconds: number,
         paymentUrl: string,
@@ -122,7 +142,6 @@ export const PaymentTimerProvider: React.FC<{ children: ReactNode }> = ({ childr
     const cancelPayment = async () => {
         if (state.orderCode) {
             try {
-                // Gọi API huỷ lên hệ thống PayOS/Backend
                 await PaymentAPI.cancelPayment(state.orderCode);
             } catch (error) {
                 console.error('Failed to cancel payment:', error);
@@ -133,13 +152,7 @@ export const PaymentTimerProvider: React.FC<{ children: ReactNode }> = ({ childr
     };
 
     return (
-        <PaymentTimerContext.Provider value={{
-            ...state,
-            startTimer,
-            stopTimer,
-            cancelPayment,
-            timeLeft
-        }}>
+        <PaymentTimerContext.Provider value={{ ...state, startTimer, stopTimer, cancelPayment, timeLeft }}>
             {children}
         </PaymentTimerContext.Provider>
     );

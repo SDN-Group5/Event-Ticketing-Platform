@@ -79,3 +79,13 @@ export const deleteEvent = async (req, res) => {
         res.status(403).json({ success: false, message: error.message });
     }
 };
+
+export const getMyEvents = async (req, res) => {
+    try {
+        const organizerId = req.user.id; // Lấy ID từ token
+        const events = await eventService.fetchMyEvents(organizerId, req.query);
+        res.status(200).json({ success: true, count: events.length, data: events });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

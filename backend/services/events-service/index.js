@@ -6,6 +6,7 @@ import cors from 'cors';
 import express from 'express';
 import eventRoutes from './src/routes/event.routes.js';
 import { setIO } from './src/socket.js';
+import { startEventCleanupJob } from './src/jobs/eventCleanup.js';
 
 import { engine } from 'express-handlebars';
 
@@ -27,8 +28,10 @@ app.set('view engine', 'ejs');
 app.set('views', './src/views');
 app.engine('.hbs', engine({ extname: '.hbs' }));
 
-connectMongoDB();
-// startSeatCleanupJob(); // Disabled for testing payment-service order cleanup
+connectMongoDB().then(() => {
+    // Kích hoạt job chạy ngầm sau khi DB kết nối thành công
+    startEventCleanupJob();
+});
 eventRoutes(app);
 
 const server = http.createServer(app);

@@ -51,3 +51,9 @@ export const removeEvent = async (eventId, userId, userRole) => {
     await event.deleteOne();
     return true;
 };
+
+export const fetchMyEvents = async (organizerId, filters = {}) => {
+    // Tìm tất cả sự kiện có organizerId khớp với ID của user đang đăng nhập
+    const query = { organizerId, ...filters };
+    return await Event.find(query).sort({ createdAt: -1 });
+};

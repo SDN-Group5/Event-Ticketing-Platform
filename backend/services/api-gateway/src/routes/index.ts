@@ -76,10 +76,12 @@ export const setupRoutes = (app: Express) => {
       endpoints: [
         '/health',
         '/api/auth/*',
+        '/api/users/*',
         '/api/events/*',
         '/api/v1/layouts/*',
         '/api/bookings/*',
         '/api/payments/*',
+        
       ],
     });
   });
@@ -98,6 +100,16 @@ export const setupRoutes = (app: Express) => {
         '^/api/auth': '',
       }),
     )
+  );
+
+  // User Service (Auth Service) - current user & admin user management
+  //  - FE:        /api/users/me, /api/users
+  //  - Gateway:   proxy nguyên prefix `/api/users` sang auth-service
+  //  - Upstream:  auth-service expose `/api/users/...` (xem user.routes.ts)
+  app.use(
+    '/api/users',
+    // Không cần pathRewrite, giữ nguyên `/api/users/...` cho auth-service
+    createProxyMiddleware(createProxy(AUTH_SERVICE_URL))
   );
 
   // Event Service: /api/events/*, /api/organizer/*, /api/admin/*

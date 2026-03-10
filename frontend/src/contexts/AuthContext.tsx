@@ -56,21 +56,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+                // Gọi endpoint validate-token qua API Gateway
+                const response = await fetch(`${API_BASE_URL}/api/auth/validate-token`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    credentials: 'include',
                 });
 
                 if (response.ok) {
-                    const userInfo = await response.json();
-                    setUser({
-                        id: userInfo.id || userInfo._id || '',
-                        name: `${userInfo.firstName ?? ''} ${userInfo.lastName ?? ''}`.trim() || userInfo.email,
-                        email: userInfo.email,
-                        role: userInfo.role as UserRole,
-                        avatar: userInfo.avatar ?? null,
-                    });
+                    const data = await response.json();
+                    const userId = data.userId || data.id || data._id || '';
+                    const role = data.role as UserRole | undefined;
+
+                    if (!userId || !role) {
+                        throw new Error('Invalid validate-token response');
+                    }
+
+                    // Khởi tạo user tối thiểu để giữ session sau F5
+                    setUser((prev) => ({
+                        id: userId,
+                        name: prev?.name || 'Người dùng',
+                        email: prev?.email || '',
+                        role,
+                        avatar: prev?.avatar ?? null,
+                    }));
                 } else {
                     // Token invalid or expired
                     localStorage.removeItem(AUTH_TOKEN_KEY);

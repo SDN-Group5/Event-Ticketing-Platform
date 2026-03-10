@@ -48,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="flex items-center justify-center size-10 rounded-lg bg-gradient-to-br from-[#8655f6] to-[#d946ef] text-white shadow-[0_0_15px_rgba(137,90,246,0.5)]">
                         <span className="material-symbols-outlined text-[24px]">confirmation_number</span>
                     </div>
-                    <h2 className="hidden md:block text-white text-xl font-bold tracking-tight">TicketVibe</h2>
+                    <h2 className="hidden md:block font-display text-white text-xl font-bold tracking-tight">TicketVibe</h2>
                 </Link>
 
                 {/* Search */}

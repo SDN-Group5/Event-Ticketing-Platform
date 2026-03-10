@@ -3,8 +3,7 @@ import type { UserRole } from '../../../shared/type';
 
 // Constants
 const API_BASE_URL =
-    // cast để tránh lỗi type khi chưa khai báo vite/client trong tsconfig
-    (import.meta as any).env.VITE_API_URL || 'http://localhost:4001';
+    (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
 const AUTH_TOKEN_KEY = 'auth_token';
 
 // User interface dùng cho session phía frontend

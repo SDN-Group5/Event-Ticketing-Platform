@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const PAYMENT_API =
-  (import.meta as any).env.VITE_PAYMENT_API_URL || 'http://localhost:4004';
+  (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
 
 const refundClient = axios.create({
   baseURL: `${PAYMENT_API}/api/payments`,

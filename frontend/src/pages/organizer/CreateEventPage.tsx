@@ -18,6 +18,11 @@ export const CreateEventPage: React.FC = () => {
         description: '',
         category: 'music',
     });
+    const [ticketData, setTicketData] = useState({
+        generalAdmission: { enabled: true, price: 45, quantity: 500 },
+        vipAccess: { enabled: true, price: 120, quantity: 100 },
+        backstagePass: { enabled: false, price: 250, quantity: 20 },
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -73,6 +78,36 @@ export const CreateEventPage: React.FC = () => {
                 // Lấy ID thật sự vừa được tạo từ MongoDB
                 const realEventId = eventResponse.data._id;
 
+                // 4. Create layout with ticket types
+                const ticketZones = [];
+                if (ticketData.generalAdmission.enabled) {
+                    ticketZones.push({
+                        name: 'General Admission',
+                        color: '#3b82f6',
+                        capacity: ticketData.generalAdmission.quantity,
+                        price: ticketData.generalAdmission.price,
+                        type: 'general'
+                    });
+                }
+                if (ticketData.vipAccess.enabled) {
+                    ticketZones.push({
+                        name: 'VIP Access',
+                        color: '#8655f6',
+                        capacity: ticketData.vipAccess.quantity,
+                        price: ticketData.vipAccess.price,
+                        type: 'vip'
+                    });
+                }
+                if (ticketData.backstagePass.enabled) {
+                    ticketZones.push({
+                        name: 'Backstage Pass',
+                        color: '#ec4899',
+                        capacity: ticketData.backstagePass.quantity,
+                        price: ticketData.backstagePass.price,
+                        type: 'backstage'
+                    });
+                }
+
                 // We don't need to create zones during event creation, pass empty array
                 await LayoutAPI.createLayout({
                     eventId: realEventId,
@@ -80,7 +115,7 @@ export const CreateEventPage: React.FC = () => {
                     eventDate: startTimeString,
                     eventLocation: formData.venue,
                     eventDescription: formData.description,
-                    zones: [],
+                    zones: ticketZones,
                     canvasWidth: 800,
                     canvasHeight: 600,
                     canvasColor: '#0f1219'
@@ -256,12 +291,27 @@ export const CreateEventPage: React.FC = () => {
                     {step === 3 && (
                         <div className="space-y-6">
                             <h3 className="text-lg font-bold text-white mb-4">Ticket Types</h3>
-                            {['General Admission', 'VIP Access', 'Backstage Pass'].map((type, i) => (
-                                <div key={type} className="bg-[#0f172a] border border-slate-700 rounded-xl p-4">
+                            {[
+                                { key: 'generalAdmission', label: 'General Admission', color: '#3b82f6' },
+                                { key: 'vipAccess' as const, label: 'VIP Access', color: '#8655f6' },
+                                { key: 'backstagePass' as const, label: 'Backstage Pass', color: '#ec4899' }
+                            ].map((type) => (
+                                <div key={type.key} className="bg-[#0f172a] border border-slate-700 rounded-xl p-4">
                                     <div className="flex items-center justify-between mb-4">
-                                        <span className="font-bold text-white">{type}</span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-4 h-4 rounded" style={{ backgroundColor: type.color }}></div>
+                                            <span className="font-bold text-white">{type.label}</span>
+                                        </div>
                                         <label className="flex items-center gap-2">
-                                            <input type="checkbox" defaultChecked={i < 2} className="rounded border-slate-600" />
+                                            <input
+                                                type="checkbox"
+                                                checked={ticketData[type.key as keyof typeof ticketData].enabled}
+                                                onChange={(e) => setTicketData({
+                                                    ...ticketData,
+                                                    [type.key]: { ...ticketData[type.key as keyof typeof ticketData], enabled: e.target.checked }
+                                                })}
+                                                className="rounded border-slate-600"
+                                            />
                                             <span className="text-sm text-slate-400">Enable</span>
                                         </label>
                                     </div>
@@ -270,21 +320,39 @@ export const CreateEventPage: React.FC = () => {
                                             <label className="block text-xs text-slate-500 mb-1">Price ($)</label>
                                             <input
                                                 type="number"
-                                                defaultValue={[45, 120, 250][i]}
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm"
+                                                value={ticketData[type.key as keyof typeof ticketData].price}
+                                                onChange={(e) => setTicketData({
+                                                    ...ticketData,
+                                                    [type.key]: { ...ticketData[type.key as keyof typeof ticketData], price: parseFloat(e.target.value) }
+                                                })}
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:border-[#8655f6]"
+                                                min="0"
+                                                step="0.01"
                                             />
                                         </div>
                                         <div>
                                             <label className="block text-xs text-slate-500 mb-1">Quantity</label>
                                             <input
                                                 type="number"
-                                                defaultValue={[500, 100, 20][i]}
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm"
+                                                value={ticketData[type.key as keyof typeof ticketData].quantity}
+                                                onChange={(e) => setTicketData({
+                                                    ...ticketData,
+                                                    [type.key]: { ...ticketData[type.key as keyof typeof ticketData], quantity: parseInt(e.target.value) }
+                                                })}
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:border-[#8655f6]"
+                                                min="0"
                                             />
                                         </div>
                                     </div>
                                 </div>
                             ))}
+
+                            {Object.values(ticketData).every(t => !t.enabled) && (
+                                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-yellow-400">warning</span>
+                                    <p className="text-sm text-yellow-400">At least one ticket type must be enabled</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -299,8 +367,10 @@ export const CreateEventPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="bg-[#0f172a] rounded-xl p-6 border border-slate-700">
-                                <div className="space-y-4">
+                            {/* Basic Info Summary */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-slate-400 mb-3">Basic Information</h4>
+                                <div className="bg-[#0f172a] rounded-xl p-4 border border-slate-700 space-y-2">
                                     <div className="flex justify-between">
                                         <span className="text-slate-400">Event Name</span>
                                         <span className="font-bold text-white">{formData.name || 'Not set'}</span>
@@ -309,15 +379,53 @@ export const CreateEventPage: React.FC = () => {
                                         <span className="text-slate-400">Category</span>
                                         <span className="font-medium text-white capitalize">{formData.category}</span>
                                     </div>
+                                    {formData.description && (
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-400">Description</span>
+                                            <span className="font-medium text-white">{formData.description.substring(0, 40) + (formData.description.length > 40 ? '...' : '')}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Date & Venue Summary */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-slate-400 mb-3">Date & Venue</h4>
+                                <div className="bg-[#0f172a] rounded-xl p-4 border border-slate-700 space-y-2">
                                     <div className="flex justify-between">
-                                        <span className="text-slate-400">Date & Time</span>
+                                        <span className="text-slate-400">Start</span>
                                         <span className="font-medium text-white">{formData.dateStart || 'Not set'} at {formData.time || 'Not set'}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-400">End</span>
                                         <span className="font-medium text-white">{formData.dateEnd || 'Not set'} at {formData.timeEnd || 'Not set'}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-slate-400">Venue</span>
                                         <span className="font-medium text-white">{formData.venue || 'Not set'}</span>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Ticket Types Summary */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-slate-400 mb-3">Ticket Configuration</h4>
+                                <div className="space-y-2">
+                                    {[
+                                        { key: 'generalAdmission' as const, label: 'General Admission' },
+                                        { key: 'vipAccess' as const, label: 'VIP Access' },
+                                        { key: 'backstagePass' as const, label: 'Backstage Pass' }
+                                    ].map((t) => (
+                                        ticketData[t.key].enabled && (
+                                            <div key={t.key} className="flex justify-between text-sm bg-slate-800/50 p-3 rounded-lg">
+                                                <span className="font-medium text-white">{t.label}</span>
+                                                <div className="flex gap-4">
+                                                    <span className="text-blue-400">${ticketData[t.key].price}</span>
+                                                    <span className="text-slate-400">{ticketData[t.key].quantity} available</span>
+                                                </div>
+                                            </div>
+                                        )
+                                    ))}
                                 </div>
                             </div>
 

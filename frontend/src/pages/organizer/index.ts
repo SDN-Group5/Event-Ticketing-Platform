@@ -7,5 +7,6 @@ export { AnalyticsPage } from './AnalyticsPage';
 export { EventsPage } from './EventsPage';
 export { ManageVouchersPage } from './ManageVouchersPage';
 export { ManageStaffPage } from './ManageStaffPage';
+export { StaffDetailPage } from './StaffDetailPage';
 export { NotificationsPage } from './NotificationsPage';
 export { CheckInPage } from './CheckInPage';

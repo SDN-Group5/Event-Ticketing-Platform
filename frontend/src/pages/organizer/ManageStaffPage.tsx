@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { StaffAPI } from '../../services/staffApiService';
 
 interface StaffMember {
@@ -12,6 +13,7 @@ interface StaffMember {
 }
 
 export const ManageStaffPage: React.FC = () => {
+  const navigate = useNavigate();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -318,6 +320,12 @@ export const ManageStaffPage: React.FC = () => {
                       </div>
 
                       <div className="flex gap-2">
+                        <button
+                          onClick={() => navigate(`/organizer/staff/${staffMember._id}`)}
+                          className="flex-1 md:flex-none px-4 py-2 bg-[#8655f6]/20 hover:bg-[#8655f6]/30 text-[#8655f6] rounded-lg text-sm transition-colors"
+                        >
+                          View Details
+                        </button>
                         <button
                           onClick={() => handleEdit(staffMember)}
                           className="flex-1 md:flex-none px-4 py-2 bg-[#8655f6]/20 hover:bg-[#8655f6]/30 text-[#8655f6] rounded-lg text-sm transition-colors"

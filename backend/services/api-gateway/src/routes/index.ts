@@ -76,10 +76,12 @@ export const setupRoutes = (app: Express) => {
       endpoints: [
         '/health',
         '/api/auth/*',
+        '/api/users/*',
         '/api/events/*',
         '/api/v1/layouts/*',
         '/api/bookings/*',
         '/api/payments/*',
+        
       ],
     });
   });
@@ -100,6 +102,16 @@ export const setupRoutes = (app: Express) => {
     )
   );
 
+  // User Service (Auth Service) - current user & admin user management
+  //  - FE:        /api/users/me, /api/users
+  //  - Gateway:   proxy nguyên prefix `/api/users` sang auth-service
+  //  - Upstream:  auth-service expose `/api/users/...` (xem user.routes.ts)
+  app.use(
+    '/api/users',
+    // Không cần pathRewrite, giữ nguyên `/api/users/...` cho auth-service
+    createProxyMiddleware(createProxy(AUTH_SERVICE_URL))
+  );
+
   // Event Service: /api/events/*, /api/organizer/*, /api/admin/*
   app.use(
     '/api/events',
@@ -118,6 +130,21 @@ export const setupRoutes = (app: Express) => {
   app.use(
     '/api/v1/layouts',
     createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL))
+  );
+
+  // Seat & layout real-time API (zones, seats, reserve/purchase/release)
+  // Layout-service expose các route dưới prefix `/api/v1/...`
+  // nên gateway cần proxy luôn `/api/v1` sang layout-service.
+  // Lưu ý: khi mount tại '/api/v1', http-proxy-middleware sẽ bỏ prefix này
+  // trước khi forward. Vì layout-service cũng mong đợi prefix '/api/v1',
+  // ta cộng thêm '/api/v1' vào target URL để giữ nguyên path:
+  //   FE:        /api/v1/events/:eventId/seats
+  //   Gateway:   mount /api/v1  -> forward /events/:eventId/seats tới
+  //              target `${LAYOUT_SERVICE_URL}/api/v1`
+  //   Upstream:  /api/v1/events/:eventId/seats  (đúng với layout-service)
+  app.use(
+    '/api/v1',
+    createProxyMiddleware(createProxy(`${LAYOUT_SERVICE_URL}/api/v1`))
   );
 
   // Booking Service: /api/bookings/*, /api/customer/*

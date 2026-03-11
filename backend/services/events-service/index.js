@@ -7,6 +7,7 @@ import express from 'express';
 import eventRoutes from './src/routes/event.routes.js';
 import { setIO } from './src/socket.js';
 import { startEventCleanupJob } from './src/jobs/eventCleanup.js';
+import { connectRabbitMQ } from './src/config/rabbitmq.js';
 
 import { engine } from 'express-handlebars';
 
@@ -29,8 +30,8 @@ app.set('views', './src/views');
 app.engine('.hbs', engine({ extname: '.hbs' }));
 
 connectMongoDB().then(() => {
-    // Kích hoạt job chạy ngầm sau khi DB kết nối thành công
     startEventCleanupJob();
+    connectRabbitMQ();
 });
 eventRoutes(app);
 
@@ -49,6 +50,9 @@ io.on('connection', (socket) => {
     });
 });
 server.listen(port, () => {
-    console.log(`Server is running on port http://localhost:${port}`);
+    console.log(`🎪 ============================================`);
+    console.log(`✅ events-service dang chay tai port: ${port}`);
+    console.log(`🐰 RabbitMQ: Event-Driven publisher mode`);
     console.log(`🔌 WebSocket ready on same port`);
+    console.log(`🎪 ============================================`);
 });

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { StaffAPI } from '../../services/staffApiService';
+import ConfirmModal from '../../components/modals/ConfirmModal';
+import { useToast } from '../../components/common/ToastProvider';
 
 interface StaffMember {
   _id: string;
@@ -16,12 +18,14 @@ interface StaffMember {
 export const StaffDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { staffId } = useParams<{ staffId: string }>();
+  const { showToast } = useToast();
   const [staff, setStaff] = useState<StaffMember | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -98,24 +102,27 @@ export const StaffDetailPage: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to remove this staff member? This action cannot be undone.')) {
-      return;
-    }
+    if (!staff) return;
+    setIsDeleteConfirmOpen(true);
+  };
 
+  const confirmDelete = async () => {
     try {
       if (!staff) return;
       setIsDeleting(true);
       setError(null);
       await StaffAPI.deleteStaff(staff._id);
-      setSuccess('Staff member removed successfully');
+      showToast('Staff member removed successfully', 'success');
       setTimeout(() => {
         navigate('/organizer/staff');
       }, 1500);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to delete staff';
+      showToast(errorMessage, 'error');
       setError(errorMessage);
     } finally {
       setIsDeleting(false);
+      setIsDeleteConfirmOpen(false);
     }
   };
 
@@ -358,6 +365,18 @@ export const StaffDetailPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        title="Remove Staff Member"
+        message="Are you sure you want to remove this staff member? This action cannot be undone."
+        confirmText="Remove"
+        cancelText="Cancel"
+        isDangerous={true}
+        isLoading={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+      />
     </div>
   );
 };

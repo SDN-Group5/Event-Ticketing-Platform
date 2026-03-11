@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StaffAPI } from '../../services/staffApiService';
+import ConfirmModal from '../../components/modals/ConfirmModal';
+import { useToast } from '../../components/common/ToastProvider';
 
 interface StaffMember {
   _id: string;
@@ -14,6 +16,7 @@ interface StaffMember {
 
 export const ManageStaffPage: React.FC = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -31,6 +34,9 @@ export const ManageStaffPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchStaff = async (pageNum = 1) => {
     try {
@@ -59,16 +65,26 @@ export const ManageStaffPage: React.FC = () => {
   }, [filter]);
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to remove this staff member?')) {
-      try {
-        await StaffAPI.deleteStaff(id);
-        setSuccess('Staff member removed successfully');
-        fetchStaff(page);
-        setTimeout(() => setSuccess(null), 3000);
-      } catch (err: any) {
-        const errorMessage = err.response?.data?.message || 'Failed to delete staff';
-        setError(errorMessage);
-      }
+    setStaffToDelete(id);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!staffToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await StaffAPI.deleteStaff(staffToDelete);
+      showToast('Staff member removed successfully', 'success');
+      fetchStaff(page);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to delete staff';
+      showToast(errorMessage, 'error');
+      setError(errorMessage);
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteConfirmOpen(false);
+      setStaffToDelete(null);
     }
   };
 
@@ -481,6 +497,18 @@ export const ManageStaffPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        <ConfirmModal
+          isOpen={isDeleteConfirmOpen}
+          title="Remove Staff Member"
+          message="Are you sure you want to remove this staff member? This action cannot be undone."
+          confirmText="Remove"
+          cancelText="Cancel"
+          isDangerous={true}
+          isLoading={isDeleting}
+          onConfirm={confirmDelete}
+          onCancel={() => setIsDeleteConfirmOpen(false)}
+        />
       </div>
     </div>
   );

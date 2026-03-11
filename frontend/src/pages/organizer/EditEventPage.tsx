@@ -39,7 +39,7 @@ export const EditEventPage: React.FC = () => {
                 }
 
                 const event = await EventAPI.getEventById(eventId);
-                const layout = await LayoutAPI.getLayoutByEventId(eventId);
+                const layout = await LayoutAPI.getLayout(eventId);
 
                 // Parse dates
                 const startDate = event.startTime ? new Date(event.startTime) : new Date();

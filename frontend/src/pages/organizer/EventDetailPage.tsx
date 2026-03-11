@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { EventAPI } from '../../services/eventApiService';
 import { LayoutAPI } from '../../services/layoutApiService';
 import ConfirmModal from '../../components/modals/ConfirmModal';
 import { useToast } from '../../components/common/ToastProvider';
@@ -46,12 +45,20 @@ export const EventDetailPage: React.FC = () => {
                     return;
                 }
 
-                const eventData = await EventAPI.getEventById(eventId);
-                setEvent(eventData.data || eventData);
-
-                // Load layout stats
+                // Load layout and map to event
                 try {
                     const layout = await LayoutAPI.getLayout(eventId);
+                    setEvent({
+                        _id: layout.eventId || eventId,
+                        title: layout.eventName || 'Unnamed Event',
+                        description: layout.eventDescription || '',
+                        category: 'Event',
+                        location: layout.eventLocation || 'TBD',
+                        startTime: layout.eventDate || new Date().toISOString(),
+                        endTime: layout.eventDate || new Date().toISOString(),
+                        createdAt: (layout as any).createdAt || new Date().toISOString(),
+                        updatedAt: (layout as any).updatedAt || new Date().toISOString(),
+                    });
                     if (layout && layout.zones) {
                         let totalCapacity = 0;
                         let ticketsSold = 0;
@@ -93,15 +100,12 @@ export const EventDetailPage: React.FC = () => {
     const handleDelete = async () => {
         setIsDeleting(true);
         try {
-            // Delete layout first (since EventsPage relies on layouts)
+            // Delete layout
             try {
                 await LayoutAPI.deleteLayout(eventId!);
             } catch (err) {
                 console.error('Error deleting layout:', err);
             }
-            
-            // Then delete event
-            await EventAPI.deleteEvent(eventId!);
             showToast('Event deleted successfully', 'success');
             navigate('/organizer/events');
         } catch (err: any) {

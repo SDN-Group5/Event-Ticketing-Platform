@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { LayoutZone } from '../../types/layout';
 import { SEAT_UNIT_2D } from '../../constants/layoutConstants';
@@ -33,6 +33,7 @@ interface Zone {
     hideScreen?: boolean; // Hide screen in 2D/3D
     screenHeight?: number; // Screen height
     screenWidthRatio?: number; // Screen width ratio (0-1)
+    view360Url?: string; // URL for 360 viewer
 }
 
 interface Seat {
@@ -72,8 +73,12 @@ export const LayoutEditorPage: React.FC = () => {
     const navigate = useNavigate();
     const canvasRef = useRef<HTMLDivElement>(null);
 
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const initialEventId = queryParams.get('eventId') || '';
+
     // Event selection state
-    const [selectedEventId, setSelectedEventId] = useState<string>('');
+    const [selectedEventId, setSelectedEventId] = useState<string>(initialEventId);
     const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [availableLayouts, setAvailableLayouts] = useState<Array<{ eventId: string; eventName: string }>>([]);
@@ -447,6 +452,7 @@ export const LayoutEditorPage: React.FC = () => {
                 if (zone.rows !== undefined) cleanZone.rows = zone.rows;
                 if (zone.seatsPerRow !== undefined) cleanZone.seatsPerRow = zone.seatsPerRow;
                 if (zone.elevation !== undefined) cleanZone.elevation = zone.elevation;
+                if (zone.view360Url !== undefined) cleanZone.view360Url = zone.view360Url;
 
                 return cleanZone;
             });
@@ -790,6 +796,16 @@ export const LayoutEditorPage: React.FC = () => {
                                     </div>
                                 </div>
 
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase mb-1.5 block">360° Image URL</label>
+                                    <input
+                                        value={selectedZone.view360Url || ''}
+                                        onChange={(e) => updateZone(selectedZone.id, { view360Url: e.target.value })}
+                                        placeholder="https://example.com/image.jpg"
+                                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
+                                    />
+                                </div>
+
                                 {selectedZone.type === 'stage' && (
                                     <div className="flex items-center gap-2">
                                         <input
@@ -1073,9 +1089,11 @@ export const LayoutEditorPage: React.FC = () => {
                         <button
                             onClick={() => selectedEventId ? navigate(`/event/${selectedEventId}/venue-3d`) : null}
                             disabled={!selectedEventId}
-                            className="px-4 py-2 text-sm border border-slate-700 rounded-lg font-medium hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:brightness-110 transition-all flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={!selectedEventId ? "Select an event to preview 3D venue" : "View 360°"}
                         >
-                            Preview
+                            <span className="material-symbols-outlined text-[18px]">360</span>
+                            View 360°
                         </button>
                         <button
                             onClick={saveLayout}

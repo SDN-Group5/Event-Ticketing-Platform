@@ -17,23 +17,35 @@ const getEventDateParts = (dateString: string) => {
 };
 
 const useScrollReveal = () => {
-    const ref = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    el.classList.add('visible');
-                    observer.unobserve(el);
-                }
-            },
-            { threshold: 0.15 }
-        );
-        observer.observe(el);
-        return () => observer.disconnect();
+    const observerRef = useRef<IntersectionObserver | null>(null);
+    
+    const setRef = useCallback((node: HTMLDivElement | null) => {
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+        }
+
+        if (node) {
+            const observer = new IntersectionObserver(
+                ([entry]) => {
+                    if (entry.isIntersecting) {
+                        node.classList.add('visible');
+                        observer.unobserve(node);
+                    }
+                },
+                { threshold: 0.05 }
+            );
+            observer.observe(node);
+            observerRef.current = observer;
+        }
     }, []);
-    return ref;
+
+    useEffect(() => {
+        return () => {
+            if (observerRef.current) observerRef.current.disconnect();
+        };
+    }, []);
+
+    return setRef;
 };
 
 const AnimatedCounter: React.FC<{ target: number; suffix?: string; duration?: number }> = ({
@@ -72,37 +84,37 @@ const CATEGORIES = [
     {
         icon: 'music_note', label: 'Âm nhạc', desc: 'Concert, Live show & DJ',
         color: 'from-purple-500 to-pink-500', glow: 'rgba(168,85,247,0.4)',
-        img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&q=80',
+        img: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&q=80',
         count: '2,400+'
     },
     {
         icon: 'sports_soccer', label: 'Thể thao', desc: 'Bóng đá, Tennis & Boxing',
-        color: 'from-green-500 to-emerald-500', glow: 'rgba(16,185,129,0.4)',
-        img: 'https://images.unsplash.com/photo-1461896836934-bd45ba48c3a5?w=400&q=80',
+        color: 'from-green-500 to-emerald-500', glow: 'rgba(10,191,120,0.4)',
+        img: 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=600&q=80',
         count: '1,800+'
     },
     {
         icon: 'theater_comedy', label: 'Kịch nghệ', desc: 'Nhạc kịch & Sân khấu',
         color: 'from-amber-500 to-orange-500', glow: 'rgba(245,158,11,0.4)',
-        img: 'https://images.unsplash.com/photo-1503095396549-807759245b35?w=400&q=80',
+        img: 'https://images.unsplash.com/photo-1503095396549-807759245b35?w=600&q=80',
         count: '960+'
     },
     {
         icon: 'mic', label: 'Hài kịch', desc: 'Stand-up & Talkshow',
         color: 'from-rose-500 to-red-500', glow: 'rgba(244,63,94,0.4)',
-        img: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?w=400&q=80',
+        img: 'https://images.unsplash.com/photo-1503095396549-807759245b35?w=600&q=80',
         count: '750+'
     },
     {
         icon: 'festival', label: 'Lễ hội', desc: 'Festival & Carnival',
         color: 'from-cyan-500 to-blue-500', glow: 'rgba(6,182,212,0.4)',
-        img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&q=80',
+        img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=600&q=80',
         count: '520+'
     },
     {
         icon: 'nightlife', label: 'Nightlife', desc: 'Club, Bar & Rooftop',
         color: 'from-violet-500 to-purple-500', glow: 'rgba(139,92,246,0.4)',
-        img: 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=400&q=80',
+        img: 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=600&q=80',
         count: '1,100+'
     },
 ];
@@ -112,6 +124,137 @@ const HOW_IT_WORKS = [
     { icon: 'event_seat', title: 'Chọn chỗ ngồi', desc: 'Xem sơ đồ 3D, chọn vị trí yêu thích và đặt vé ngay lập tức.' },
     { icon: 'confirmation_number', title: 'Nhận vé điện tử', desc: 'Thanh toán an toàn, nhận e-ticket qua email và check-in nhanh chóng.' },
 ];
+
+const FeaturedCarousel: React.FC<{ events: EventLayout[] }> = ({ events }) => {
+    const navigate = useNavigate();
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const nextSlide = useCallback(() => {
+        setCurrentIndex((prev) => (prev + 1) % events.length);
+    }, [events.length]);
+
+    const prevSlide = useCallback(() => {
+        setCurrentIndex((prev) => (prev - 1 + events.length) % events.length);
+    }, [events.length]);
+
+    useEffect(() => {
+        if (isAutoPlaying && events.length > 1) {
+            timerRef.current = setInterval(nextSlide, 5000);
+        }
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [isAutoPlaying, nextSlide, events.length]);
+
+    if (events.length === 0) return null;
+
+    const currentEvent = events[currentIndex];
+
+    return (
+        <section className="px-4 md:px-10 pb-8 max-w-[1440px] mx-auto group">
+            <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-slate-900/50 min-h-[400px] md:min-h-[480px]">
+                {/* Carousel Slides */}
+                {events.map((event, index) => (
+                    <div
+                        key={event.eventId}
+                        className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                            }`}
+                    >
+                        {/* Background Image */}
+                        <div className="absolute inset-0">
+                            <img
+                                src={event.eventImage || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'}
+                                alt={event.eventName}
+                                className={`w-full h-full object-cover transition-transform duration-[5000ms] ${index === currentIndex ? 'scale-110' : 'scale-100'
+                                    }`}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#151022] via-[#151022]/80 to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#151022] via-transparent to-transparent" />
+                        </div>
+
+                        {/* Content */}
+                        <div className="relative z-20 flex flex-col justify-end h-full p-8 md:p-14 md:pb-16 max-w-4xl">
+                            <div className={`transition-all duration-700 delay-300 transform ${index === currentIndex ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
+                                }`}>
+                                <span className="inline-flex items-center gap-2 w-fit py-1.5 px-3 rounded-full bg-[#8655f6]/20 border border-[#8655f6]/30 text-xs font-bold uppercase tracking-wider text-[#c084fc] mb-4">
+                                    <span className="material-symbols-outlined text-[14px] filled">star</span>
+                                    Sự kiện nổi bật
+                                </span>
+                                <h3 className="font-display text-3xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight drop-shadow-2xl">
+                                    {event.eventName || 'Untitled Event'}
+                                </h3>
+                                <div className="flex flex-wrap items-center gap-5 text-gray-200 text-sm md:text-base mb-8 font-medium">
+                                    {event.eventDate && (
+                                        <span className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-[20px] text-[#8655f6]">calendar_month</span>
+                                            {new Date(event.eventDate).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        </span>
+                                    )}
+                                    {event.eventLocation && (
+                                        <span className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-[20px] text-[#8655f6]">location_on</span>
+                                            {event.eventLocation}
+                                        </span>
+                                    )}
+                                    {event.minPrice != null && (
+                                        <span className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-[20px] text-[#8655f6]">sell</span>
+                                            Từ ${event.minPrice}
+                                        </span>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => navigate(`/event/${event.eventId}`)}
+                                    className="w-fit h-14 px-8 rounded-2xl bg-gradient-to-r from-[#8655f6] to-[#7c3aed] text-white text-lg font-bold shadow-[0_10px_40px_rgba(137,90,246,0.4)] hover:shadow-[0_15px_50px_rgba(137,90,246,0.6)] transition-all duration-300 hover:-translate-y-1 flex items-center gap-3 active:scale-95"
+                                >
+                                    <span>Mua vé ngay</span>
+                                    <span className="material-symbols-outlined text-[22px]">arrow_forward</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {/* Navigation Arrows */}
+                {events.length > 1 && (
+                    <>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); prevSlide(); setIsAutoPlaying(false); }}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-black/20 hover:bg-white/10 border border-white/5 backdrop-blur-md text-white flex items-center justify-center transition-all duration-300 transform opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-90"
+                        >
+                            <span className="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); nextSlide(); setIsAutoPlaying(false); }}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-black/20 hover:bg-white/10 border border-white/5 backdrop-blur-md text-white flex items-center justify-center transition-all duration-300 transform opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-90"
+                        >
+                            <span className="material-symbols-outlined">chevron_right</span>
+                        </button>
+                    </>
+                )}
+
+                {/* Indicators */}
+                {events.length > 1 && (
+                    <div className="absolute bottom-8 right-8 md:right-14 z-30 flex gap-2.5">
+                        {events.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={(e) => { e.stopPropagation(); setCurrentIndex(index); setIsAutoPlaying(false); }}
+                                className={`h-1.5 transition-all duration-500 rounded-full ${index === currentIndex
+                                        ? 'w-8 bg-[#8655f6]'
+                                        : 'w-2 bg-white/30 hover:bg-white/50'
+                                    }`}
+                                aria-label={`Go to slide ${index + 1}`}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </section>
+    );
+};
 
 export const HomePage: React.FC = () => {
     const navigate = useNavigate();
@@ -146,19 +289,19 @@ export const HomePage: React.FC = () => {
         navigate('/search');
     }, [navigate]);
 
-    const featuredEvent = events[0];
+    const featuredEvents = events.slice(0, 5);
 
     return (
         <>
             {/* ==================== HERO SECTION ==================== */}
-            <div className="relative w-full min-h-[90vh] flex items-center justify-center overflow-hidden">
+            <div className="relative w-full min-h-[75vh] flex items-center justify-center overflow-hidden">
                 {/* Background Image */}
                 <div className="absolute inset-0 z-0">
                     <div className="absolute inset-0 bg-gradient-to-b from-[#151022]/40 via-[#151022]/70 to-[#151022] z-10" />
                     <img
                         alt="Concert"
                         className="w-full h-full object-cover opacity-60"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuDT7K98ACs9vSfWQJt6l98gKBFXGVc38ShpjT8RCOhtRLtf6Ln3C9-S-dqANQv7H0a4rbWE1B9NP8y1e109gSd0Zj_-MkAHP6hPYeoklUrPg6VTM-f_KsMk_CLC6nO7gJ4Crv28pUo9DVBTVA5pK0lR34RTkxamij83oLj22VJKOdD0dCkS2oKWxtBEJONPQ1Z6cJD5TKpb4BYwGwcgPnKglqMo5W_z-2Sd7VzM0wGBqJM0mKQ-knGZaMM0KFyud3hDkWe-FGeHw4Ft"
+                        src="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1920&q=80"
                     />
                 </div>
 
@@ -168,7 +311,7 @@ export const HomePage: React.FC = () => {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#8655f6]/10 blur-[200px] pointer-events-none" />
 
                 {/* Hero Content */}
-                <div className="relative z-20 flex flex-col items-center text-center max-w-5xl px-6 pt-20 pb-32">
+                <div className="relative z-20 flex flex-col items-center text-center max-w-5xl px-6 pt-20 pb-20">
                     <span className="animate-hero-text inline-flex items-center gap-2 py-2 px-4 rounded-full bg-white/10 border border-white/10 backdrop-blur-md text-xs font-bold uppercase tracking-widest text-[#c084fc] mb-8 shadow-[0_0_30px_rgba(137,90,246,0.25)]">
                         <span className="w-2 h-2 rounded-full bg-[#d946ef] animate-pulse" />
                         Nền tảng bán vé #1 Việt Nam
@@ -224,7 +367,7 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* ==================== FILTER BAR ==================== */}
-            <div className="relative z-30 px-4 -mt-20 mb-16">
+            <div className="relative z-30 px-4 -mt-12 mb-12">
                 <div className="max-w-[1100px] mx-auto glass-panel rounded-2xl p-4 md:p-5 shadow-2xl border border-white/10 bg-[#1e293b]/60 backdrop-blur-xl">
                     <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4 relative">
@@ -273,12 +416,12 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* ==================== CATEGORIES ==================== */}
-            <section className="relative px-4 md:px-10 pb-14 max-w-[1440px] mx-auto overflow-hidden">
+            <section ref={categoriesRef} className="reveal relative px-4 md:px-10 py-16 md:py-20 max-w-[1440px] mx-auto overflow-hidden">
                 {/* Section background decoration */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#8655f6]/[0.04] blur-[150px] pointer-events-none" />
 
-                <div ref={categoriesRef} className="reveal relative z-10">
-                    <div className="text-center mb-12">
+                <div className="relative z-10">
+                    <div className="text-center mb-10">
                         <p className="text-[#8655f6] text-sm font-bold uppercase tracking-widest mb-3">Danh mục</p>
                         <h2 className="font-display text-3xl md:text-4xl font-black text-white mb-3">Khám phá theo thể loại</h2>
                         <p className="text-gray-500 max-w-md mx-auto text-sm">Chọn thể loại yêu thích và tìm ngay sự kiện phù hợp với bạn</p>
@@ -344,62 +487,14 @@ export const HomePage: React.FC = () => {
                 </div>
             </section>
 
-            {/* ==================== FEATURED EVENT ==================== */}
-            {featuredEvent && (
-                <section className="px-4 md:px-10 pb-14 max-w-[1440px] mx-auto">
-                    <div ref={featuredRef} className="reveal">
-                        <div className="relative rounded-3xl overflow-hidden border border-white/10 group cursor-pointer"
-                            onClick={() => navigate(`/event/${featuredEvent.eventId}`)}>
-                            <div className="absolute inset-0">
-                                <img
-                                    src={featuredEvent.eventImage || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'}
-                                    alt={featuredEvent.eventName}
-                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-r from-[#151022] via-[#151022]/80 to-transparent" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#151022] via-transparent to-transparent" />
-                            </div>
-                            <div className="relative z-10 flex flex-col justify-end min-h-[350px] md:min-h-[420px] p-8 md:p-12">
-                                <span className="inline-flex items-center gap-2 w-fit py-1.5 px-3 rounded-full bg-[#8655f6]/20 border border-[#8655f6]/30 text-xs font-bold uppercase tracking-wider text-[#c084fc] mb-4">
-                                    <span className="material-symbols-outlined text-[14px] filled">star</span>
-                                    Sự kiện nổi bật
-                                </span>
-                                <h3 className="font-display text-3xl md:text-5xl font-black text-white mb-3 max-w-lg leading-tight">
-                                    {featuredEvent.eventName || 'Untitled Event'}
-                                </h3>
-                                <div className="flex flex-wrap items-center gap-4 text-gray-300 text-sm mb-6">
-                                    {featuredEvent.eventDate && (
-                                        <span className="flex items-center gap-1.5">
-                                            <span className="material-symbols-outlined text-[18px] text-[#8655f6]">calendar_month</span>
-                                            {new Date(featuredEvent.eventDate).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                                        </span>
-                                    )}
-                                    {featuredEvent.eventLocation && (
-                                        <span className="flex items-center gap-1.5">
-                                            <span className="material-symbols-outlined text-[18px] text-[#8655f6]">location_on</span>
-                                            {featuredEvent.eventLocation}
-                                        </span>
-                                    )}
-                                    {featuredEvent.minPrice != null && (
-                                        <span className="flex items-center gap-1.5">
-                                            <span className="material-symbols-outlined text-[18px] text-[#8655f6]">sell</span>
-                                            Từ ${featuredEvent.minPrice}
-                                        </span>
-                                    )}
-                                </div>
-                                <button className="w-fit h-12 px-6 rounded-xl bg-gradient-to-r from-[#8655f6] to-[#7c3aed] text-white font-bold shadow-[0_0_30px_rgba(137,90,246,0.4)] hover:shadow-[0_0_50px_rgba(137,90,246,0.6)] transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2">
-                                    <span>Mua vé ngay</span>
-                                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            )}
+            {/* ==================== FEATURED EVENT CAROUSEL ==================== */}
+            <div ref={featuredRef} className={`reveal py-16 ${featuredEvents.length === 0 ? 'hidden' : ''}`}>
+                <FeaturedCarousel events={featuredEvents} />
+            </div>
 
             {/* ==================== TRENDING NOW ==================== */}
-            <section className="w-full px-4 md:px-10 pb-16 max-w-[1440px] mx-auto">
-                <div ref={trendingRef} className="reveal">
+            <section ref={trendingRef} className="reveal w-full px-4 md:px-10 py-16 md:py-20 max-w-[1440px] mx-auto">
+                <div>
                     <div className="flex items-end justify-between mb-8">
                         <div>
                             <p className="text-[#8655f6] text-sm font-bold uppercase tracking-widest mb-3">Xu hướng</p>
@@ -445,7 +540,7 @@ export const HomePage: React.FC = () => {
                         </div>
                     ) : (
                         <div className="stagger-children visible grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {events.map((item) => {
+                            {events.slice(0, 8).map((item) => {
                                 const { date, month } = getEventDateParts(item.eventDate || new Date().toISOString());
                                 return (
                                     <EventCard
@@ -475,9 +570,9 @@ export const HomePage: React.FC = () => {
             </section>
 
             {/* ==================== HOW IT WORKS ==================== */}
-            <section id="how-it-works" className="px-4 md:px-10 pb-16 max-w-[1440px] mx-auto">
-                <div ref={howItWorksRef} className="reveal">
-                    <div className="text-center mb-14">
+            <section id="how-it-works" ref={howItWorksRef} className="reveal px-4 md:px-10 py-16 md:py-20 max-w-[1440px] mx-auto">
+                <div>
+                    <div className="text-center mb-10">
                         <p className="text-[#8655f6] text-sm font-bold uppercase tracking-widest mb-3">Hướng dẫn</p>
                         <h2 className="font-display text-3xl md:text-4xl font-black text-white mb-4">Đặt vé dễ dàng trong 3 bước</h2>
                         <p className="text-gray-400 max-w-xl mx-auto">Chỉ cần vài phút để tìm và đặt vé cho sự kiện yêu thích của bạn.</p>
@@ -508,8 +603,8 @@ export const HomePage: React.FC = () => {
             </section>
 
             {/* ==================== CTA SECTION ==================== */}
-            <section className="px-4 md:px-10 pb-20 max-w-[1440px] mx-auto">
-                <div ref={ctaRef} className="reveal">
+            <section ref={ctaRef} className="reveal px-4 md:px-10 py-16 md:py-20 max-w-[1440px] mx-auto">
+                <div>
                     <div className="relative rounded-3xl overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-br from-[#8655f6] via-[#7c3aed] to-[#d946ef] animate-gradient" />
                         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNCI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />

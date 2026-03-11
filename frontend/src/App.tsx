@@ -48,7 +48,6 @@ import {
   StaffDetailPage,
   NotificationsPage,
   CheckInPage,
-  ManageLayoutPage,
   ManageTicketPage,
   ManageOrdersPage,
 } from './pages/organizer';
@@ -215,14 +214,6 @@ const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute allowedRoles={['organizer']}>
             <OrganizerLayout title="Edit Event"><EditEventPage /></OrganizerLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/organizer/events/:eventId/layout"
-        element={
-          <ProtectedRoute allowedRoles={['organizer']}>
-            <OrganizerLayout title="Manage Layout"><ManageLayoutPage /></OrganizerLayout>
           </ProtectedRoute>
         }
       />

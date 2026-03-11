@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { EventAPI } from '../../services/eventApiService';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -43,29 +42,21 @@ export const EditEventPage: React.FC = () => {
                     return;
                 }
 
-                const event = await EventAPI.getEventById(eventId);
                 const layout = await LayoutAPI.getLayout(eventId);
 
                 // Parse dates
-                const startDate = event.startTime ? new Date(event.startTime) : new Date();
-                const endDate = event.endTime ? new Date(event.endTime) : new Date();
-
-                // Convert banners if they exist
-                const banners = event.banners?.map((b: any) => ({
-                    url: typeof b === 'string' ? b : b.url || '',
-                    title: typeof b === 'string' ? '' : b.title || '',
-                })) || [];
+                const startDate = layout.eventDate ? new Date(layout.eventDate) : new Date();
+                const endDate = layout.eventDate ? new Date(layout.eventDate) : new Date();
 
                 setFormData({
-                    name: event.title || '',
+                    name: layout.eventName || '',
                     dateStart: startDate.toISOString().split('T')[0],
                     dateEnd: endDate.toISOString().split('T')[0],
                     time: startDate.toTimeString().slice(0, 5),
                     timeEnd: endDate.toTimeString().slice(0, 5),
-                    venue: event.location || '',
-                    description: event.description || '',
-                    category: event.category || 'music',
-                    banners: banners,
+                    venue: layout.eventLocation || '',
+                    description: layout.eventDescription || '',
+                    category: 'music',
                 });
             } catch (err: any) {
                 const errorMessage = err.response?.data?.message || 'Failed to load event';
@@ -178,29 +169,14 @@ export const EditEventPage: React.FC = () => {
                     ? new Date(`${formData.dateEnd}T${formData.timeEnd}:00`).toISOString()
                     : undefined;
 
-                const updatePayload = {
-                    title: formData.name,
-                    description: formData.description,
-                    category: formData.category,
-                    location: formData.venue,
-                    startTime: startTimeString,
-                    endTime: endTimeString,
-                    banners: formData.banners,
-                };
-
-                await EventAPI.updateEvent(eventId!, updatePayload);
-
                 // Update layout info
-                await LayoutAPI.createLayout({
-                    eventId: eventId!,
+                const layout = await LayoutAPI.getLayout(eventId!);
+                await LayoutAPI.updateLayout(eventId!, {
+                    ...layout,
                     eventName: formData.name,
                     eventDate: startTimeString,
                     eventLocation: formData.venue,
                     eventDescription: formData.description,
-                    zones: [],
-                    canvasWidth: 800,
-                    canvasHeight: 600,
-                    canvasColor: '#0f1219'
                 });
 
                 navigate('/organizer');

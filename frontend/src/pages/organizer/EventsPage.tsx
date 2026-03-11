@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
-import { EventAPI } from '../../services/eventApiService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/common/ToastProvider';
 import type { EventLayout, LayoutZone } from '../../types/layout';
@@ -103,17 +102,6 @@ export const EventsPage: React.FC = () => {
         
         // Create a map of events for quick lookup
         const eventMap = new Map();
-        
-        // Try to get event details from API
-        try {
-          const myEventsResponse = await EventAPI.getAllEvents();
-          const myEvents = (myEventsResponse.data || []).filter((e: any) => e.organizerId === user.id);
-          myEvents.forEach((event: any) => {
-            eventMap.set(String(event._id), event);
-          });
-        } catch (error) {
-          console.error('Error fetching events from API:', error);
-        }
 
         // Map layouts to organizer events
         const mapped = (layouts || []).map(layout => {
@@ -145,15 +133,8 @@ export const EventsPage: React.FC = () => {
   const handleDeleteEvent = async (eventId: string) => {
     setDeleting(true);
     try {
-      // Delete layout first (since EventsPage relies on layouts)
-      try {
-        await LayoutAPI.deleteLayout(eventId);
-      } catch (err) {
-        console.error('Error deleting layout:', err);
-      }
-      
-      // Then delete event
-      await EventAPI.deleteEvent(eventId);
+      // Delete layout
+      await LayoutAPI.deleteLayout(eventId);
       
       // Remove from local state
       setEvents(events.filter(e => e.eventId !== eventId));
@@ -343,7 +324,7 @@ export const EventsPage: React.FC = () => {
                       View Details
                     </button>
                     <button 
-                      onClick={() => navigate(`/organizer/events/${event.eventId}/layout`)}
+                      onClick={() => navigate(`/organizer/stage-builder?eventId=${event.eventId}`)}
                       className="px-4 py-2 bg-[#3a3447] hover:bg-[#3a3447]/80 text-gray-300 rounded-lg text-sm transition-colors flex items-center gap-1"
                     >
                       <span className="material-symbols-outlined text-sm">grid_on</span>

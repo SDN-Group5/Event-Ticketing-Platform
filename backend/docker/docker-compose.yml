@@ -20,33 +20,12 @@ services:
       - NODE_ENV=development
       - PORT=4000
       - AUTH_SERVICE_URL=http://auth-service:4001
-      - EVENT_SERVICE_URL=http://event-service:4002
       - LAYOUT_SERVICE_URL=http://layout-service:4002
       - BOOKING_SERVICE_URL=http://booking-service:4003
       - PAYMENT_SERVICE_URL=http://payment-service:4004
       - FRONTEND_URL=http://localhost:3000
     depends_on:
       - auth-service
-      - event-service
-    networks:
-      - ticketing-network
-    restart: unless-stopped
-
-  # ============================================
-  # EVENT SERVICE (Port 4005 trên host, 4002 trong container)
-  # ============================================
-  event-service:
-    build:
-      context: ../services/events-service
-      dockerfile: Dockerfile
-    ports:
-      - "4005:4002"
-    env_file:
-      - ../.env
-    environment:
-      - PORT=4002
-      - MONGODB_URI=${MONGODB_ATLAS_URI:-mongodb://host.docker.internal:27017/Ticket}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-me}
     networks:
       - ticketing-network
     restart: unless-stopped
@@ -64,8 +43,10 @@ services:
       - ../.env
     environment:
       - PORT=4002
-      - MONGODB_URI=${MONGODB_ATLAS_URI:-mongodb://host.docker.internal:27017/Ticket}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-me}
+      - RABBITMQ_URL=amqp://ticketing:ticketing123@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     networks:
       - ticketing-network
     restart: unless-stopped
@@ -85,6 +66,10 @@ services:
       - NODE_ENV=development
       - PAYMENT_SERVICE_PORT=4004
       - LAYOUT_SERVICE_URL=http://layout-service:4002
+      - RABBITMQ_URL=amqp://ticketing:ticketing123@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     networks:
       - ticketing-network
     restart: unless-stopped
@@ -103,14 +88,34 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=4001
-      # Dùng MongoDB Atlas (cloud) - không cần MongoDB local
-      # Lấy từ file .env hoặc env file
-      - MONGODB_URI=${MONGODB_ATLAS_URI}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-me}
     # Không cần depends_on mongodb nữa vì dùng Atlas
     networks:
       - ticketing-network
     restart: unless-stopped
+
+  # ============================================
+  # RABBITMQ - Message Broker (Port 5672 + Management UI 15672)
+  #Dùng để quản lý message backend
+  # ============================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=ticketing
+      - RABBITMQ_DEFAULT_PASS=ticketing123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ticketing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   # ============================================
   # MONGODB (ĐÃ TẮT - Dùng MongoDB Atlas thay thế)
@@ -154,9 +159,10 @@ networks:
     driver: bridge
 
 # ============================================
-# VOLUMES (Đã xóa vì không dùng MongoDB và Redis local)
+# VOLUMES
 # ============================================
+volumes:
+  rabbitmq_data:
 # Bật lại khi cần MongoDB hoặc Redis local:
-# volumes:
 #   mongodb_data:
 #   redis_data:

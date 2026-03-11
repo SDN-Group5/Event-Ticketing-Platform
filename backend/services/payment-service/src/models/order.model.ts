@@ -46,6 +46,12 @@ export interface IOrder extends Document {
 
   paidAt?: Date;
   cancelledAt?: Date;
+
+  sagaLog?: {
+    sagaName: string;
+    status: 'running' | 'completed' | 'compensated' | 'failed';
+    steps: { name: string; status: string; timestamp: Date; error?: string }[];
+  }[];
 }
 
 const OrderItemSchema = new Schema(
@@ -107,6 +113,22 @@ const OrderSchema = new Schema(
 
     paidAt: { type: Date },
     cancelledAt: { type: Date },
+
+    sagaLog: [
+      {
+        sagaName: { type: String },
+        status: { type: String, enum: ['running', 'completed', 'compensated', 'failed'] },
+        steps: [
+          {
+            name: { type: String },
+            status: { type: String },
+            timestamp: { type: Date },
+            error: { type: String },
+          },
+        ],
+        _id: false,
+      },
+    ],
   },
   { timestamps: true }
 );

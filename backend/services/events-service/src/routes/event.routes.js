@@ -6,12 +6,6 @@ const router = express.Router();
 
 // [PUBLIC] Ai cũng có thể xem danh sách và chi tiết sự kiện
 router.get('/', eventController.getAllEvents);
-router.get(
-    '/my-events', 
-    verifyToken, 
-    authorizeRoles('organizer'), 
-    eventController.getMyEvents
-);
 router.get('/:id', eventController.getEventById);
 
 // [PROTECTED] Chỉ Organizer và Admin mới được thao tác thêm, sửa, xóa

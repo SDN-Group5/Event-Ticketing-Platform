@@ -78,7 +78,7 @@ export const setupRoutes = (app: Express) => {
         '/api/v1/layouts/*',
         '/api/bookings/*',
         '/api/payments/*',
-        
+
       ],
     });
   });
@@ -87,9 +87,9 @@ export const setupRoutes = (app: Express) => {
   // PROXY TO MICROSERVICES
   // ============================================
 
-// Auth Service: /api/auth/* -> auth-service:4001/login, /register, ...
-//  - Gateway prefix `/api/auth` được bỏ đi trước khi forward,
-//  - Auth-service expose các route `/login`, `/register`, ...
+  // Auth Service: /api/auth/* -> auth-service:4001/login, /register, ...
+  //  - Gateway prefix `/api/auth` được bỏ đi trước khi forward,
+  //  - Auth-service expose các route `/login`, `/register`, ...
   app.use(
     '/api/auth',
     createProxyMiddleware(

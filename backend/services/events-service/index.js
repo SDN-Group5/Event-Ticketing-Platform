@@ -4,10 +4,8 @@ import config from './src/config/env.config.js';
 import connectMongoDB from './src/config/mongo.config.js';
 import cors from 'cors';
 import express from 'express';
-import indexRoute from './src/routes/index.js';
-import { startSeatCleanupJob } from './src/jobs/seatCleanup.js';
+import eventRoutes from './src/routes/event.routes.js';
 import { setIO } from './src/socket.js';
-import { connectRabbitMQ } from './src/config/rabbitmq.js'; // import rabiit mq
 
 import { engine } from 'express-handlebars';
 
@@ -20,11 +18,13 @@ const allowedOrigins = [
     'http://localhost:5174',
     process.env.FRONTEND_URL,
 ].filter(Boolean);
-const isAllowedOrigin = (origin) =>
-    !origin || allowedOrigins.includes(origin) || /railway\.app/.test(origin);
 const corsOptions = {
     origin: (origin, callback) => {
-        callback(null, isAllowedOrigin(origin));
+        if (!origin || allowedOrigins.includes(origin) || /railway\.app/.test(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, true);
+        }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -39,11 +39,9 @@ app.set('view engine', 'ejs');
 app.set('views', './src/views');
 app.engine('.hbs', engine({ extname: '.hbs' }));
 
-connectMongoDB().then(() => {
-    connectRabbitMQ();
-});
+connectMongoDB();
 // startSeatCleanupJob(); // Disabled for testing payment-service order cleanup
-indexRoute(app);
+eventRoutes(app);
 
 const server = http.createServer(app);
 
@@ -59,11 +57,7 @@ io.on('connection', (socket) => {
         socket.leave(`event:${eventId}`);
     });
 });
-
 server.listen(port, () => {
-    console.log(`🪑 ============================================`);
-    console.log(`✅ layout-service dang chay tai port: ${port}`);
-    console.log(`🐰 RabbitMQ: Event-Driven consumer mode`);
+    console.log(`Server is running on port http://localhost:${port}`);
     console.log(`🔌 WebSocket ready on same port`);
-    console.log(`🪑 ============================================`);
 });

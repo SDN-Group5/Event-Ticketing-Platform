@@ -37,10 +37,23 @@ type ApiErr = { success: false; error?: { code?: string; message?: string }; mes
 type ApiResponse<T> = ApiOk<T> & Partial<ApiErr>;
 
 // Ưu tiên gọi thẳng layout-service (cách 1), fallback về API gateway nếu cần
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_LAYOUT_URL ||
-  process.env.EXPO_PUBLIC_API_URL ||
-  'http://localhost:4002';
+// IMPORTANT: Base URL must NOT include path (e.g. /api/v1/layouts) - only protocol + host
+// Wrong: https://ticket-platform.up.railway.app/api/v1/layouts (causes path duplication)
+// Right: https://ticket-platform.up.railway.app
+function getBaseUrl(): string {
+  const raw =
+    process.env.EXPO_PUBLIC_LAYOUT_URL ||
+    process.env.EXPO_PUBLIC_API_URL ||
+    'http://localhost:4002';
+  // Strip any path to prevent duplication (e.g. /api/v1/layouts -> base only)
+  try {
+    const u = new URL(raw);
+    return u.origin;
+  } catch {
+    return raw;
+  }
+}
+const API_BASE_URL = getBaseUrl();
 
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;

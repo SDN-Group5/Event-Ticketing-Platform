@@ -41,10 +41,19 @@ type ApiResponse<T> = {
   message?: string;
 };
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_LAYOUT_URL ||
-  process.env.EXPO_PUBLIC_API_URL ||
-  'http://localhost:4002';
+// Base URL must NOT include path - only protocol + host (prevents path duplication on Railway)
+function getBaseUrl(): string {
+  const raw =
+    process.env.EXPO_PUBLIC_LAYOUT_URL ||
+    process.env.EXPO_PUBLIC_API_URL ||
+    'http://localhost:4002';
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return raw;
+  }
+}
+const BASE_URL = getBaseUrl();
 
 async function requestSeats<T>(path: string, params?: Record<string, any>): Promise<T> {
   const url = new URL(path, BASE_URL);

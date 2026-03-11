@@ -6,15 +6,16 @@ const router = express.Router();
 
 // [PUBLIC] Ai cũng có thể xem danh sách và chi tiết sự kiện
 router.get('/', eventController.getAllEvents);
+router.get('/:id', eventController.getEventById);
+
+// [PROTECTED] Organizer: My events & create event
 router.get(
     '/my-events', 
     verifyToken, 
     authorizeRoles('organizer'), 
     eventController.getMyEvents
 );
-router.get('/:id', eventController.getEventById);
 
-// [PROTECTED] Chỉ Organizer và Admin mới được thao tác thêm, sửa, xóa
 router.post(
     '/', 
     verifyToken, 
@@ -34,6 +35,28 @@ router.delete(
     verifyToken, 
     authorizeRoles('organizer', 'admin'), 
     eventController.deleteEvent
+);
+
+// [ADMIN ONLY] Event Approval System
+router.get(
+    '/admin/pending',
+    verifyToken,
+    authorizeRoles('admin'),
+    eventController.getPendingEvents
+);
+
+router.patch(
+    '/:id/approve',
+    verifyToken,
+    authorizeRoles('admin'),
+    eventController.approveEvent
+);
+
+router.patch(
+    '/:id/reject',
+    verifyToken,
+    authorizeRoles('admin'),
+    eventController.rejectEvent
 );
 
 // File index.js của bạn đang dùng eventRoutes(app), nên mình export hàm này:

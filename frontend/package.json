@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@photo-sphere-viewer/core": "^5.14.1",
+    "@react-oauth/google": "^0.13.4",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "axios": "^1.13.5",

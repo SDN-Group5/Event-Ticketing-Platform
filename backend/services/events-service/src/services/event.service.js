@@ -1,7 +1,7 @@
 import Event from '../models/Event.js';
 
 export const createNewEvent = async (eventData, organizerId) => {
-    // Thêm logic nghiệp vụ ở đây (nếu có). VD: Validate thời gian startTime < endTime
+    // Validate time
     if (new Date(eventData.startTime) >= new Date(eventData.endTime)) {
         throw new Error('Thời gian kết thúc phải sau thời gian bắt đầu');
     }
@@ -9,7 +9,7 @@ export const createNewEvent = async (eventData, organizerId) => {
     const newEvent = new Event({
         ...eventData,
         organizerId,
-        status: 'pending' // Tạo xong mặc định chờ Admin duyệt theo đúng spec
+        status: 'draft' // Tạo xong mặc định là draft, chờ Admin duyệt
     });
 
     return await newEvent.save();
@@ -57,3 +57,42 @@ export const fetchMyEvents = async (organizerId, filters = {}) => {
     const query = { organizerId, ...filters };
     return await Event.find(query).sort({ createdAt: -1 });
 };
+
+// ============================================
+// Admin Event Approval
+// ============================================
+
+export const fetchPendingEvents = async (filters = {}) => {
+    const query = { status: 'draft', ...filters };
+    return await Event.find(query).sort({ createdAt: -1 });
+};
+
+export const publishEvent = async (eventId, adminId) => {
+    const event = await Event.findById(eventId);
+    if (!event) throw new Error('Không tìm thấy sự kiện');
+    
+    if (event.status !== 'draft') {
+        throw new Error(`Không thể công bố sự kiện với trạng thái: ${event.status}`);
+    }
+    
+    event.status = 'published';
+    event.publishedBy = adminId;
+    event.publishedAt = new Date();
+    return await event.save();
+};
+
+export const rejectEvent = async (eventId, adminId, rejectionReason) => {
+    const event = await Event.findById(eventId);
+    if (!event) throw new Error('Không tìm thấy sự kiện');
+    
+    if (event.status !== 'draft') {
+        throw new Error(`Không thể từ chối sự kiện với trạng thái: ${event.status}`);
+    }
+    
+    event.status = 'rejected';
+    event.rejectedBy = adminId;
+    event.rejectedAt = new Date();
+    event.rejectionReason = rejectionReason;
+    return await event.save();
+};
+

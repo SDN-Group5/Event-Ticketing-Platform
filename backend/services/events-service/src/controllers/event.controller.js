@@ -89,3 +89,104 @@ export const getMyEvents = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// ============================================
+// ADMIN: Event Approval System
+// ============================================
+
+/**
+ * GET /api/events/admin/pending
+ * Admin: Get all pending events awaiting approval
+ */
+export const getPendingEvents = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, organizerId, search } = req.query;
+        const skip = (page - 1) * limit;
+
+        const filter = { status: 'draft' };
+        
+        if (organizerId) {
+            filter.organizerId = organizerId;
+        }
+        
+        if (search) {
+            filter.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const Event = (await import('../models/Event.js')).default;
+        
+        const events = await Event.find(filter)
+            .skip(skip)
+            .limit(parseInt(limit))
+            .sort({ createdAt: -1 });
+
+        const total = await Event.countDocuments(filter);
+
+        res.status(200).json({
+            success: true,
+            count: events.length,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                totalPages: Math.ceil(total / limit)
+            },
+            data: events
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * PATCH /api/events/:id/approve
+ * Admin: Approve an event (change status from draft to published)
+ */
+export const approveEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const adminId = req.user.id;
+
+        const event = await eventService.publishEvent(id, adminId);
+
+        res.status(200).json({
+            success: true,
+            message: 'Event published successfully',
+            data: event
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * PATCH /api/events/:id/reject
+ * Admin: Reject an event (change status to rejected)
+ */
+export const rejectEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rejectionReason } = req.body;
+        const adminId = req.user.id;
+
+        if (!rejectionReason) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rejection reason is required'
+            });
+        }
+
+        const event = await eventService.rejectEvent(id, adminId, rejectionReason);
+
+        res.status(200).json({
+            success: true,
+            message: 'Event rejected successfully',
+            data: event
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};

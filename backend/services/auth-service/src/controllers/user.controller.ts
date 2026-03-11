@@ -69,3 +69,255 @@ export const updateCurrentUser = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+// ============================================
+// STAFF MANAGEMENT BY ORGANIZER (CRUD)
+// ============================================
+
+/**
+ * POST /api/users/staff
+ * Organizer tạo một staff mới
+ */
+export const createStaff = async (req: Request, res: Response) => {
+  try {
+    const organizerId = (req as any).userId;
+
+    if (!organizerId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { email, password, firstName, lastName, phone } = req.body;
+
+    // Validate input
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).json({
+        message: "Email, password, firstName, lastName là bắt buộc",
+      });
+    }
+
+    // Check nếu email đã tồn tại
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email đã tồn tại" });
+    }
+
+    // Tạo staff mới với companyId = organizerId
+    const newStaff = await User.create({
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      role: "staff",
+      companyId: organizerId,
+      isActive: true,
+    });
+
+    const staffData = await User.findById(newStaff._id).select("-password");
+
+    res.status(201).json({
+      message: "Staff được tạo thành công",
+      data: staffData,
+    });
+  } catch (error: any) {
+    console.error("❌ Lỗi createStaff:", error);
+    res.status(500).json({
+      message: error.message || "Something went wrong",
+    });
+  }
+};
+
+/**
+ * GET /api/users/staff
+ * Organizer lấy danh sách tất cả staff của mình
+ */
+export const getStaffList = async (req: Request, res: Response) => {
+  try {
+    const organizerId = (req as any).userId;
+
+    if (!organizerId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { page = 1, limit = 10, isActive } = req.query;
+
+    const filter: any = {
+      companyId: organizerId,
+      role: "staff",
+    };
+
+    if (isActive !== undefined) {
+      filter.isActive = isActive === "true";
+    }
+
+    const staffs = await User.find(filter)
+      .select("-password -emailVerificationCode -passwordResetCode")
+      .skip((Number(page) - 1) * Number(limit))
+      .limit(Number(limit))
+      .sort({ createdAt: -1 });
+
+    const total = await User.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      message: "Lấy danh sách staff thành công",
+      data: staffs,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    });
+  } catch (error: any) {
+    console.error("❌ Lỗi getStaffList:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong",
+    });
+  }
+};
+
+/**
+ * GET /api/users/staff/:staffId
+ * Organizer lấy thông tin chi tiết của một staff
+ */
+export const getStaffById = async (req: Request, res: Response) => {
+  try {
+    const organizerId = (req as any).userId;
+    const { staffId } = req.params;
+
+    if (!organizerId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const staff = await User.findById(staffId).select(
+      "-password -emailVerificationCode -passwordResetCode"
+    );
+
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+
+    // Kiểm tra xem staff này có thuộc về organizer không
+    if (staff.companyId?.toString() !== organizerId) {
+      return res.status(403).json({
+        message: "Bạn không có quyền truy cập staff này",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Lấy thông tin staff thành công",
+      data: staff,
+    });
+  } catch (error: any) {
+    console.error("❌ Lỗi getStaffById:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong",
+    });
+  }
+};
+
+/**
+ * PATCH /api/users/staff/:staffId
+ * Organizer cập nhật thông tin của một staff
+ */
+export const updateStaff = async (req: Request, res: Response) => {
+  try {
+    const organizerId = (req as any).userId;
+    const { staffId } = req.params;
+    const { firstName, lastName, phone, email, isActive } = req.body;
+
+    if (!organizerId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const staff = await User.findById(staffId);
+
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+
+    // Kiểm tra xem staff này có thuộc về organizer không
+    if (staff.companyId?.toString() !== organizerId) {
+      return res.status(403).json({
+        message: "Bạn không có quyền cập nhật staff này",
+      });
+    }
+
+    // Kiểm tra nếu email thay đổi, nó không được trùng với email khác
+    if (email && email !== staff.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email đã tồn tại" });
+      }
+      staff.email = email;
+    }
+
+    if (firstName !== undefined) staff.firstName = firstName;
+    if (lastName !== undefined) staff.lastName = lastName;
+    if (phone !== undefined) staff.phone = phone;
+    if (isActive !== undefined) staff.isActive = isActive;
+
+    await staff.save();
+
+    const updatedStaff = await User.findById(staffId).select(
+      "-password -emailVerificationCode -passwordResetCode"
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Staff được cập nhật thành công",
+      data: updatedStaff,
+    });
+  } catch (error: any) {
+    console.error("❌ Lỗi updateStaff:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong",
+    });
+  }
+};
+
+/**
+ * DELETE /api/users/staff/:staffId
+ * Organizer xóa một staff
+ */
+export const deleteStaff = async (req: Request, res: Response) => {
+  try {
+    const organizerId = (req as any).userId;
+    const { staffId } = req.params;
+
+    if (!organizerId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const staff = await User.findById(staffId);
+
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+
+    // Kiểm tra xem staff này có thuộc về organizer không
+    if (staff.companyId?.toString() !== organizerId) {
+      return res.status(403).json({
+        message: "Bạn không có quyền xóa staff này",
+      });
+    }
+
+    await User.findByIdAndDelete(staffId);
+
+    res.status(200).json({
+      success: true,
+      message: "Staff được xóa thành công",
+    });
+  } catch (error: any) {
+    console.error("❌ Lỗi deleteStaff:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong",
+    });
+  }
+};

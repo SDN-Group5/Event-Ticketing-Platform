@@ -1,9 +1,12 @@
 export { DashboardPage } from './DashboardPage';
 export { CreateEventPage } from './CreateEventPage';
+export { EditEventPage } from './EditEventPage';
+export { EventDetailPage } from './EventDetailPage';
 export { AttendeesPage } from './AttendeesPage';
 export { AnalyticsPage } from './AnalyticsPage';
 export { EventsPage } from './EventsPage';
 export { ManageVouchersPage } from './ManageVouchersPage';
 export { ManageStaffPage } from './ManageStaffPage';
+export { StaffDetailPage } from './StaffDetailPage';
 export { NotificationsPage } from './NotificationsPage';
 export { CheckInPage } from './CheckInPage';

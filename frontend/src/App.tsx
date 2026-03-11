@@ -48,6 +48,8 @@ import {
   StaffDetailPage,
   NotificationsPage,
   CheckInPage,
+  ManageLayoutPage,
+  ManageTicketPage,
 } from './pages/organizer';
 
 // Admin Pages
@@ -212,6 +214,22 @@ const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute allowedRoles={['organizer']}>
             <OrganizerLayout title="Edit Event"><EditEventPage /></OrganizerLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/organizer/events/:eventId/layout"
+        element={
+          <ProtectedRoute allowedRoles={['organizer']}>
+            <OrganizerLayout title="Manage Layout"><ManageLayoutPage /></OrganizerLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/organizer/events/:eventId/tickets"
+        element={
+          <ProtectedRoute allowedRoles={['organizer']}>
+            <OrganizerLayout title="Manage Tickets"><ManageTicketPage /></OrganizerLayout>
           </ProtectedRoute>
         }
       />

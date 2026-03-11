@@ -3,6 +3,8 @@ import {
   createPayment,
   getOrder,
   getUserOrders,
+  getOrganizerOrders,
+  getOrganizerCustomers,
   handleWebhook,
   cancelPayment,
   verifyPayment,
@@ -39,6 +41,13 @@ router.post('/cancel/:orderCode', cancelPayment);
 
 // Huỷ đơn đã thanh toán nhưng cấp voucher 50% thay vì hoàn tiền
 router.post('/cancel-with-voucher/:orderCode', cancelPaidOrderWithVoucher);
+
+// ================== ORGANIZER - ORDERS & CUSTOMERS ==================
+// Lấy danh sách đơn hàng của organizer (tất cả sự kiện)
+router.get('/organizer/orders', getOrganizerOrders);
+
+// Lấy danh sách khách hàng của organizer
+router.get('/organizer/customers', getOrganizerCustomers);
 
 // ================== VOUCHERS (ORGANIZER) ==================
 // Lấy danh sách voucher của organizer hiện tại

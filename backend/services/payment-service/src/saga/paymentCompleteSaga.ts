@@ -1,6 +1,8 @@
 import { SagaOrchestrator, SagaStep } from './sagaOrchestrator';
 import { publishEvent } from '../config/rabbitmq';
 import { transferToOrganizerBank } from '../services/bankTransfer.service';
+import { sendPaymentConfirmationEmail } from '../services/email.service';
+import { getUserFromAuthService } from '../services/user.service';
 
 export interface PaymentCompleteContext {
   order: any;
@@ -120,10 +122,55 @@ const autoPayoutStep: SagaStep<PaymentCompleteContext> = {
   },
 };
 
+const sendEmailStep: SagaStep<PaymentCompleteContext> = {
+  name: 'send-confirmation-email',
+  async execute(ctx) {
+    try {
+      const order = ctx.order;
+      
+      // Fetch user information from auth service
+      const user = await getUserFromAuthService(order.userId);
+      
+      if (!user || !user.email) {
+        console.warn(`[PaymentCompleteSaga] Could not fetch user ${order.userId} email, skipping email send`);
+        return ctx;
+      }
+
+      // Calculate ticket count
+      const ticketCount = (order.items || []).reduce((total: number, item: any) => total + (item.quantity || 1), 0);
+
+      // Send confirmation email
+      const emailSent = await sendPaymentConfirmationEmail({
+        to: user.email,
+        firstName: user.firstName,
+        eventName: order.eventName,
+        orderCode: order.orderCode,
+        totalAmount: order.totalAmount,
+        items: order.items || [],
+        ticketCount,
+      });
+
+      if (!emailSent) {
+        console.warn(`[PaymentCompleteSaga] Failed to send email to ${user.email}, but continuing...`);
+      }
+
+      return ctx;
+    } catch (err: any) {
+      console.error('[PaymentCompleteSaga] Error in send-email step:', err?.message);
+      // Don't fail the saga if email fails - it's not critical
+      return ctx;
+    }
+  },
+  async compensate(ctx) {
+    // Email doesn't need compensation - it's informational only
+  },
+};
+
 export function createPaymentCompleteSaga() {
   return new SagaOrchestrator<PaymentCompleteContext>('PaymentCompleteSaga', [
     markPaidStep,
     markSeatsSoldStep,
     autoPayoutStep,
+    sendEmailStep,
   ]);
 }

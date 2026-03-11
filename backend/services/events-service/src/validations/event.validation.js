@@ -11,22 +11,32 @@ export const createEventSchema = Joi.object({
     category: Joi.string().required().messages({
         'any.required': 'Thể loại sự kiện là bắt buộc'
     }),
-    location: Joi.string().required().messages({
+    location: Joi.string().min(3).required().messages({
+        'string.min': 'Địa điểm phải có ít nhất 3 ký tự',
         'any.required': 'Địa điểm là bắt buộc'
     }),
     startTime: Joi.date().iso().greater('now').required().messages({
-        'date.greater': 'Thời gian bắt đầu phải lớn hơn thời gian hiện tại',
+        'date.greater': 'Thời gian bắt đầu phải ở tương lai (tối thiểu 1 phút)',
         'any.required': 'Thời gian bắt đầu là bắt buộc',
         'date.format': 'Định dạng thời gian không hợp lệ (nên dùng chuẩn ISO)'
     }),
-    // endTime không bắt buộc, nhưng nếu có thì phải lớn hơn startTime
-    endTime: Joi.date().iso().greater(Joi.ref('startTime')).optional().messages({
-        'date.greater': 'Thời gian kết thúc phải sau thời gian bắt đầu'
+    endTime: Joi.date().iso().required().messages({
+        'any.required': 'Thời gian kết thúc là bắt buộc',
+        'date.format': 'Định dạng thời gian không hợp lệ (nên dùng chuẩn ISO)'
     }),
-    banners: Joi.array().items(Joi.string().uri()).optional().messages({
-        'string.uri': 'Link banner phải là một URL hợp lệ'
-    }),
-    policies: Joi.string().allow('', null)
+    banners: Joi.alternatives(
+        Joi.array().items(
+            Joi.object({
+                url: Joi.string().uri().required().messages({
+                    'string.uri': 'URL banner phải hợp lệ'
+                }),
+                title: Joi.string().optional()
+            })
+        ),
+        Joi.array().items(Joi.string().uri())
+    ).optional(),
+    policies: Joi.string().allow('', null),
+    suggestedVenues: Joi.boolean().optional()
 });
 
 // Schema cho API [PUT] Cập nhật sự kiện (Tất cả các trường đều optional)
@@ -34,10 +44,27 @@ export const updateEventSchema = Joi.object({
     title: Joi.string().min(5).max(150),
     description: Joi.string().allow('', null),
     category: Joi.string(),
-    location: Joi.string(),
-    startTime: Joi.date().iso().greater('now'),
-    endTime: Joi.date().iso().greater(Joi.ref('startTime')),
+    location: Joi.string().min(3),
+    startTime: Joi.date().iso().greater('now').messages({
+        'date.greater': 'Thời gian bắt đầu phải ở tương lai'
+    }),
+    endTime: Joi.date().iso(),
     status: Joi.string().valid('draft', 'published', 'rejected', 'cancelled'),
-    banners: Joi.array().items(Joi.string().uri()),
+    banners: Joi.alternatives(
+        Joi.array().items(
+            Joi.object({
+                url: Joi.string().uri().required(),
+                title: Joi.string().optional()
+            })
+        ),
+        Joi.array().items(Joi.string().uri())
+    ),
     policies: Joi.string().allow('', null)
 }).min(1); // Yêu cầu phải truyền lên ít nhất 1 trường để cập nhật
+
+// Schema kiểm tra xung đột khung giờ
+export const checkTimeSlotSchema = Joi.object({
+    location: Joi.string().required(),
+    startTime: Joi.date().iso().required(),
+    endTime: Joi.date().iso().greater(Joi.ref('startTime')).required()
+});

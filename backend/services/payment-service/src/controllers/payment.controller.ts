@@ -199,6 +199,132 @@ export const getUserOrders = async (req: Request, res: Response) => {
   }
 };
 
+// ==================== GET ORGANIZER ORDERS ====================
+
+export const getOrganizerOrders = async (req: Request, res: Response) => {
+  try {
+    const organizerId = req.headers['x-user-id'] as string || req.body.organizerId;
+    if (!organizerId) {
+      return res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+    }
+
+    const { page = 1, limit = 20, eventId, status } = req.query;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const filter: any = { organizerId };
+    
+    if (eventId) filter.eventId = eventId;
+    if (status) filter.status = status;
+    else filter.status = { $in: ['paid', 'refunded', 'pending', 'processing', 'cancelled', 'expired'] };
+
+    const [orders, total] = await Promise.all([
+      Order.find(filter)
+        .sort({ paidAt: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Order.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    return res.json({
+      success: true,
+      data: orders,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+      },
+    });
+  } catch (err: any) {
+    console.error('[getOrganizerOrders] Error:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ==================== GET ORGANIZER CUSTOMERS ====================
+
+export const getOrganizerCustomers = async (req: Request, res: Response) => {
+  try {
+    const organizerId = req.headers['x-user-id'] as string || req.body.organizerId;
+    if (!organizerId) {
+      return res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+    }
+
+    const { page = 1, limit = 50, eventId, search } = req.query;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    // Tìm tất cả đơn hàng của organizer
+    let orderFilter: any = { organizerId, status: 'paid' };
+    if (eventId) orderFilter.eventId = eventId;
+
+    // Lấy userIds từ đơn hàng đã thanh toán
+    const orders = await Order.find(orderFilter).lean();
+    const userIds = [...new Set(orders.map(o => o.userId))];
+
+    if (userIds.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: { page: pageNum, limit: limitNum, total: 0, totalPages: 0 },
+      });
+    }
+
+    // Nếu có tìm kiếm, lọc theo email (cần gọi auth service)
+    // Tạm thời trả về danh sách user IDs với thông tin từ orders
+    const customerMap = new Map<string, any>();
+
+    orders.forEach(order => {
+      if (!customerMap.has(order.userId)) {
+        customerMap.set(order.userId, {
+          userId: order.userId,
+          orderCount: 0,
+          totalSpent: 0,
+          lastOrderDate: null,
+          events: new Set<string>(),
+        });
+      }
+      const customer = customerMap.get(order.userId)!;
+      customer.orderCount++;
+      customer.totalSpent += order.totalAmount || 0;
+      if (!customer.lastOrderDate || new Date(order.paidAt) > new Date(customer.lastOrderDate)) {
+        customer.lastOrderDate = order.paidAt;
+      }
+      customer.events.add(order.eventName);
+    });
+
+    // Convert Map to array và sort
+    let customers = Array.from(customerMap.values()).map(c => ({
+      ...c,
+      events: Array.from(c.events),
+    }));
+
+    // Áp dụng pagination
+    const total = customers.length;
+    const totalPages = Math.ceil(total / limitNum);
+    customers = customers.slice(skip, skip + limitNum);
+
+    return res.json({
+      success: true,
+      data: customers,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+      },
+    });
+  } catch (err: any) {
+    console.error('[getOrganizerCustomers] Error:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // ==================== WEBHOOK ====================
 
 async function handlePaidOrder(order: any): Promise<void> {

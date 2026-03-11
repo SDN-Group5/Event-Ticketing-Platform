@@ -173,3 +173,56 @@ export const rejectEvent = async (req, res) => {
         res.status(400).json({ success: false, message: error.message });
     }
 };
+
+// ============================================
+// Venue Management Endpoints
+// ============================================
+
+/**
+ * GET /api/events/venues/suggested
+ * Get suggested venues based on popularity
+ */
+export const getSuggestedVenues = async (req, res) => {
+    try {
+        const { limit = 5 } = req.query;
+        const venues = await eventService.getSuggestedVenues(parseInt(limit));
+        
+        res.status(200).json({
+            success: true,
+            count: venues.length,
+            data: venues
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * POST /api/events/venues/check-availability
+ * Check time slot availability for a specific venue
+ */
+export const checkVenueAvailability = async (req, res) => {
+    try {
+        const { location, startTime, endTime } = req.body;
+
+        if (!location || !startTime || !endTime) {
+            return res.status(400).json({
+                success: false,
+                message: 'location, startTime, and endTime are required'
+            });
+        }
+
+        const availability = await eventService.checkTimeSlotAvailability(
+            location,
+            new Date(startTime),
+            new Date(endTime)
+        );
+
+        res.status(200).json({
+            success: true,
+            data: availability
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};

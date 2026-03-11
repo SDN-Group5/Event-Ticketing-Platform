@@ -59,6 +59,17 @@ router.patch(
     eventController.rejectEvent
 );
 
+// [PUBLIC] Venue Management & Suggestions
+router.get(
+    '/venues/suggested',
+    eventController.getSuggestedVenues
+);
+
+router.post(
+    '/venues/check-availability',
+    eventController.checkVenueAvailability
+);
+
 // File index.js của bạn đang dùng eventRoutes(app), nên mình export hàm này:
 export default function eventRoutes(app) {
     app.use('/api/events', router);

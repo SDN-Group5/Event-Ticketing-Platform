@@ -71,7 +71,7 @@ export const ManageTicketPage: React.FC = () => {
         // Fetch event details
         try {
           const eventData = await EventAPI.getEventById(eventId);
-          setEvent(eventData.data || eventData);
+          setEvent(eventData);
         } catch (err) {
           console.error('Error fetching event:', err);
         }

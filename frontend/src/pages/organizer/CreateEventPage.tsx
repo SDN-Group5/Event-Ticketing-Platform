@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { EventAPI } from '../../services/eventApiService';
@@ -8,6 +8,11 @@ export const CreateEventPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
     const [step, setStep] = useState(1);
+    const [suggestedVenues, setSuggestedVenues] = useState<string[]>([]);
+    const [loadingVenues, setLoadingVenues] = useState(true);
+    const [venueAvailability, setVenueAvailability] = useState<any>(null);
+    const [checkingAvailability, setCheckingAvailability] = useState(false);
+    
     const [formData, setFormData] = useState({
         name: '',
         dateStart: '',
@@ -17,6 +22,7 @@ export const CreateEventPage: React.FC = () => {
         venue: '',
         description: '',
         category: 'music',
+        banners: [] as { url: string; title: string }[],
     });
     const [ticketData, setTicketData] = useState({
         generalAdmission: { enabled: true, price: 45, quantity: 500 },
@@ -33,52 +39,179 @@ export const CreateEventPage: React.FC = () => {
         { num: 4, label: 'Review' },
     ];
 
+    // Load suggested venues when component mounts
+    useEffect(() => {
+        const loadSuggestedVenues = async () => {
+            try {
+                setLoadingVenues(true);
+                const venues = await EventAPI.getSuggestedVenues(8);
+                setSuggestedVenues(venues);
+            } catch (err) {
+                console.error('Failed to load suggested venues:', err);
+                setSuggestedVenues([]);
+            } finally {
+                setLoadingVenues(false);
+            }
+        };
+        loadSuggestedVenues();
+    }, []);
+
+    // Check availability when venue/time changes
+    useEffect(() => {
+        const checkAvailability = async () => {
+            if (!formData.venue || !formData.dateStart || !formData.time || !formData.dateEnd || !formData.timeEnd) {
+                setVenueAvailability(null);
+                return;
+            }
+
+            try {
+                setCheckingAvailability(true);
+                const startTime = new Date(`${formData.dateStart}T${formData.time}:00`).toISOString();
+                const endTime = new Date(`${formData.dateEnd}T${formData.timeEnd}:00`).toISOString();
+                
+                const result = await EventAPI.checkVenueAvailability(formData.venue, startTime, endTime);
+                setVenueAvailability(result);
+            } catch (err) {
+                console.error('Failed to check venue availability:', err);
+                setVenueAvailability(null);
+            } finally {
+                setCheckingAvailability(false);
+            }
+        };
+
+        const timer = setTimeout(checkAvailability, 1000);
+        return () => clearTimeout(timer);
+    }, [formData.venue, formData.dateStart, formData.time, formData.dateEnd, formData.timeEnd]);
+
+    const addBanner = () => {
+        setFormData({
+            ...formData,
+            banners: [...formData.banners, { url: '', title: '' }]
+        });
+    };
+
+    const removeBanner = (index: number) => {
+        setFormData({
+            ...formData,
+            banners: formData.banners.filter((_, i) => i !== index)
+        });
+    };
+
+    const updateBanner = (index: number, field: 'url' | 'title', value: string) => {
+        const newBanners = [...formData.banners];
+        newBanners[index][field] = value;
+        setFormData({
+            ...formData,
+            banners: newBanners
+        });
+    };
+
+    const isValidDate = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return date > new Date();
+    };
+
+    const validateStep = (): boolean => {
+        if (step === 1) {
+            if (!formData.name.trim() || formData.name.length < 5) {
+                setError('Event name must be at least 5 characters');
+                return false;
+            }
+            if (!formData.category) {
+                setError('Please select a category');
+                return false;
+            }
+            return true;
+        } else if (step === 2) {
+            if (!formData.dateStart || !formData.time) {
+                setError('Start date and time are required');
+                return false;
+            }
+            if (!isValidDate(formData.dateStart)) {
+                setError('Start date must be in the future');
+                return false;
+            }
+            if (!formData.dateEnd || !formData.timeEnd) {
+                setError('End date and time are required');
+                return false;
+            }
+            if (!formData.venue) {
+                setError('Venue is required');
+                return false;
+            }
+            if (venueAvailability && !venueAvailability.available) {
+                setError('Venue is not available during this time. Please choose a different time or venue.');
+                return false;
+            }
+            return true;
+        } else if (step === 3) {
+            if (Object.values(ticketData).every(t => !t.enabled)) {
+                setError('At least one ticket type must be enabled');
+                return false;
+            }
+            return true;
+        }
+        return true;
+    };
+
     const handleNext = async () => {
+        setError(null);
+
+        if (!validateStep()) {
+            return;
+        }
+
         if (step < 4) {
             setStep(step + 1);
         } else {
-            // Submit and redirect
-            setIsSubmitting(true);
-            setError(null);
-            try {
-                // Check quyền ngay trên UI cho rõ ràng (backend cũng sẽ check)
-                if (!isAuthenticated) {
-                    setError('Bạn cần đăng nhập để tạo sự kiện');
-                    navigate('/login');
-                    return;
-                }
-                if (user?.role !== 'organizer' && user?.role !== 'admin') {
-                    setError('Tài khoản của bạn không có quyền Organizer/Admin để tạo sự kiện');
-                    navigate('/');
-                    return;
-                }
+            submitEvent();
+        }
+    };
 
-                // 1. Gộp ngày và giờ thành chuẩn ISO String cho startTime
-                const startTimeString = formData.dateStart && formData.time 
-                    ? new Date(`${formData.dateStart}T${formData.time}:00`).toISOString()
-                    : new Date().toISOString();
+    const submitEvent = async () => {
+        // Submit and redirect
+        setIsSubmitting(true);
+        setError(null);
+        try {
+            // Check quyền ngay trên UI cho rõ ràng (backend cũng sẽ check)
+            if (!isAuthenticated) {
+                setError('Bạn cần đăng nhập để tạo sự kiện');
+                navigate('/login');
+                return;
+            }
+            if (user?.role !== 'organizer' && user?.role !== 'admin') {
+                setError('Tài khoản của bạn không có quyền Organizer/Admin để tạo sự kiện');
+                navigate('/');
+                return;
+            }
 
-                const endTimeString = formData.dateEnd && formData.timeEnd
-                    ? new Date(`${formData.dateEnd}T${formData.timeEnd}:00`).toISOString()
-                    : undefined;
+            // 1. Gộp ngày và giờ thành chuẩn ISO String cho startTime
+            const startTimeString = formData.dateStart && formData.time 
+                ? new Date(`${formData.dateStart}T${formData.time}:00`).toISOString()
+                : new Date().toISOString();
 
-                // 2. Map dữ liệu form sang format của event-service
-                const newEventPayload = {
-                    title: formData.name,
-                    description: formData.description,
-                    category: formData.category,
-                    location: formData.venue,
-                    startTime: startTimeString,
-                    endTime: endTimeString,
-                };
+            const endTimeString = formData.dateEnd && formData.timeEnd
+                ? new Date(`${formData.dateEnd}T${formData.timeEnd}:00`).toISOString()
+                : undefined;
 
-                // 3. Gọi API tạo Event
-                const eventResponse = await EventAPI.createEvent(newEventPayload);
-                
-                // Lấy ID thật sự vừa được tạo từ MongoDB
-                const realEventId = eventResponse.data._id;
+            // 2. Map dữ liệu form sang format của event-service (including banners)
+            const newEventPayload = {
+                title: formData.name,
+                description: formData.description,
+                category: formData.category,
+                location: formData.venue,
+                startTime: startTimeString,
+                endTime: endTimeString,
+                banners: formData.banners.length > 0 ? formData.banners : undefined,
+            };
 
-                // 4. Create layout with ticket types
+            // 3. Gọi API tạo Event
+            const eventResponse = await EventAPI.createEvent(newEventPayload);
+            
+            // Lấy ID thật sự vừa được tạo từ MongoDB
+            const realEventId = eventResponse._id;
+
+            // 4. Create layout with ticket types
                 // Helper to generate UUID
                 const generateUUID = () => {
                     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -195,16 +328,15 @@ export const CreateEventPage: React.FC = () => {
                 });
 
                 navigate('/organizer/events');
-            } catch (err: any) {
-                console.error("Failed to create event:", err);
-                const errorMessage = err.response?.data?.error?.message 
-                                  || err.response?.data?.message 
-                                  || err.message 
-                                  || "Failed to create event";
-                setError(errorMessage);
-            } finally {
-                setIsSubmitting(false);
-            }
+        } catch (err: any) {
+            console.error("Failed to create event:", err);
+            const errorMessage = err.response?.data?.error?.message 
+                              || err.response?.data?.message 
+                              || err.message 
+                              || "Failed to create event";
+            setError(errorMessage);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -257,11 +389,14 @@ export const CreateEventPage: React.FC = () => {
                     {step === 1 && (
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2">Event Name *</label>
+                                <label className="block text-sm font-bold text-slate-300 mb-2">Event Name * <span className="text-xs text-slate-500">(min 5 characters)</span></label>
                                 <input
                                     type="text"
                                     value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, name: e.target.value });
+                                        setError(null);
+                                    }}
                                     className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6] focus:ring-2 focus:ring-[#8655f6]/20"
                                     placeholder="Enter event name"
                                 />
@@ -288,6 +423,58 @@ export const CreateEventPage: React.FC = () => {
                                     placeholder="Describe your event..."
                                 />
                             </div>
+
+                            {/* Banners Section */}
+                            <div className="border-t border-slate-700 pt-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <label className="block text-sm font-bold text-slate-300">Event Banners</label>
+                                    <button
+                                        onClick={addBanner}
+                                        className="text-xs px-3 py-1.5 bg-[#8655f6]/20 border border-[#8655f6]/50 text-[#a78bfa] rounded-lg hover:bg-[#8655f6]/30 transition-colors flex items-center gap-1"
+                                    >
+                                        <span className="material-symbols-outlined text-sm">add</span>
+                                        Add Banner
+                                    </button>
+                                </div>
+                                
+                                {formData.banners.map((banner, idx) => (
+                                    <div key={idx} className="bg-[#0f172a] rounded-lg border border-slate-700 p-4 mb-3">
+                                        <div className="flex gap-3">
+                                            <div className="flex-1">
+                                                <label className="block text-xs text-slate-500 mb-1">Banner Image URL</label>
+                                                <input
+                                                    type="url"
+                                                    placeholder="https://example.com/banner.jpg"
+                                                    value={banner.url}
+                                                    onChange={(e) => updateBanner(idx, 'url', e.target.value)}
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:border-[#8655f6]"
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="block text-xs text-slate-500 mb-1">Title (optional)</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Banner title"
+                                                    value={banner.title}
+                                                    onChange={(e) => updateBanner(idx, 'title', e.target.value)}
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:border-[#8655f6]"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => removeBanner(idx)}
+                                                className="self-end px-3 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">delete</span>
+                                            </button>
+                                        </div>
+                                        {banner.url && (
+                                            <div className="mt-2 text-xs text-slate-500">
+                                                <img src={banner.url} alt="preview" className="w-full h-24 object-cover rounded mt-1 opacity-60" onError={() => {}} />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -295,59 +482,83 @@ export const CreateEventPage: React.FC = () => {
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date Start</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date Start *</label>
                                     <input
                                         type="date"
                                         value={formData.dateStart}
-                                        onChange={(e) => setFormData({ ...formData, dateStart: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, dateStart: e.target.value });
+                                            setError(null);
+                                        }}
                                         className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time Start</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time Start *</label>
                                     <input
                                         type="time"
                                         value={formData.time}
-                                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, time: e.target.value });
+                                            setError(null);
+                                        }}
                                         className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date End</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date End *</label>
                                     <input
                                         type="date"
                                         value={formData.dateEnd}
-                                        onChange={(e) => setFormData({ ...formData, dateEnd: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, dateEnd: e.target.value });
+                                            setError(null);
+                                        }}
                                         className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time End</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time End *</label>
                                     <input
                                         type="time"
                                         value={formData.timeEnd}
-                                        onChange={(e) => setFormData({ ...formData, timeEnd: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, timeEnd: e.target.value });
+                                            setError(null);
+                                        }}
                                         className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     />
                                 </div>
                             </div>
+
+                            {/* Venue Input */}
                             <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2">Venue *</label>
+                                <label className="block text-sm font-bold text-slate-300 mb-2">Venue * {checkingAvailability && <span className="text-xs text-blue-400">(checking availability...)</span>}</label>
                                 <input
                                     type="text"
                                     value={formData.venue}
-                                    onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                                    className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, venue: e.target.value });
+                                        setError(null);
+                                    }}
+                                    className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6] placeholder-slate-600"
                                     placeholder="Enter venue name or address"
                                 />
                             </div>
+
+                            {/* Suggested Venues */}
                             <div className="bg-[#0f172a] rounded-xl p-4 border border-slate-700">
-                                <p className="text-sm text-slate-400 mb-3">Or select from popular venues:</p>
+                                <p className="text-sm text-slate-400 mb-3">
+                                    {loadingVenues ? '⏳ Loading suggested venues...' : '💡 Or select from popular venues:'}
+                                </p>
                                 <div className="flex flex-wrap gap-2">
-                                    {['Grand Arena', 'City Hall', 'Riverside Park', 'Convention Center'].map(venue => (
+                                    {suggestedVenues.map(venue => (
                                         <button
                                             key={venue}
-                                            onClick={() => setFormData({ ...formData, venue })}
+                                            onClick={() => {
+                                                setFormData({ ...formData, venue });
+                                                setError(null);
+                                            }}
                                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${formData.venue === venue
                                                 ? 'bg-[#8655f6] text-white'
                                                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -358,6 +569,40 @@ export const CreateEventPage: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Availability Status */}
+                            {venueAvailability && (
+                                <div className={`rounded-xl p-4 border flex items-start gap-3 ${
+                                    venueAvailability.available 
+                                        ? 'bg-emerald-500/10 border-emerald-500/20' 
+                                        : 'bg-red-500/10 border-red-500/20'
+                                }`}>
+                                    <span className={`material-symbols-outlined text-lg flex-shrink-0 mt-0.5 ${
+                                        venueAvailability.available ? 'text-emerald-400' : 'text-red-400'
+                                    }`}>
+                                        {venueAvailability.available ? 'check_circle' : 'error'}
+                                    </span>
+                                    <div>
+                                        <p className={`text-sm font-medium ${
+                                            venueAvailability.available ? 'text-emerald-400' : 'text-red-400'
+                                        }`}>
+                                            {venueAvailability.available 
+                                                ? '✓ Venue is available for this time!' 
+                                                : '✗ Venue is not available during this time'}
+                                        </p>
+                                        {!venueAvailability.available && venueAvailability.conflictingEvents?.length > 0 && (
+                                            <div className="mt-2 text-xs text-slate-300 space-y-1">
+                                                <p className="font-medium">Conflicting events:</p>
+                                                {venueAvailability.conflictingEvents.map((evt: any, idx: number) => (
+                                                    <p key={idx}>
+                                                        • {evt.title} ({new Date(evt.startTime).toLocaleTimeString()} - {new Date(evt.endTime).toLocaleTimeString()})
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -458,6 +703,12 @@ export const CreateEventPage: React.FC = () => {
                                             <span className="font-medium text-white">{formData.description.substring(0, 40) + (formData.description.length > 40 ? '...' : '')}</span>
                                         </div>
                                     )}
+                                    {formData.banners && formData.banners.length > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-400">Promotional Banners</span>
+                                            <span className="font-medium text-white">{formData.banners.length} image{formData.banners.length !== 1 ? 's' : ''}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -501,6 +752,34 @@ export const CreateEventPage: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Banners Summary */}
+                            {formData.banners && formData.banners.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-semibold text-slate-400 mb-3">Promotional Banners</h4>
+                                    <div className="bg-[#0f172a] rounded-xl p-4 border border-slate-700 space-y-2">
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-400">Total Banners</span>
+                                            <span className="font-bold text-white">{formData.banners.length}</span>
+                                        </div>
+                                        {formData.banners.map((banner, idx) => (
+                                            <div key={idx} className="bg-slate-800/50 rounded-lg p-2 flex items-center gap-3">
+                                                {banner.url && (
+                                                    <img 
+                                                        src={banner.url} 
+                                                        alt={banner.title || 'Banner'} 
+                                                        className="w-12 h-12 rounded object-cover"
+                                                    />
+                                                )}
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-slate-400">{banner.title || 'Untitled Banner'}</p>
+                                                    <p className="text-xs text-slate-500 truncate">{banner.url || 'No URL'}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {!error && (
                                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">

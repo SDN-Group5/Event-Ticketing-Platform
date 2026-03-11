@@ -112,6 +112,17 @@ export const PaymentSuccessPage: React.FC = () => {
         <p className="text-slate-400 text-lg">Chúc bạn có trải nghiệm tuyệt vời!</p>
       </div>
 
+      {/* Email Confirmation Message */}
+      <div className="relative z-10 mb-8 max-w-md w-full">
+        <div className="bg-gradient-to-r from-[#8655f6]/10 to-[#d946ef]/10 border border-[#8655f6]/30 rounded-xl p-4 flex items-start gap-3">
+          <span className="material-symbols-outlined text-[#8655f6] mt-0.5 flex-shrink-0">mail</span>
+          <div className="text-left">
+            <p className="text-sm font-semibold text-white">Xác nhận qua email</p>
+            <p className="text-xs text-gray-400 mt-1">Email xác nhận đã được gửi đến địa chỉ email của bạn. Vui lòng kiểm tra hộp thư (hoặc thư rác) để nhận vé.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Ticket Card */}
       <div className="w-full max-w-md bg-gradient-to-b from-[#1e293b]/80 to-[#0f172a]/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
         <div className="absolute top-2/3 left-0 -translate-x-1/2 w-8 h-8 bg-[#0f172a] rounded-full" />

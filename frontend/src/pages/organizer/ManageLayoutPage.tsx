@@ -69,6 +69,7 @@ export const ManageLayoutPage: React.FC = () => {
             try {
                 if (!eventId) return;
 
+                // Load layout
                 const layoutData = await LayoutAPI.getLayout(eventId);
                 const convertedZones = layoutData.zones as Zone[];
                 setZones(convertedZones);
@@ -81,17 +82,26 @@ export const ManageLayoutPage: React.FC = () => {
                 if (layoutData.canvasColor) {
                     setCanvasColor(layoutData.canvasColor);
                 }
-
-                // Load event
-                const eventData = await EventAPI.getEventById(eventId);
-                setEvent(eventData.data || eventData);
             } catch (err: any) {
                 console.error('Error loading layout:', err);
                 if (err.response?.status === 404) {
-                    showToast('No layout found - creating new', 'info');
+                    showToast('New layout created', 'info');
                     setZones([]);
                     setHistory([[]]);
+                } else {
+                    showToast('Failed to load layout', 'error');
                 }
+            }
+
+            // Load event separately
+            try {
+                if (!eventId) return;
+                const eventData = await EventAPI.getEventById(eventId);
+                setEvent(eventData);
+            } catch (err: any) {
+                console.error('Error loading event:', err);
+                showToast('Event not found', 'error');
+                setTimeout(() => navigate('/organizer'), 2000);
             } finally {
                 setLoading(false);
             }

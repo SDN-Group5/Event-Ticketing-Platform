@@ -46,6 +46,7 @@ export const organizerSidebarItems = [
     { name: 'My Events', icon: 'event_note', path: '/organizer/events' },
     { name: 'Create Event', icon: 'add_circle', path: '/organizer/create-event' },
     { name: 'Attendees', icon: 'group', path: '/organizer/attendees' },
+    { name: 'Orders', icon: 'receipt_long', path: '/organizer/orders' },
     { name: 'Vouchers', icon: 'card_giftcard', path: '/organizer/vouchers' },
     { name: 'Staff', icon: 'people', path: '/organizer/staff' },
     { name: 'Check-in', icon: 'qr_code_scanner', path: '/organizer/check-in' },

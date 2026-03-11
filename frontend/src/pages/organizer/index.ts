@@ -12,3 +12,4 @@ export { NotificationsPage } from './NotificationsPage';
 export { CheckInPage } from './CheckInPage';
 export { ManageLayoutPage } from './ManageLayoutPage';
 export { ManageTicketPage } from './ManageTicketPage';
+export { ManageOrdersPage } from './ManageOrdersPage';

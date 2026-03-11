@@ -44,9 +44,18 @@ export interface SeatsResponse {
     limit: number;
 }
 
-// Setup axios instance
+// Ưu tiên endpoint riêng cho seat (layout-service),
+// fallback về API gateway nếu không cấu hình.
+const API_BASE =
+    (import.meta as any).env.VITE_SEAT_API_URL ||
+    (import.meta as any).env.VITE_API_URL ||
+    'http://localhost:4000';
+
+const normalizedBase = String(API_BASE).replace(/\/+$/, '');
+const seatBaseUrl = normalizedBase.endsWith('/api/v1') ? normalizedBase : `${normalizedBase}/api/v1`;
+
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4002/api/v1',
+    baseURL: seatBaseUrl,
     headers: {
         'Content-Type': 'application/json',
     },

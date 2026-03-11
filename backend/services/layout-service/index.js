@@ -7,6 +7,7 @@ import express from 'express';
 import indexRoute from './src/routes/index.js';
 import { startSeatCleanupJob } from './src/jobs/seatCleanup.js';
 import { setIO } from './src/socket.js';
+import { connectRabbitMQ } from './src/config/rabbitmq.js'; // import rabiit mq
 
 import { engine } from 'express-handlebars';
 
@@ -38,7 +39,9 @@ app.set('view engine', 'ejs');
 app.set('views', './src/views');
 app.engine('.hbs', engine({ extname: '.hbs' }));
 
-connectMongoDB();
+connectMongoDB().then(() => {
+    connectRabbitMQ();
+});
 // startSeatCleanupJob(); // Disabled for testing payment-service order cleanup
 indexRoute(app);
 
@@ -58,6 +61,9 @@ io.on('connection', (socket) => {
 });
 
 server.listen(port, () => {
-    console.log(`Server is running on port http://localhost:${port}`);
+    console.log(`🪑 ============================================`);
+    console.log(`✅ layout-service dang chay tai port: ${port}`);
+    console.log(`🐰 RabbitMQ: Event-Driven consumer mode`);
     console.log(`🔌 WebSocket ready on same port`);
+    console.log(`🪑 ============================================`);
 });

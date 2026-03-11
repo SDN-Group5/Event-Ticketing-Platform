@@ -10,6 +10,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { connectDB } from './config/db';
+import { connectRabbitMQ } from './config/rabbitmq';
 import paymentRoutes from './routes/payment.routes';
 import { startOrderCleanupJob } from './jobs/orderCleanup';
 
@@ -47,10 +48,12 @@ app.use('/', paymentRoutes);
 
 const start = async () => {
   await connectDB();
+  await connectRabbitMQ();
   startOrderCleanupJob();
   app.listen(PORT, () => {
     console.log('💳 ============================================');
     console.log(`✅ payment-service đang chạy tại port: ${PORT}`);
+    console.log(`🐰 RabbitMQ: Event-Driven mode`);
     console.log(`🌐 Health: http://localhost:${PORT}/health`);
     console.log('💳 ============================================');
   });

@@ -25,6 +25,7 @@ export const ROUTES = {
   ORGANIZER_ADMIN: '/organizer/admin',
   CREATE_EVENT: '/organizer/create-event',
   ORGANIZER_EVENTS: '/organizer/events',
+  MANAGE_EVENT_TICKETS: '/organizer/events/:eventId/tickets',
   ATTENDEES: '/organizer/attendees',
   ORGANIZER_ANALYTICS: '/organizer/analytics',
   MANAGE_VOUCHERS: '/organizer/vouchers',

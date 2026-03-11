@@ -6,31 +6,17 @@ import type { Options } from 'http-proxy-middleware';
 // SERVICE URLS (từ env hoặc default)
 // ============================================
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4001';
-const EVENT_SERVICE_URL = process.env.EVENT_SERVICE_URL || 'http://localhost:4002';
-const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL || 'http://localhost:4003';
+const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL || 'http://localhost:4002';
+const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost:4003';
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:4004';
 
 // ============================================
 // PROXY OPTIONS
 // ============================================
-const applyPathRewrite = (
-  originalPath: string,
-  pathRewrite?: Record<string, string>
-): string => {
-  if (!pathRewrite) return originalPath;
-
-  let out = originalPath;
-  for (const [pattern, replacement] of Object.entries(pathRewrite)) {
-    out = out.replace(new RegExp(pattern), replacement);
-  }
-  return out;
-};
-
 const createProxy = (target: string, pathRewrite?: Record<string, string>): Options => ({
   target,
   changeOrigin: true,
   pathRewrite,
-
   /**
    * Tăng timeout để tránh gateway tự trả 408 trước khi service con xử lý xong.
    *  - timeout: thời gian chờ response từ upstream (ms)
@@ -51,15 +37,10 @@ const createProxy = (target: string, pathRewrite?: Record<string, string>): Opti
       });
     }
   },
-  onProxyReq: (proxyReq, req: any) => {
-    const originalUrl = (req as any).originalUrl || req.url || '';
-    const rawPath = (req as any).path || (req.url ? req.url.split('?')[0] : '') || '';
-    const rewrittenPath = applyPathRewrite(rawPath, pathRewrite);
-    console.log(`[proxy] ${req.method} ${originalUrl} -> ${target}${rewrittenPath}`);
-
+  onProxyReq: (proxyReq, req) => {
     // Forward cookies/headers nếu cần
-    if ((req as any).headers?.cookie) {
-      proxyReq.setHeader('Cookie', (req as any).headers.cookie);
+    if (req.headers.cookie) {
+      proxyReq.setHeader('Cookie', req.headers.cookie);
     }
   },
 } as Options);
@@ -78,8 +59,8 @@ export const setupRoutes = (app: Express) => {
       timestamp: new Date().toISOString(),
       downstream: {
         auth: AUTH_SERVICE_URL,
-        event: EVENT_SERVICE_URL,
         layout: LAYOUT_SERVICE_URL,
+        booking: BOOKING_SERVICE_URL,
         payment: PAYMENT_SERVICE_URL,
       },
     });
@@ -93,9 +74,11 @@ export const setupRoutes = (app: Express) => {
       endpoints: [
         '/health',
         '/api/auth/*',
-        '/api/events/*',
+        '/api/users/*',
         '/api/v1/layouts/*',
+        '/api/bookings/*',
         '/api/payments/*',
+
       ],
     });
   });
@@ -112,31 +95,20 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware(
       createProxy(AUTH_SERVICE_URL, {
         '^/api/auth': '',
-      })
+      }),
     )
   );
 
-  // Event Service: /api/events/*, /api/organizer/*, /api/admin/*
+  // User Service (Auth Service) - current user & admin user management
+  //  - FE:        /api/users/me, /api/users
+  //  - Gateway:   proxy nguyên prefix `/api/users` sang auth-service
+  //  - Upstream:  auth-service expose `/api/users/...` (xem user.routes.ts)
   app.use(
-    '/api/events',
-    createProxyMiddleware(createProxy(EVENT_SERVICE_URL))
+    '/api/users',
+    // Không cần pathRewrite, giữ nguyên `/api/users/...` cho auth-service
+    createProxyMiddleware(createProxy(AUTH_SERVICE_URL))
   );
-  app.use(
-    '/api/organizer',
-    createProxyMiddleware(
-      createProxy(EVENT_SERVICE_URL, {
-        '^/api/organizer': '/api/organizer',
-      })
-    )
-  );
-  app.use(
-    '/api/admin',
-    createProxyMiddleware(
-      createProxy(EVENT_SERVICE_URL, {
-        '^/api/admin': '/api/admin',
-      })
-    )
-  );
+
 
   // Layout Service
   app.use(
@@ -144,10 +116,43 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL))
   );
 
-  // Payment Service: /api/payments/*
+  // Seat & layout real-time API (zones, seats, reserve/purchase/release)
+  // Layout-service expose các route dưới prefix `/api/v1/...`
+  // nên gateway cần proxy luôn `/api/v1` sang layout-service.
+  // Lưu ý: khi mount tại '/api/v1', http-proxy-middleware sẽ bỏ prefix này
+  // trước khi forward. Vì layout-service cũng mong đợi prefix '/api/v1',
+  // ta cộng thêm '/api/v1' vào target URL để giữ nguyên path:
+  //   FE:        /api/v1/events/:eventId/seats
+  //   Gateway:   mount /api/v1  -> forward /events/:eventId/seats tới
+  //              target `${LAYOUT_SERVICE_URL}/api/v1`
+  //   Upstream:  /api/v1/events/:eventId/seats  (đúng với layout-service)
+  app.use(
+    '/api/v1',
+    createProxyMiddleware(createProxy(`${LAYOUT_SERVICE_URL}/api/v1`))
+  );
+
+  // Booking Service: /api/bookings/*, /api/customer/*
+  app.use(
+    '/api/bookings',
+    createProxyMiddleware(createProxy(BOOKING_SERVICE_URL))
+  );
+  app.use(
+    '/api/customer',
+    createProxyMiddleware(createProxy(BOOKING_SERVICE_URL))
+  );
+
+  // Payment Service: /api/payments/* — khi proxy gửi path tương đối (vd /create) thì thêm prefix /api/payments/
   app.use(
     '/api/payments',
-    createProxyMiddleware(createProxy(PAYMENT_SERVICE_URL))
+    createProxyMiddleware(
+      createProxy(PAYMENT_SERVICE_URL, { '^/(?!api/payments)': '/api/payments/' })
+    )
+  );
+
+  // Staff (check-in) -> Booking Service
+  app.use(
+    '/api/staff',
+    createProxyMiddleware(createProxy(BOOKING_SERVICE_URL))
   );
 
   // 404 handler

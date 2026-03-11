@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PaymentTimerProvider } from './contexts/PaymentTimerContext';
+import { ToastProvider } from './components/common/ToastProvider';
 import { FloatingPaymentTimer } from './components/payment/FloatingPaymentTimer';
 import type { UserRole } from '../../shared/type';
 import { ROUTES } from './constants/routes';
@@ -37,6 +38,8 @@ import { LoginPage, RegisterPage, OTPPage, ResetPasswordPage } from './pages/aut
 import {
   DashboardPage as OrganizerDashboard,
   CreateEventPage,
+  EditEventPage,
+  EventDetailPage,
   AttendeesPage,
   AnalyticsPage,
   EventsPage,
@@ -197,6 +200,22 @@ const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path="/organizer/events/:eventId"
+        element={
+          <ProtectedRoute allowedRoles={['organizer']}>
+            <OrganizerLayout title="Event Details"><EventDetailPage /></OrganizerLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/organizer/events/:eventId/edit"
+        element={
+          <ProtectedRoute allowedRoles={['organizer']}>
+            <OrganizerLayout title="Edit Event"><EditEventPage /></OrganizerLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path={ROUTES.MANAGE_VOUCHERS}
         element={
           <ProtectedRoute allowedRoles={['organizer']}>
@@ -349,8 +368,10 @@ const App: React.FC = () => {
       <Router>
         <AuthProvider>
           <PaymentTimerProvider>
-            <AppContent />
-            <FloatingPaymentTimer />
+            <ToastProvider>
+              <AppContent />
+              <FloatingPaymentTimer />
+            </ToastProvider>
           </PaymentTimerProvider>
         </AuthProvider>
       </Router>

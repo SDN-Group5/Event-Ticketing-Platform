@@ -79,33 +79,106 @@ export const CreateEventPage: React.FC = () => {
                 const realEventId = eventResponse.data._id;
 
                 // 4. Create layout with ticket types
+                // Helper to generate UUID
+                const generateUUID = () => {
+                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                        const r = Math.random() * 16 | 0;
+                        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    });
+                };
+
+                // Helper to calculate rows and seatsPerRow from quantity
+                const calculateSeatsLayout = (quantity: number) => {
+                    // Try to create a square-ish layout
+                    const rows = Math.ceil(Math.sqrt(quantity));
+                    const seatsPerRow = Math.ceil(quantity / rows);
+                    return { rows, seatsPerRow };
+                };
+
+                // Helper to generate zone position (fan layout)
+                const getZonePosition = (index: number, totalZones: number) => {
+                    const canvasWidth = 800;
+                    const canvasHeight = 600;
+                    const zoneWidth = 120;
+                    const zoneHeight = 100;
+                    
+                    if (totalZones === 1) {
+                        return { x: (canvasWidth - zoneWidth) / 2, y: (canvasHeight - zoneHeight) / 2 };
+                    } else if (totalZones === 2) {
+                        return {
+                            x: index === 0 ? 100 : 580,
+                            y: (canvasHeight - zoneHeight) / 2
+                        };
+                    } else {
+                        // 3 zones: top-left, top-right, bottom-center
+                        if (index === 0) return { x: 80, y: 80 };
+                        if (index === 1) return { x: 600, y: 80 };
+                        return { x: (canvasWidth - zoneWidth) / 2, y: 400 };
+                    }
+                };
+
                 const ticketZones = [];
+                let zoneIndex = 0;
+
                 if (ticketData.generalAdmission.enabled) {
+                    const { rows, seatsPerRow } = calculateSeatsLayout(ticketData.generalAdmission.quantity);
+                    const position = getZonePosition(zoneIndex, 
+                        [ticketData.generalAdmission.enabled, ticketData.vipAccess.enabled, ticketData.backstagePass.enabled].filter(Boolean).length
+                    );
                     ticketZones.push({
+                        id: generateUUID(),
                         name: 'General Admission',
+                        type: 'seats',
+                        position: { x: position.x, y: position.y },
+                        size: { width: 120, height: 100 },
                         color: '#3b82f6',
-                        capacity: ticketData.generalAdmission.quantity,
+                        rows,
+                        seatsPerRow,
                         price: ticketData.generalAdmission.price,
-                        type: 'general'
+                        rotation: 0
                     });
+                    zoneIndex++;
                 }
+
                 if (ticketData.vipAccess.enabled) {
+                    const { rows, seatsPerRow } = calculateSeatsLayout(ticketData.vipAccess.quantity);
+                    const position = getZonePosition(zoneIndex,
+                        [ticketData.generalAdmission.enabled, ticketData.vipAccess.enabled, ticketData.backstagePass.enabled].filter(Boolean).length
+                    );
                     ticketZones.push({
+                        id: generateUUID(),
                         name: 'VIP Access',
+                        type: 'seats',
+                        position: { x: position.x, y: position.y },
+                        size: { width: 120, height: 100 },
                         color: '#8655f6',
-                        capacity: ticketData.vipAccess.quantity,
+                        rows,
+                        seatsPerRow,
                         price: ticketData.vipAccess.price,
-                        type: 'vip'
+                        rotation: 0
                     });
+                    zoneIndex++;
                 }
+
                 if (ticketData.backstagePass.enabled) {
+                    const { rows, seatsPerRow } = calculateSeatsLayout(ticketData.backstagePass.quantity);
+                    const position = getZonePosition(zoneIndex,
+                        [ticketData.generalAdmission.enabled, ticketData.vipAccess.enabled, ticketData.backstagePass.enabled].filter(Boolean).length
+                    );
                     ticketZones.push({
+                        id: generateUUID(),
                         name: 'Backstage Pass',
+                        type: 'seats',
+                        position: { x: position.x, y: position.y },
+                        size: { width: 120, height: 100 },
                         color: '#ec4899',
-                        capacity: ticketData.backstagePass.quantity,
+                        rows,
+                        seatsPerRow,
                         price: ticketData.backstagePass.price,
-                        type: 'backstage'
+                        rotation: 0
                     });
+                    zoneIndex++;
                 }
 
                 // We don't need to create zones during event creation, pass empty array
@@ -121,7 +194,7 @@ export const CreateEventPage: React.FC = () => {
                     canvasColor: '#0f1219'
                 });
 
-                navigate('/organizer');
+                navigate('/organizer/events');
             } catch (err: any) {
                 console.error("Failed to create event:", err);
                 const errorMessage = err.response?.data?.error?.message 

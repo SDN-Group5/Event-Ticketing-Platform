@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { EventAPI } from '../../services/eventApiService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,16 +14,17 @@ interface OrganizerEvent {
   ticketsSold: number;
   totalCapacity: number;
   revenue: number;
-  status: 'draft' | 'published' | 'completed' | 'rejected';
+  status: 'draft' | 'published' | 'rejected';
   rejectionReason?: string;
 }
 
 export const EventsPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'draft' | 'published' | 'completed' | 'rejected'>('all');
+  const [filter, setFilter] = useState<'all' | 'draft' | 'published' | 'rejected'>('all');
 
   const sumSeatMetadata = (zones: LayoutZone[]) => {
     let totalCapacity = 0;
@@ -50,20 +51,21 @@ export const EventsPage: React.FC = () => {
 
   const mapLayoutToOrganizerEvent = (layout: EventLayout, eventStatus?: string, rejectionReason?: string): OrganizerEvent => {
     const { totalCapacity, ticketsSold, revenue } = sumSeatMetadata(layout.zones || []);
-    const eventDateMs = layout.eventDate ? new Date(layout.eventDate).getTime() : NaN;
     
-    let status: OrganizerEvent['status'] = 'published';
+    // Default to 'draft' for new events waiting admin approval
+    let status: OrganizerEvent['status'] = 'draft';
     
-    // Determine status from event data first, then fallback to date-based logic
-    if (eventStatus === 'draft') {
-      status = 'draft';
+    // Determine status from event data (from backend)
+    if (eventStatus === 'published') {
+      status = 'published';
     } else if (eventStatus === 'rejected') {
       status = 'rejected';
-    } else if (Number.isFinite(eventDateMs) && eventDateMs < Date.now()) {
-      status = 'completed';
-    } else if (eventStatus === 'published') {
-      status = 'published';
+    } else if (eventStatus === 'cancelled') {
+      status = 'rejected'; // Treat cancelled as rejected for UI
+    } else if (eventStatus === 'draft') {
+      status = 'draft';
     }
+    // If eventStatus is undefined, default to 'draft' (already set above)
 
     return {
       eventId: String(layout.eventId),
@@ -124,7 +126,7 @@ export const EventsPage: React.FC = () => {
     };
 
     fetchEvents();
-  }, [user?.id]);
+  }, [user?.id, location.pathname]);
 
   const filteredEvents = events.filter(event => {
     if (filter === 'all') return true;
@@ -137,8 +139,6 @@ export const EventsPage: React.FC = () => {
         return 'bg-yellow-500/20 text-yellow-400';
       case 'published':
         return 'bg-green-500/20 text-green-400';
-      case 'completed':
-        return 'bg-purple-500/20 text-purple-400';
       case 'rejected':
         return 'bg-red-500/20 text-red-400';
       default:
@@ -152,8 +152,6 @@ export const EventsPage: React.FC = () => {
         return 'edit';
       case 'published':
         return 'check_circle';
-      case 'completed':
-        return 'done_all';
       case 'rejected':
         return 'cancel';
       default:
@@ -189,7 +187,7 @@ export const EventsPage: React.FC = () => {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {(['all', 'draft', 'published', 'completed', 'rejected'] as const).map(status => (
+        {(['all', 'draft', 'published', 'rejected'] as const).map(status => (
           <button
             key={status}
             onClick={() => setFilter(status)}

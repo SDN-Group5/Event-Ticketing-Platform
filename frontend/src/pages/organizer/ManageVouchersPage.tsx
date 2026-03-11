@@ -5,6 +5,8 @@ import {
   VoucherDTO,
   VoucherInput,
 } from '../../services/voucherApiService';
+import ConfirmModal from '../../components/modals/ConfirmModal';
+import { useToast } from '../../components/common/ToastProvider';
 
 interface Voucher extends VoucherDTO {
   id: string;
@@ -23,11 +25,15 @@ interface VoucherFormState {
 
 export const ManageVouchersPage: React.FC = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [voucherToDelete, setVoucherToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [form, setForm] = useState<VoucherFormState>({
     code: '',
     description: '',
@@ -68,17 +74,27 @@ export const ManageVouchersPage: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (!user?.id) return;
-    if (!window.confirm('Bạn có chắc muốn xoá voucher này?')) return;
+    setVoucherToDelete(id);
+    setIsDeleteConfirmOpen(true);
+  };
 
-    (async () => {
-      try {
-        await OrganizerVoucherAPI.deleteVoucher(user.id, id);
-        setVouchers((prev) => prev.filter((v) => v.id !== id));
-      } catch (err) {
-        console.error('Error deleting voucher:', err);
-        setError('Xoá voucher thất bại');
-      }
-    })();
+  const confirmDelete = async () => {
+    if (!user?.id || !voucherToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await OrganizerVoucherAPI.deleteVoucher(user.id, voucherToDelete);
+      setVouchers((prev) => prev.filter((v) => v.id !== voucherToDelete));
+      showToast('Voucher deleted successfully', 'success');
+    } catch (err) {
+      console.error('Error deleting voucher:', err);
+      showToast('Xoá voucher thất bại', 'error');
+      setError('Xoá voucher thất bại');
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteConfirmOpen(false);
+      setVoucherToDelete(null);
+    }
   };
 
   const handleEdit = (voucher: Voucher) => {
@@ -550,6 +566,18 @@ export const ManageVouchersPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        title="Delete Voucher"
+        message="Are you sure you want to delete this voucher? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDangerous={true}
+        isLoading={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+      />
     </div>
   );
 };

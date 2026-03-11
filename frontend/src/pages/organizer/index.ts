@@ -10,5 +10,4 @@ export { ManageStaffPage } from './ManageStaffPage';
 export { StaffDetailPage } from './StaffDetailPage';
 export { NotificationsPage } from './NotificationsPage';
 export { CheckInPage } from './CheckInPage';
-export { ManageLayoutPage } from './ManageLayoutPage';
 export { ManageTicketPage } from './ManageTicketPage';

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
-import { EventAPI } from '../../services/eventApiService';
 import { SeatAPI } from '../../services/seatApiService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/common/ToastProvider';
@@ -66,14 +65,6 @@ export const ManageTicketPage: React.FC = () => {
         } catch (err) {
           console.error('Error fetching layout:', err);
           setError('Failed to load layout');
-        }
-
-        // Fetch event details
-        try {
-          const eventData = await EventAPI.getEventById(eventId);
-          setEvent(eventData.data || eventData);
-        } catch (err) {
-          console.error('Error fetching event:', err);
         }
       } finally {
         setLoading(false);
@@ -148,17 +139,8 @@ export const ManageTicketPage: React.FC = () => {
 
     setUploading(true);
     try {
-      // Save ticket image to event metadata
-      const eventData = {
-        ...event,
-        ticketImages: {
-          ...(event.ticketImages || {}),
-          [zoneId]: ticketImages[zoneId]
-        }
-      };
-
-      await EventAPI.updateEvent(eventId!, eventData);
-      showToast('Ticket image saved successfully', 'success');
+      // Feature disabled since EventService is removed
+      showToast('Saving ticket image is not supported in Layout mode yet', 'info');
       setEditingZoneId(null);
     } catch (err: any) {
       console.error('Error saving ticket image:', err);

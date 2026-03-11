@@ -6,7 +6,6 @@ import type { Options } from 'http-proxy-middleware';
 // SERVICE URLS (từ env hoặc default)
 // ============================================
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4001';
-const EVENT_SERVICE_URL = process.env.EVENT_SERVICE_URL || 'http://localhost:4002';
 const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL || 'http://localhost:4002';
 const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost:4003';
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:4004';
@@ -60,7 +59,6 @@ export const setupRoutes = (app: Express) => {
       timestamp: new Date().toISOString(),
       downstream: {
         auth: AUTH_SERVICE_URL,
-        event: EVENT_SERVICE_URL,
         layout: LAYOUT_SERVICE_URL,
         booking: BOOKING_SERVICE_URL,
         payment: PAYMENT_SERVICE_URL,
@@ -77,7 +75,6 @@ export const setupRoutes = (app: Express) => {
         '/health',
         '/api/auth/*',
         '/api/users/*',
-        '/api/events/*',
         '/api/v1/layouts/*',
         '/api/bookings/*',
         '/api/payments/*',
@@ -112,19 +109,6 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware(createProxy(AUTH_SERVICE_URL))
   );
 
-  // Event Service: /api/events/*, /api/organizer/*, /api/admin/*
-  app.use(
-    '/api/events',
-    createProxyMiddleware(createProxy(EVENT_SERVICE_URL))
-  );
-  app.use(
-    '/api/organizer',
-    createProxyMiddleware(createProxy(EVENT_SERVICE_URL))
-  );
-  app.use(
-    '/api/admin',
-    createProxyMiddleware(createProxy(EVENT_SERVICE_URL))
-  );
 
   // Layout Service
   app.use(

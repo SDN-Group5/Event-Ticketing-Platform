@@ -36,18 +36,23 @@ export const EventsPage: React.FC = () => {
     let revenue = 0;
 
     for (const z of zones || []) {
-      if (z.type !== 'seats') continue;
-      const meta = (z as any).seatMetadata as
-        | { totalSeats?: number; soldSeats?: number }
-        | undefined;
+      if (z.type === 'seats') {
+        const meta = (z as any).seatMetadata as
+          | { totalSeats?: number; soldSeats?: number }
+          | undefined;
 
-      const zoneTotal = meta?.totalSeats ?? 0;
-      const zoneSold = meta?.soldSeats ?? 0;
-      const price = typeof z.price === 'number' ? z.price : 0;
+        const zoneTotal = meta?.totalSeats ?? 0;
+        const zoneSold = meta?.soldSeats ?? 0;
+        const price = typeof z.price === 'number' ? z.price : 0;
 
-      totalCapacity += zoneTotal;
-      ticketsSold += zoneSold;
-      revenue += zoneSold * price;
+        totalCapacity += zoneTotal;
+        ticketsSold += zoneSold;
+        revenue += zoneSold * price;
+      } else if (z.type === 'standing') {
+        // For standing areas, calculate capacity from rows × seatsPerRow
+        const capacity = ((z as any).rows ?? 0) * ((z as any).seatsPerRow ?? 0);
+        totalCapacity += capacity;
+      }
     }
 
     return { totalCapacity, ticketsSold, revenue };

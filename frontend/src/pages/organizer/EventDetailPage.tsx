@@ -63,6 +63,10 @@ export const EventDetailPage: React.FC = () => {
                                 totalCapacity += meta?.totalSeats ?? 0;
                                 ticketsSold += meta?.soldSeats ?? 0;
                                 revenue += (meta?.soldSeats ?? 0) * (zone.price ?? 0);
+                            } else if (zone.type === 'standing') {
+                                // For standing areas, calculate capacity from rows × seatsPerRow
+                                const capacity = (zone.rows ?? 0) * (zone.seatsPerRow ?? 0);
+                                totalCapacity += capacity;
                             }
                         });
 

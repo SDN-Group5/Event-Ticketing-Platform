@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Gọi qua API Gateway (port 4000) thay vì trực tiếp events-service
-const EVENT_API_URL = 'http://localhost:4005/api/events'; 
+const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+const EVENT_API_URL = `${API_BASE}/api/events`; 
 
 // Hàm helper để tự động lấy token từ localStorage gán vào header
 const getAuthHeaders = () => {

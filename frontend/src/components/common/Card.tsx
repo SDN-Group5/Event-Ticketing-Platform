@@ -80,7 +80,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                         onClick={onBuyClick}
                         className="px-4 py-2 rounded-lg border border-[#8655f6] text-[#8655f6] font-bold hover:bg-[#8655f6] hover:text-white transition-all text-sm"
                     >
-                        Buy Ticket
+                        Mua vé
                     </button>
                 </div>
             </div>

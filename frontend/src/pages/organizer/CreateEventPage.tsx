@@ -10,8 +10,10 @@ export const CreateEventPage: React.FC = () => {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         name: '',
-        date: '',
+        dateStart: '',
+        dateEnd: '',
         time: '',
+        timeEnd: '',
         venue: '',
         description: '',
         category: 'music',
@@ -47,9 +49,13 @@ export const CreateEventPage: React.FC = () => {
                 }
 
                 // 1. Gộp ngày và giờ thành chuẩn ISO String cho startTime
-                const startTimeString = formData.date && formData.time 
-                    ? new Date(`${formData.date}T${formData.time}:00`).toISOString()
+                const startTimeString = formData.dateStart && formData.time 
+                    ? new Date(`${formData.dateStart}T${formData.time}:00`).toISOString()
                     : new Date().toISOString();
+
+                const endTimeString = formData.dateEnd && formData.timeEnd
+                    ? new Date(`${formData.dateEnd}T${formData.timeEnd}:00`).toISOString()
+                    : undefined;
 
                 // 2. Map dữ liệu form sang format của event-service
                 const newEventPayload = {
@@ -58,7 +64,7 @@ export const CreateEventPage: React.FC = () => {
                     category: formData.category,
                     location: formData.venue,
                     startTime: startTimeString,
-                    // endTime có thể để trống hoặc code thêm UI để chọn
+                    endTime: endTimeString,
                 };
 
                 // 3. Gọi API tạo Event
@@ -181,20 +187,38 @@ export const CreateEventPage: React.FC = () => {
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date *</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date Start</label>
                                     <input
                                         type="date"
-                                        value={formData.date}
-                                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                        value={formData.dateStart}
+                                        onChange={(e) => setFormData({ ...formData, dateStart: e.target.value })}
                                         className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time *</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time Start</label>
                                     <input
                                         type="time"
                                         value={formData.time}
                                         onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                                        className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date End</label>
+                                    <input
+                                        type="date"
+                                        value={formData.dateEnd}
+                                        onChange={(e) => setFormData({ ...formData, dateEnd: e.target.value })}
+                                        className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time End</label>
+                                    <input
+                                        type="time"
+                                        value={formData.timeEnd}
+                                        onChange={(e) => setFormData({ ...formData, timeEnd: e.target.value })}
                                         className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     />
                                 </div>
@@ -287,7 +311,8 @@ export const CreateEventPage: React.FC = () => {
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-slate-400">Date & Time</span>
-                                        <span className="font-medium text-white">{formData.date || 'Not set'} at {formData.time || 'Not set'}</span>
+                                        <span className="font-medium text-white">{formData.dateStart || 'Not set'} at {formData.time || 'Not set'}</span>
+                                        <span className="font-medium text-white">{formData.dateEnd || 'Not set'} at {formData.timeEnd || 'Not set'}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-slate-400">Venue</span>

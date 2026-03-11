@@ -10,11 +10,19 @@ const eventSchema = new mongoose.Schema({
   endTime: { type: Date },
   status: { 
     type: String, 
-    enum: ['draft', 'pending', 'approved', 'published', 'cancelled'], 
+    enum: ['draft', 'published', 'rejected', 'cancelled'], 
     default: 'draft' 
   },
   banners: [{ type: String }],
-  policies: { type: String }
+  policies: { type: String },
+  
+  // Admin Approval Fields
+  publishedBy: { type: String, default: null }, // Admin ID who published
+  publishedAt: { type: Date, default: null },
+  rejectedBy: { type: String, default: null }, // Admin ID who rejected
+  rejectedAt: { type: Date, default: null },
+  rejectionReason: { type: String, default: null },
+  
 }, { 
   timestamps: true 
 });

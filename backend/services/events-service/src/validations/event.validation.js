@@ -37,7 +37,7 @@ export const updateEventSchema = Joi.object({
     location: Joi.string(),
     startTime: Joi.date().iso().greater('now'),
     endTime: Joi.date().iso().greater(Joi.ref('startTime')),
-    status: Joi.string().valid('draft', 'pending', 'approved', 'published', 'cancelled'),
+    status: Joi.string().valid('draft', 'published', 'rejected', 'cancelled'),
     banners: Joi.array().items(Joi.string().uri()),
     policies: Joi.string().allow('', null)
 }).min(1); // Yêu cầu phải truyền lên ít nhất 1 trường để cập nhật

@@ -41,6 +41,210 @@ router.patch("/me", verifyToken, userController.updateCurrentUser);
 
 /**
  * @swagger
+ * /api/users/staff:
+ *   post:
+ *     summary: Create a new staff (Organizer only)
+ *     description: Organizer can create a new staff member for their organization
+ *     tags: [Staff Management]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - firstName
+ *               - lastName
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Staff created successfully
+ *       400:
+ *         description: Bad request or email already exists
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Not an organizer
+ */
+router.post(
+  "/staff",
+  verifyToken,
+  roleCheck(["organizer"]),
+  userController.createStaff
+);
+
+/**
+ * @swagger
+ * /api/users/staff:
+ *   get:
+ *     summary: Get all staff (Organizer only)
+ *     description: Organizer can retrieve all their staff members with pagination
+ *     tags: [Staff Management]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: number
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *           default: 10
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *           enum: [true, false]
+ *     responses:
+ *       200:
+ *         description: List of staff retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Not an organizer
+ */
+router.get(
+  "/staff",
+  verifyToken,
+  roleCheck(["organizer"]),
+  userController.getStaffList
+);
+
+/**
+ * @swagger
+ * /api/users/staff/{staffId}:
+ *   get:
+ *     summary: Get staff by ID (Organizer only)
+ *     description: Organizer can retrieve details of a specific staff member
+ *     tags: [Staff Management]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: staffId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Staff information retrieved successfully
+ *       403:
+ *         description: Forbidden - Not authorized to access this staff
+ *       404:
+ *         description: Staff not found
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  "/staff/:staffId",
+  verifyToken,
+  roleCheck(["organizer"]),
+  userController.getStaffById
+);
+
+/**
+ * @swagger
+ * /api/users/staff/{staffId}:
+ *   patch:
+ *     summary: Update staff information (Organizer only)
+ *     description: Organizer can update a staff member's information
+ *     tags: [Staff Management]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: staffId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Staff updated successfully
+ *       400:
+ *         description: Bad request
+ *       403:
+ *         description: Forbidden - Not authorized to update this staff
+ *       404:
+ *         description: Staff not found
+ *       401:
+ *         description: Unauthorized
+ */
+router.patch(
+  "/staff/:staffId",
+  verifyToken,
+  roleCheck(["organizer"]),
+  userController.updateStaff
+);
+
+/**
+ * @swagger
+ * /api/users/staff/{staffId}:
+ *   delete:
+ *     summary: Delete staff (Organizer only)
+ *     description: Organizer can delete a staff member from their organization
+ *     tags: [Staff Management]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: staffId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Staff deleted successfully
+ *       403:
+ *         description: Forbidden - Not authorized to delete this staff
+ *       404:
+ *         description: Staff not found
+ *       401:
+ *         description: Unauthorized
+ */
+router.delete(
+  "/staff/:staffId",
+  verifyToken,
+  roleCheck(["organizer"]),
+  userController.deleteStaff
+);
+
+/**
+ * @swagger
  * /api/users:
  *   get:
  *     summary: Get all users (Admin only)

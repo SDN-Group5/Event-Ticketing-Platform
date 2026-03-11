@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const EVENTS_API_URL = 'http://localhost:4005/api/events';
+const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+const EVENTS_API_URL = `${API_BASE}/api/events`;
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem('auth_token');

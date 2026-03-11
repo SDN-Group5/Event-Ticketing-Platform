@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:4005/api/analytics';
+const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = `${API_BASE}/api/analytics`;
 
 interface RevenueData {
   month: string;

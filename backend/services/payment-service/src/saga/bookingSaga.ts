@@ -17,6 +17,7 @@ export interface BookingContext {
   commissionRate: number;
 
   // Populated by steps
+  voucherTicketCount?: number;
   subtotal?: number;
   totalAmount?: number;
   voucherDiscount?: number;
@@ -44,7 +45,7 @@ const cleanupStep: SagaStep<BookingContext> = {
   },
 };
 
-const validateVoucherStep: SagaStep<BookingContext> = {
+export const validateVoucherStep: SagaStep<BookingContext> = {
   name: 'validate-voucher',
   async execute(ctx) {
     ctx.subtotal = ctx.items.reduce(
@@ -53,6 +54,11 @@ const validateVoucherStep: SagaStep<BookingContext> = {
     );
     ctx.totalAmount = ctx.subtotal;
     ctx.voucherDiscount = 0;
+    const totalTickets = ctx.items.reduce(
+      (sum: number, item: any) => sum + (item.quantity || 1),
+      0,
+    );
+    ctx.voucherTicketCount = totalTickets;
 
     if (!ctx.rawVoucherCode) return ctx;
 
@@ -67,7 +73,7 @@ const validateVoucherStep: SagaStep<BookingContext> = {
 
     if (!voucher) throw new Error('Ma voucher khong hop le hoac khong ton tai');
     if (voucher.endDate && voucher.endDate < now) throw new Error('Ma voucher da het han');
-    if (voucher.maxUses && voucher.usedCount >= voucher.maxUses)
+    if (voucher.maxUses && voucher.usedCount + totalTickets > voucher.maxUses)
       throw new Error('Ma voucher da su dung toi da');
     if (voucher.minimumPrice && ctx.subtotal! < voucher.minimumPrice)
       throw new Error(`Don hang phai toi thieu ${voucher.minimumPrice} de dung ma nay`);
@@ -91,7 +97,7 @@ const validateVoucherStep: SagaStep<BookingContext> = {
     ctx.voucherId = voucher._id.toString();
     ctx.voucherDoc = voucher;
 
-    voucher.usedCount += 1;
+    voucher.usedCount += totalTickets;
     await voucher.save();
 
     return ctx;
@@ -99,7 +105,8 @@ const validateVoucherStep: SagaStep<BookingContext> = {
   async compensate(ctx) {
     if (ctx.voucherDoc) {
       try {
-        ctx.voucherDoc.usedCount = Math.max(0, ctx.voucherDoc.usedCount - 1);
+        const ticketCount = ctx.voucherTicketCount || 1;
+        ctx.voucherDoc.usedCount = Math.max(0, ctx.voucherDoc.usedCount - ticketCount);
         await ctx.voucherDoc.save();
       } catch (e: any) {
         console.warn('[BookingSaga] Compensate voucher failed:', e?.message);

@@ -15,6 +15,7 @@ import {
   createVoucher,
   updateVoucher,
   deleteVoucher,
+  previewVoucher,
 } from '../controllers/voucher.controller';
 
 const router = Router();
@@ -39,6 +40,9 @@ router.post('/cancel/:orderCode', cancelPayment);
 
 // Huỷ đơn đã thanh toán nhưng cấp voucher 50% thay vì hoàn tiền
 router.post('/cancel-with-voucher/:orderCode', cancelPaidOrderWithVoucher);
+
+// Preview voucher cho khách trước khi tạo đơn
+router.post('/vouchers/preview', previewVoucher);
 
 // ================== VOUCHERS (ORGANIZER) ==================
 // Lấy danh sách voucher của organizer hiện tại

@@ -318,16 +318,14 @@ export const ManageVouchersPage: React.FC = () => {
                       type="button"
                       onClick={() => handleToggleStatus(voucher)}
                       disabled={voucher.status === 'expired' || togglingId === voucher.id}
-                      className={`w-12 h-6 rounded-full flex items-center px-1 transition-all ${
-                        voucher.status === 'active'
+                      className={`w-12 h-6 rounded-full flex items-center px-1 transition-all ${voucher.status === 'active'
                           ? 'bg-emerald-500/80'
                           : 'bg-gray-500/70'
-                      } ${voucher.status === 'expired' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                        } ${voucher.status === 'expired' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
                       <span
-                        className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-                          voucher.status === 'active' ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                        className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${voucher.status === 'active' ? 'translate-x-5' : 'translate-x-0'
+                          }`}
                       />
                     </button>
                   </div>
@@ -551,8 +549,8 @@ export const ManageVouchersPage: React.FC = () => {
                 {saving
                   ? 'Saving...'
                   : editingVoucher
-                  ? 'Update'
-                  : 'Create'}
+                    ? 'Update'
+                    : 'Create'}
               </button>
             </div>
           </div>

@@ -14,8 +14,18 @@ import { engine } from 'express-handlebars';
 const app = express();
 const port = config.port;
 
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    process.env.FRONTEND_URL,
+].filter(Boolean);
+const isAllowedOrigin = (origin) =>
+    !origin || allowedOrigins.includes(origin) || /railway\.app/.test(origin);
 const corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: (origin, callback) => {
+        callback(null, isAllowedOrigin(origin));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']

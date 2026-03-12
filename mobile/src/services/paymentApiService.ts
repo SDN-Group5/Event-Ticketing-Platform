@@ -1,4 +1,13 @@
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+// Base URL must NOT include path - only protocol + host (prevents path duplication on Railway)
+function getBaseUrl(): string {
+  const raw = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return raw;
+  }
+}
+const API_BASE_URL = getBaseUrl();
 
 export type PaymentCreateItem = {
   zoneName: string;

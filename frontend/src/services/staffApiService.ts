@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const STAFF_API_URL = 'http://localhost:4001/api/users/staff';
+const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+const STAFF_API_URL = `${API_BASE}/api/users/staff`;
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem('auth_token');

@@ -15,6 +15,19 @@ export interface User {
     avatar?: string | null;
 }
 
+// Helper để trích xuất thông báo lỗi an toàn (tránh render array/object gây crash React)
+const extractErrorMessage = (message: any, defaultMsg: string): string => {
+    if (!message) return defaultMsg;
+    if (typeof message === 'string') return message;
+    if (Array.isArray(message)) {
+        return message.map(m => m.msg || m.message || (typeof m === 'string' ? m : JSON.stringify(m))).join(', ');
+    }
+    if (typeof message === 'object') {
+        return message.msg || message.message || JSON.stringify(message);
+    }
+    return String(message);
+};
+
 
 // Auth context type
 interface AuthContextType {
@@ -118,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data?.message || 'Đăng nhập thất bại');
+                setError(extractErrorMessage(data?.message, 'Đăng nhập thất bại'));
                 return null;
             }
 
@@ -168,7 +181,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data?.message || 'Đăng ký thất bại');
+                setError(extractErrorMessage(data?.message, 'Đăng ký thất bại'));
                 return false;
             }
 
@@ -199,7 +212,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data?.message || 'Xác thực email thất bại');
+                setError(extractErrorMessage(data?.message, 'Xác thực email thất bại'));
                 return false;
             }
 
@@ -230,7 +243,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data?.message || 'Gửi lại mã thất bại');
+                setError(extractErrorMessage(data?.message, 'Gửi lại mã thất bại'));
                 return false;
             }
 
@@ -261,7 +274,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data?.message || 'Yêu cầu đặt lại mật khẩu thất bại');
+                setError(extractErrorMessage(data?.message, 'Yêu cầu đặt lại mật khẩu thất bại'));
                 return false;
             }
 
@@ -292,7 +305,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data?.message || 'Mã xác thực không hợp lệ');
+                setError(extractErrorMessage(data?.message, 'Mã xác thực không hợp lệ'));
                 return false;
             }
 
@@ -323,7 +336,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data?.message || 'Đặt lại mật khẩu thất bại');
+                setError(extractErrorMessage(data?.message, 'Đặt lại mật khẩu thất bại'));
                 return false;
             }
 
@@ -355,7 +368,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data?.message || 'Đăng nhập Google thất bại');
+                setError(extractErrorMessage(data?.message, 'Đăng nhập Google thất bại'));
                 return null;
             }
 

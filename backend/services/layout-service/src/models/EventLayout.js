@@ -154,6 +154,22 @@ const eventLayoutSchema = new mongoose.Schema({
         type: Number,
         required: true,
         default: 1
+    },
+    status: {
+        type: String,
+        enum: ['draft', 'published', 'rejected', 'completed'],
+        default: 'draft'
+    },
+    rejectionReason: {
+        type: String,
+        maxlength: 500
+    },
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    approvedAt: {
+        type: Date
     }
 }, {
     timestamps: true  // Automatically adds createdAt and updatedAt
@@ -173,8 +189,10 @@ eventLayoutSchema.pre('save', async function () {
 });
 
 // Increment version on update
-eventLayoutSchema.pre('findOneAndUpdate', async function () {
-    this.update({}, { $inc: { version: 1 } });
+eventLayoutSchema.pre('findOneAndUpdate', function () {
+    // In Mongoose query middleware, `this` là Query instance
+    // dùng this.set() để merge update hiện tại với $inc version
+    this.set({ $inc: { version: 1 } });
 });
 
 const EventLayout = mongoose.model('EventLayout', eventLayoutSchema);

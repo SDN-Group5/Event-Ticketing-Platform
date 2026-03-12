@@ -123,6 +123,23 @@ export const setupRoutes = (app: Express) => {
     createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL))
   );
 
+  // Static uploads (event banners) served from layout-service
+  app.use(
+    '/uploads',
+    createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL))
+  );
+
+  // Event Approval Service (Admin) -> layout-service
+  app.use(
+    '/api/events',
+    // Giữ nguyên prefix `/api/events` khi forward sang layout-service
+    // FE:        /api/events/admin/pending
+    // Gateway:   mount /api/events -> forward `/admin/pending` tới
+    //            target `${LAYOUT_SERVICE_URL}/api/events`
+    // Upstream:  /api/events/admin/pending (đúng với layout-service)
+    createProxyMiddleware(createProxy(`${LAYOUT_SERVICE_URL}/api/events`))
+  );
+
   // Seat & layout real-time API (zones, seats, reserve/purchase/release)
   // Layout-service expose các route dưới prefix `/api/v1/...`
   // nên gateway cần proxy luôn `/api/v1` sang layout-service.

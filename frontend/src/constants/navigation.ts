@@ -23,7 +23,6 @@ export const navItems: NavItem[] = [
     { name: 'Analytics', screen: 'OrganizerAnalytics', icon: 'insights', category: 'Organizer' },
 
     { name: 'Payouts', screen: 'AdminPayouts', icon: 'payments', category: 'Admin' },
-    { name: 'Queue', screen: 'AdminEventQueue', icon: 'queue', category: 'Admin' },
     { name: 'Users', screen: 'AdminUsers', icon: 'manage_accounts', category: 'Admin' },
     { name: 'Editor', screen: 'LayoutEditor', icon: 'edit_square', category: 'Admin' },
 ];
@@ -31,7 +30,6 @@ export const navItems: NavItem[] = [
 // Sidebar items for Admin
 export const adminSidebarItems = [
     { name: 'Dashboard', icon: 'dashboard', path: '/admin/payouts' },
-    { name: 'Event Queue', icon: 'inbox', path: '/admin/events' },
     { name: 'Organizers', icon: 'group', path: '/admin/users' },
     { name: 'Event Approvals', icon: 'check_circle', path: '/admin/event-approvals' },
     { name: 'Refund Requests', icon: 'undo', path: '/admin/refund-requests' },

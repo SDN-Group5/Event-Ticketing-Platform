@@ -122,6 +122,18 @@ export const createVoucher = async (req: Request, res: Response) => {
       });
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (endDate) {
+      const end = new Date(endDate);
+      if (end < today) {
+        return res.status(400).json({
+          success: false,
+          message: 'Expiry date không được ở trong quá khứ',
+        });
+      }
+    }
+
     const voucher = await Voucher.create({
       code,
       description,
@@ -146,6 +158,122 @@ export const createVoucher = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: err?.message || 'Lỗi tạo voucher',
+    });
+  }
+};
+
+/**
+ * POST /api/payments/vouchers/preview
+ * Preview giảm giá cho khách trước khi tạo đơn (không tăng usedCount)
+ */
+export const previewVoucher = async (req: Request, res: Response) => {
+  try {
+    const { items, voucherCode, eventId, userId } = req.body as {
+      items?: { price: number; quantity?: number }[];
+      voucherCode?: string;
+      eventId?: string;
+      userId?: string;
+    };
+
+    if (!items || !items.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Thiếu danh sách vé (items)',
+      });
+    }
+
+    const subtotal = items.reduce(
+      (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1),
+      0,
+    );
+
+    if (!voucherCode) {
+      return res.json({
+        success: true,
+        data: {
+          subtotal,
+          voucherDiscount: 0,
+          totalAmount: subtotal,
+          voucherCode: null,
+        },
+      });
+    }
+
+    const normalizedCode = String(voucherCode).trim().toUpperCase();
+    const totalTickets = items.reduce(
+      (sum, item) => sum + Number(item.quantity || 1),
+      0,
+    );
+    const now = new Date();
+
+    const voucher = await Voucher.findOne({
+      code: normalizedCode,
+      status: 'active',
+      $or: [{ startDate: { $exists: false } }, { startDate: { $lte: now } }],
+    });
+
+    if (!voucher) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ma voucher khong hop le hoac khong ton tai',
+      });
+    }
+    if (voucher.endDate && voucher.endDate < now) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ma voucher da het han',
+      });
+    }
+    if (voucher.maxUses && voucher.usedCount + totalTickets > voucher.maxUses) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ma voucher da su dung toi da',
+      });
+    }
+    if (voucher.minimumPrice && subtotal < voucher.minimumPrice) {
+      return res.status(400).json({
+        success: false,
+        message: `Don hang phai toi thieu ${voucher.minimumPrice} de dung ma nay`,
+      });
+    }
+    if (voucher.eventId && eventId && voucher.eventId !== eventId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ma voucher khong ap dung cho su kien nay',
+      });
+    }
+    if (voucher.userId && userId && voucher.userId !== userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ma voucher nay chi ap dung cho tai khoan da duoc cap',
+      });
+    }
+
+    let discount = 0;
+    if (voucher.discountType === 'percentage') {
+      discount = Math.floor(
+        (subtotal * Number(voucher.discountValue || 0)) / 100,
+      );
+    } else {
+      discount = Number(voucher.discountValue || 0);
+    }
+    if (discount < 0) discount = 0;
+    if (discount > subtotal) discount = subtotal;
+
+    return res.json({
+      success: true,
+      data: {
+        subtotal,
+        voucherDiscount: discount,
+        totalAmount: subtotal - discount,
+        voucherCode: normalizedCode,
+      },
+    });
+  } catch (err: any) {
+    console.error('[previewVoucher] Error:', err);
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Lỗi preview voucher',
     });
   }
 };
@@ -229,6 +357,17 @@ export const updateVoucher = async (req: Request, res: Response) => {
     }
 
     if (endDate !== undefined) {
+      if (endDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        if (end < today) {
+          return res.status(400).json({
+            success: false,
+            message: 'Expiry date không được ở trong quá khứ',
+          });
+        }
+      }
       (voucher as any).endDate = endDate ? new Date(endDate) : undefined;
     }
 

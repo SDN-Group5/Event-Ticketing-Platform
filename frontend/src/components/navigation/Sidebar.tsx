@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarItem {
     name: string;
@@ -122,6 +123,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     );
                 })}
             </nav>
+
+            {/* Logout Footer - Only for Organizer */}
+            {variant === 'organizer' && <LogoutFooter isCollapsed={isCollapsed} />}
         </aside>
     );
 };
+
+interface LogoutFooterProps {
+    isCollapsed: boolean;
+}
+
+const LogoutFooter: React.FC<LogoutFooterProps> = ({ isCollapsed }) => {
+    const navigate = useNavigate();
+    const { logout } = useAuth();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
+    return (
+        <div className="border-t border-[#342f42] p-3 mt-auto">
+            <button
+                onClick={handleLogout}
+                className={`
+                    w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
+                    text-red-500 hover:bg-red-500/10 hover:text-red-400 group relative
+                    ${isCollapsed ? 'justify-center' : ''}
+                `}
+                title="Logout"
+            >
+                <span className={`material-symbols-outlined shrink-0 ${isCollapsed ? 'text-2xl' : ''}`}>
+                    logout
+                </span>
+
+                {!isCollapsed && (
+                    <span className="text-sm font-medium flex-1 truncate">Logout</span>
+                )}
+
+                {/* Tooltip for collapsed mode */}
+                {isCollapsed && (
+                    <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
+                        Logout
+                    </div>
+                )}
+            </button>
+        </div>
+    );
+};
+

@@ -321,3 +321,35 @@ export const deleteStaff = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * GET /api/users/:userId
+ * Public endpoint để lấy thông tin user bằng ID (dùng cho service-to-service calls)
+ * Không yêu cầu authentication, nhưng chỉ trả về thông tin cơ bản
+ */
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    const user = await User.findById(userId).select("-password -emailVerificationCode -passwordResetCode");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error: any) {
+    console.error("❌ Lỗi getUserById:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong",
+    });
+  }
+};

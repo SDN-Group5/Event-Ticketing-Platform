@@ -30,6 +30,7 @@ export const ROUTES = {
   ORGANIZER_ANALYTICS: '/organizer/analytics',
   MANAGE_VOUCHERS: '/organizer/vouchers',
   MANAGE_STAFF: '/organizer/staff',
+  MANAGE_ORDERS: '/organizer/orders',
   NOTIFICATIONS: '/organizer/notifications',
   CHECK_IN: '/organizer/check-in',
   STAGE_BUILDER: '/organizer/stage-builder',

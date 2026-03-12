@@ -1,9 +1,20 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { Stage3D } from './Stage3D';
 import { Zone3D } from './Zone3D';
+import { InstancedPeople, PersonInstanceData } from './InstancedPeople';
+import {
+    SCALE_FACTOR_3D,
+    SEAT_SPACING_3D,
+    ROW_SPACING_3D,
+} from '../../constants/layoutConstants';
+
+// Use shared constants for consistent 2D-3D mapping
+const SCALE_FACTOR = SCALE_FACTOR_3D;
+const SEAT_SPACING = SEAT_SPACING_3D;
+const ROW_SPACING = ROW_SPACING_3D;
 
 interface Zone {
     id: string;
@@ -16,6 +27,7 @@ interface Zone {
     position?: { x: number; y: number };
     size?: { width: number; height: number };
     rotation?: number;
+    elevation?: number;
 }
 
 interface Stage {
@@ -64,7 +76,7 @@ interface CameraControllerProps {
 }
 
 // Scale factor for converting 2D to 3D coordinates
-const SCALE_FACTOR = 0.08;
+// Scale factor for converting 2D to 3D coordinates (handled by shared constants above)
 
 // Free look controls - WASD movement + mouse rotation (no orbit pivot)
 function FreeLookControls({ enabled }: { enabled: boolean }) {
@@ -399,6 +411,7 @@ function VenueScene({
     canvasWidth = 800,
     canvasHeight = 600,
     canvasColor = '#1a1a1a',
+    allPeople = [],
 }: {
     zones: Zone[];
     stages: Stage[];
@@ -417,6 +430,7 @@ function VenueScene({
     canvasWidth?: number;
     canvasHeight?: number;
     canvasColor?: string;
+    allPeople?: PersonInstanceData[];
 }) {
     // Calculate ground plane dimensions based on canvas size
     const groundWidth = canvasWidth * SCALE_FACTOR;
@@ -547,6 +561,9 @@ function VenueScene({
 
             {/* Free look controls - WASD + mouse rotation */}
             <FreeLookControls enabled={!firstPersonMode} />
+
+            {/* BATTERIES INCLUDED: All People across all zones */}
+            <InstancedPeople people={allPeople} />
         </>
     );
 }
@@ -608,6 +625,68 @@ export function Venue3DViewer({
     const [isCinematic, setIsCinematic] = useState(cinematicModeFromProps ?? false);
     const [isDayMode, setIsDayMode] = useState(daylightFromProps ?? false);
     const [showPeople, setShowPeople] = useState(showPeopleFromProps ?? false);
+
+    // Aggregated people calculation
+    const allPeople = useMemo(() => {
+        if (!showPeople) return [];
+        const people: PersonInstanceData[] = [];
+
+        zones.forEach(zone => {
+            const isStanding = zone.type === 'standing';
+            const baseElevation = zone.elevation || 0;
+            const rotationRad = (zone.rotation || 0) * Math.PI / 180;
+            
+            const baseX = zone.position ? (zone.position.x + (isStanding ? (zone.size?.width || 100) / 2 : (zone.seatsPerRow * SEAT_SPACING_3D) / 2 / SCALE_FACTOR) - canvasWidth / 2) * SCALE_FACTOR : 0;
+            const baseZ = zone.position ? (zone.position.y + (isStanding ? (zone.size?.height || 60) / 2 : (zone.rows * ROW_SPACING_3D) / 2 / SCALE_FACTOR)) * SCALE_FACTOR : 8;
+
+            if (isStanding) {
+                const zoneWidth = (zone.size?.width || 100) * SCALE_FACTOR;
+                const zoneDepth = (zone.size?.height || 60) * SCALE_FACTOR;
+                const personCount = 7 + (zone.name.length % 2);
+                
+                for (let i = 0; i < personCount; i++) {
+                    const seed = i * 123.45 + (zone.id.charCodeAt(0) || 0);
+                    const randX = (Math.sin(seed) * 0.5 + 0.5) * (zoneWidth - 2) - (zoneWidth - 2) / 2;
+                    const randZ = (Math.cos(seed * 1.5) * 0.5 + 0.5) * (zoneDepth - 2) - (zoneDepth - 2) / 2;
+                    
+                    // Rotate
+                    const rotatedX = randX * Math.cos(-rotationRad) - randZ * Math.sin(-rotationRad);
+                    const rotatedZ = randX * Math.sin(-rotationRad) + randZ * Math.cos(-rotationRad);
+
+                    const shirtColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                    people.push({
+                        id: `${zone.id}-standing-${i}`,
+                        position: [baseX + rotatedX, baseElevation, baseZ + rotatedZ],
+                        color: shirtColors[i % shirtColors.length],
+                        pose: 'standing'
+                    });
+                }
+            } else {
+                for (let row = 0; row < zone.rows; row++) {
+                    for (let seat = 0; seat < zone.seatsPerRow; seat++) {
+                        const seatId = `${zone.id}-R${row + 1}-S${seat + 1}`;
+                        if (bookedSeats.includes(seatId)) {
+                            const x = (seat - (zone.seatsPerRow - 1) / 2) * SEAT_SPACING_3D;
+                            const z = row * ROW_SPACING_3D - (zone.rows * ROW_SPACING_3D) / 2 + ROW_SPACING_3D / 2;
+                            const y = baseElevation + row * 0.2 + 0.2; 
+
+                            const rotatedX = x * Math.cos(-rotationRad) - z * Math.sin(-rotationRad);
+                            const rotatedZ = x * Math.sin(-rotationRad) + z * Math.cos(-rotationRad);
+
+                            const shirtColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                            people.push({
+                                id: `${seatId}-person`,
+                                position: [baseX + rotatedX, y, baseZ + rotatedZ],
+                                color: shirtColors[(row + seat) % shirtColors.length],
+                                pose: 'sitting'
+                            });
+                        }
+                    }
+                }
+            }
+        });
+        return people;
+    }, [zones, bookedSeats, showPeople, canvasWidth]);
 
     // Sync with props when they change
     useEffect(() => {
@@ -725,6 +804,7 @@ export function Venue3DViewer({
                     onFirstPersonReady={() => setFirstPersonReady(true)}
                     isDayMode={isDayMode}
                     showPeople={showPeople}
+                    allPeople={allPeople}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
                     canvasColor={canvasColor}

@@ -292,4 +292,25 @@ router.get("/", verifyToken, roleCheck(["admin"]), async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/users/{userId}:
+ *   get:
+ *     summary: Get user by ID (Public endpoint for service communication)
+ *     description: Fetch basic user information by ID without authentication (email, name, phone, etc.)
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User information retrieved successfully
+ *       404:
+ *         description: User not found
+ */
+router.get("/:userId", userController.getUserById);
+
 export default router;

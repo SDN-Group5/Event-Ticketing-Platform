@@ -128,8 +128,9 @@ export const NavbarSearch: React.FC<{
   };
 
   return (
-    <div ref={rootRef} className="relative w-full">
+    <div ref={rootRef} className="relative w-full ">
       <SearchInput
+        className="w-full"
         placeholder="Tìm sự kiện, địa điểm..."
         value={query}
         onChange={(v) => {
@@ -147,7 +148,6 @@ export const NavbarSearch: React.FC<{
             submitToSearchPage();
           }
         }}
-        className="w-full"
       />
 
       {open && (
@@ -158,6 +158,8 @@ export const NavbarSearch: React.FC<{
             // Center the panel under input, but keep inside viewport
             'left-1/2 -translate-x-1/2',
             'w-[min(920px,calc(100vw-1.5rem))]',
+            // Full-height feel (fit within viewport under navbar)
+            'max-h-[calc(100vh-96px)]',
             'rounded-3xl border border-white/10',
             'bg-[#120d1e]/80 backdrop-blur-xl',
             'shadow-[0_20px_80px_-30px_rgba(0,0,0,0.75)]',
@@ -167,10 +169,10 @@ export const NavbarSearch: React.FC<{
             if (e.key === 'Escape') setOpen(false);
           }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-[360px_1fr]">
+          <div className="grid grid-cols-1 md:grid-cols-[360px_1fr] h-full">
             {/* Left: suggestions */}
             <div className="border-b md:border-b-0 md:border-r border-white/10">
-              <div className="max-h-[420px] overflow-auto">
+              <div className="h-full overflow-auto">
                 {query.trim() === '' ? (
                   <div className="px-5 py-5 text-sm text-gray-300">
                     <div className="font-semibold text-white/90 mb-1">Gợi ý tìm kiếm</div>
@@ -222,7 +224,7 @@ export const NavbarSearch: React.FC<{
             </div>
 
             {/* Right: tabs */}
-            <div className="bg-gradient-to-b from-white/0 to-white/6 max-h-[420px] overflow-auto">
+            <div className="bg-gradient-to-b from-white/0 to-white/6 h-full overflow-auto">
               <div className="flex items-center gap-2 px-4 pt-4">
                 <button
                   type="button"

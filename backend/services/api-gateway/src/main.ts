@@ -4,7 +4,7 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cors from 'cors';
-import { setupRoutes } from './routes/index';
+import { setupRoutes, socketIoProxy } from './routes/index';
 
 // Load env from backend/.env
 dotenv.config({
@@ -29,10 +29,12 @@ app.use(
 
 setupRoutes(app);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('🚀 ============================================');
   console.log(`✅ api-gateway đang chạy tại port: ${PORT}`);
   console.log(`🌐 Health: http://localhost:${PORT}/health`);
   console.log('🚀 ============================================');
 });
+
+server.on('upgrade', (socketIoProxy as any).upgrade);
 

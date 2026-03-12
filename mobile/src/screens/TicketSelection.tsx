@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
+import { State, GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withDecay } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { EventLayout, LayoutAPI, LayoutZone } from '../services/layoutApiService';
+import { LinearGradient } from 'expo-linear-gradient';
 
 function getZoneCapacityText(z: LayoutZone): string | null {
   if (z.type === 'seats') {
@@ -97,86 +100,210 @@ export default function TicketSelection({ navigation, route }: any) {
     return price * quantity;
   }, [selectedZone?.price, quantity, selectedSeats]);
 
+  const mapDimensions = useMemo(() => {
+    const zones = layout?.zones || [];
+    if (zones.length === 0) return { width: 400, height: 400 };
+    let maxX = 0, maxY = 0;
+    zones.forEach((zone: any) => {
+        const x = zone.position?.x || 0;
+        const y = zone.position?.y || 0;
+        const w = zone.size?.width || 200;
+        const h = zone.size?.height || 150;
+        maxX = Math.max(maxX, x + w);
+        maxY = Math.max(maxY, y + h);
+    });
+    return { width: Math.max(Dimensions.get('window').width, maxX + 200), height: Math.max(Dimensions.get('window').height - 250, maxY + 200) };
+  }, [layout?.zones]);
+
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
+
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((event) => {
+      scale.value = savedScale.value * event.scale;
+    })
+    .onEnd(() => {
+      if (scale.value < 0.5) {
+        scale.value = withSpring(0.5);
+        savedScale.value = 0.5;
+      } else if (scale.value > 3) {
+        scale.value = withSpring(3);
+        savedScale.value = 3;
+      } else {
+        savedScale.value = scale.value;
+      }
+    });
+
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+    })
+    .onUpdate((event) => {
+      translateX.value = savedTranslateX.value + event.translationX;
+      translateY.value = savedTranslateY.value + event.translationY;
+    })
+    .onEnd((event) => {
+        translateX.value = withDecay({
+            velocity: event.velocityX,
+            clamp: [-mapDimensions.width, mapDimensions.width],
+        });
+        translateY.value = withDecay({
+            velocity: event.velocityY,
+            clamp: [-mapDimensions.height, mapDimensions.height],
+        });
+    });
+
+  const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        { scale: scale.value },
+      ],
+    };
+  });
+
+  const handleZonePress = (z: LayoutZone) => {
+    if (z.type === 'seats') {
+      if (!eventId) return;
+      navigation.navigate('SeatMapDesigner', {
+        eventId,
+        zoneId: z.id,
+        zoneName: z.name,
+      });
+    } else if (z.type === 'standing') {
+      setSelectedZoneId(z.id);
+      setSelectedSeats([]);
+      setQuantity(1);
+    }
+  };
+
   return (
-    <View className="flex-1 bg-[#0a0014]">
-      <View className="flex-row items-center p-4 pt-12 bg-[#1a0033] border-b border-[#4d0099]">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View className="flex-1 bg-[#151022]">
+        <View className="flex-row items-center p-4 pt-12 bg-[#1e1a29] border-b border-white/10">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-white/5 rounded-full items-center justify-center border border-white/10">
           <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
         </TouchableOpacity>
         <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Select Tickets</Text>
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-6">
+      <View className="flex-1">
         {loading ? (
-          <View className="py-10 items-center justify-center">
+          <View className="flex-1 items-center justify-center">
             <ActivityIndicator />
-            <Text className="text-[#b388ff] mt-3 font-bold">Đang tải khu vực vé...</Text>
+            <Text className="text-[#a59cba] mt-3 font-bold">Đang tải sơ đồ...</Text>
           </View>
         ) : error ? (
-          <View className="py-10 items-center justify-center">
+          <View className="flex-1 items-center justify-center">
             <Text className="text-red-400 font-bold text-center">{error}</Text>
           </View>
-        ) : sellableZones.length === 0 ? (
-          <View className="py-10 items-center justify-center">
-            <Text className="text-[#b388ff] font-bold">Sự kiện chưa có zone bán vé</Text>
+        ) : (layout?.zones || []).length === 0 ? (
+          <View className="flex-1 items-center justify-center">
+            <Text className="text-[#a59cba] font-bold">Sự kiện chưa có sơ đồ</Text>
           </View>
         ) : (
-          sellableZones.map((z) => {
-            const isSelected = z.id === selectedZoneId;
-            const cap = getZoneCapacityText(z);
-            return (
-              <TouchableOpacity
-                key={z.id}
-                onPress={() => {
-                  setSelectedZoneId(z.id);
-                  setSelectedSeats([]);
-                }}
-                className={`bg-[#1a0033] border rounded-3xl p-5 mb-4 ${isSelected ? 'border-[#d500f9]' : 'border-[#4d0099]'} ${isSelected ? 'shadow-[0_0_15px_rgba(213,0,249,0.2)]' : ''}`}
+          <GestureDetector gesture={composedGesture}>
+            <Animated.View style={[{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }, animatedStyle]}>
+              <View 
+                className="relative overflow-hidden" 
+                style={{ width: mapDimensions.width, height: mapDimensions.height }}
               >
-                <View className="flex-row justify-between items-start mb-2">
-                  <View className="flex-1 mr-4">
-                    <Text className="text-xl font-bold text-white">{z.name}</Text>
-                    <Text className="text-sm text-[#b388ff]">
-                      {z.type === 'seats' ? 'Seated zone' : 'Standing zone'}
-                      {cap ? ` • ${cap}` : ''}
-                    </Text>
-                  </View>
-                  <Text className="text-2xl font-bold text-[#00e5ff]">${Number(z.price || 0).toFixed(2)}</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        )}
-        
-        <TouchableOpacity 
-          onPress={() => {
-            if (!eventId || !selectedZone) return;
-            navigation.navigate('SeatMapDesigner', {
-              eventId,
-              zoneId: selectedZone.id,
-              zoneName: selectedZone.name,
-            });
-          }}
-          className="bg-[#2a004d] border border-[#d500f9]/50 rounded-2xl p-4 mt-4 flex-row items-center justify-center"
-        >
-          <MaterialIcons name="event-seat" size={24} color="#00e5ff" />
-          <Text className="text-[#00e5ff] font-bold text-lg ml-2">Choose on Map</Text>
-        </TouchableOpacity>
-      </ScrollView>
+                {(layout?.zones || []).map((zone: any) => {
+                  const x = zone.position?.x ?? 50;
+                  const y = zone.position?.y ?? 150;
+                  const w = zone.size?.width ?? 150;
+                  const h = zone.size?.height ?? 150;
+                  const isSelectable = zone.type === 'seats' || zone.type === 'standing';
+                  const isSelected = zone.id === selectedZoneId;
+                  const zColor = zone.color || '#8655f6';
 
-      <View className="p-6 bg-[#1a0033] border-t border-[#4d0099] rounded-t-3xl">
+                  return (
+                    <TouchableOpacity
+                      key={zone.id}
+                      activeOpacity={0.8}
+                      onPress={() => isSelectable ? handleZonePress(zone) : {}}
+                      disabled={!isSelectable}
+                      className="absolute items-center justify-center border-2 border-dashed"
+                      style={{
+                        left: x,
+                        top: y,
+                        width: w,
+                        height: h,
+                        transform: [{ rotate: `${zone.rotation || 0}deg` }],
+                        borderColor: zColor,
+                        backgroundColor: `${zColor}${isSelected ? '40' : '15'}`,
+                        borderStyle: zone.type === 'barrier' ? 'dashed' : 'solid',
+                        zIndex: isSelected ? 10 : 1
+                      }}
+                    >
+                      {/* Cảnh nền sân khấu */}
+                      {zone.type === 'stage' && !zone.hideScreen && (
+                          <View
+                              className="absolute top-1.5 w-3/4 h-1 opacity-50 rounded-full"
+                              style={{ backgroundColor: zColor }}
+                          />
+                      )}
+                      
+                      <Text className="font-bold text-sm text-center px-1 leading-tight" style={{ color: zColor }}>
+                        {zone.name}
+                      </Text>
+                      
+                      {isSelectable && zone.type === 'seats' ? (
+                        <Text className="text-[10px] text-white/50 mt-1">Select Seats</Text>
+                      ) : isSelectable && zone.type === 'standing' ? (
+                        <Text className="text-[10px] text-white/50 mt-1">Standing</Text>
+                      ) : zone.type === 'stage' ? (
+                        <Text className="text-[10px] text-white/50 mt-1">Stage</Text>
+                      ) : null}
+
+                      {/* Hiển thị giá và số lượng ghế chọn (nếu là ghế có select) */}
+                      {zone.price > 0 && isSelectable && (
+                        <View 
+                          className="absolute bottom-1 right-1 rounded px-1 py-0.5"
+                          style={{ backgroundColor: `${zColor}30` }}
+                        >
+                          <Text className="text-[10px] font-bold" style={{ color: zColor }}>
+                            ${zone.price}
+                          </Text>
+                        </View>
+                      )}
+                      
+                      {selectedSeats.length > 0 && selectedSeats[0]?.zoneId === zone.id && (
+                        <View 
+                          className="absolute -top-2 -right-2 w-5 h-5 rounded-full items-center justify-center border border-black"
+                          style={{ backgroundColor: zColor }}
+                        >
+                          <Text className="text-[10px] font-bold text-white">
+                            {selectedSeats.length}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </Animated.View>
+          </GestureDetector>
+        )}
+      </View>
+
+      <View className="p-6 bg-[#1e1a29]/95 border-t border-white/10 rounded-t-3xl">
         <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-[#b388ff] font-bold text-lg">Total ({quantity} tickets)</Text>
+          <Text className="text-[#a59cba] font-bold text-lg">Total ({quantity} tickets)</Text>
           <Text className="text-3xl font-black text-[#00e5ff]">${total.toFixed(2)}</Text>
         </View>
         <TouchableOpacity 
           onPress={() => {
             if (!layout || !eventId || !selectedZone) return;
-            const organizerId = layout.createdBy;
-            if (!organizerId) {
-              setError('Sự kiện thiếu organizerId (createdBy)');
-              return;
-            }
+            const organizerId = layout.createdBy || 'unknown';
             navigation.navigate('Checkout', {
               orderDraft: {
                 eventId,
@@ -191,11 +318,19 @@ export default function TicketSelection({ navigation, route }: any) {
             });
           }}
           disabled={!selectedZone || loading || !!error}
-          className={`w-full bg-[#d500f9] h-14 rounded-2xl items-center justify-center shadow-[0_0_20px_rgba(213,0,249,0.4)] ${!selectedZone || loading || !!error ? 'opacity-50' : ''}`}
+          className={`rounded-2xl shadow-[0_0_20px_rgba(134,85,246,0.4)] overflow-hidden ${!selectedZone || loading || !!error ? 'opacity-50' : ''}`}
         >
-          <Text className="text-white font-bold text-lg tracking-wide">Continue to Checkout</Text>
+          <LinearGradient
+            colors={['#8655f6', '#a855f7']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            className="w-full h-14 items-center justify-center"
+          >
+            <Text className="text-white font-bold text-lg tracking-wide">Continue to Checkout</Text>
+          </LinearGradient>
         </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </GestureHandlerRootView>
   );
 }

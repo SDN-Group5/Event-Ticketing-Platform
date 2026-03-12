@@ -11,3 +11,4 @@ export { StaffDetailPage } from './StaffDetailPage';
 export { NotificationsPage } from './NotificationsPage';
 export { CheckInPage } from './CheckInPage';
 export { ManageTicketPage } from './ManageTicketPage';
+export { ManageOrdersPage } from './ManageOrdersPage';

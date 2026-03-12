@@ -101,31 +101,31 @@ export default function EventDetail({ navigation, route }: any) {
   }, [layout, startDate]);
 
   return (
-    <View className="flex-1 bg-[#0a0014]">
+    <View className="flex-1 bg-[#151022]">
       <ScrollView className="flex-1" bounces={false}>
         <ImageBackground
           source={{ uri: layout?.eventImage || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30' }}
           className="w-full h-80 justify-between pt-12 pb-4 px-4"
         >
           <LinearGradient
-            colors={['rgba(10, 0, 20, 0.6)', 'transparent', '#0a0014']}
+            colors={['rgba(21, 16, 34, 0.6)', 'transparent', '#151022']}
             className="absolute inset-0"
           />
           <View className="flex-row justify-between items-center z-10">
-            <TouchableOpacity onPress={() => navigation.goBack()} className="h-10 w-10 bg-[#1a0033]/80 rounded-full items-center justify-center border border-[#4d0099]">
+            <TouchableOpacity onPress={() => navigation.goBack()} className="h-10 w-10 bg-[#1e1a29]/80 rounded-full items-center justify-center border border-white/10">
               <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={addToCalendar} className="h-10 w-10 bg-[#1a0033]/80 rounded-full items-center justify-center border border-[#4d0099]">
+            <TouchableOpacity onPress={addToCalendar} className="h-10 w-10 bg-[#1e1a29]/80 rounded-full items-center justify-center border border-white/10">
               <MaterialIcons name="event-available" size={22} color="#00e5ff" />
             </TouchableOpacity>
           </View>
         </ImageBackground>
 
-        <View className="px-6 py-6 bg-[#0a0014] -mt-6 rounded-t-[40px] border-t border-[#4d0099]/50">
+        <View className="px-6 py-6 bg-[#151022] -mt-6 rounded-t-[40px] border-t border-white/10">
           {loading ? (
             <View className="py-10 items-center justify-center">
               <ActivityIndicator />
-              <Text className="text-[#b388ff] mt-3 font-bold">Đang tải chi tiết...</Text>
+              <Text className="text-[#a59cba] mt-3 font-bold">Đang tải chi tiết...</Text>
             </View>
           ) : error ? (
             <View className="py-10 items-center justify-center">
@@ -140,9 +140,16 @@ export default function EventDetail({ navigation, route }: any) {
                     .catch((e: any) => setError(e?.message || 'Không tải được chi tiết sự kiện'))
                     .finally(() => setLoading(false));
                 }}
-                className="bg-[#d500f9] px-5 py-3 rounded-2xl"
+                className="rounded-2xl overflow-hidden"
               >
-                <Text className="text-white font-bold">Thử lại</Text>
+                <LinearGradient
+                  colors={['#8655f6', '#a855f7']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  className="px-5 py-3 items-center justify-center"
+                >
+                  <Text className="text-white font-bold">Thử lại</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           ) : (
@@ -154,30 +161,30 @@ export default function EventDetail({ navigation, route }: any) {
                 </View>
               </View>
 
-              <View className="flex-row items-center mb-4 bg-[#1a0033] p-4 rounded-2xl border border-[#4d0099]">
-                <View className="h-12 w-12 bg-[#2a004d] rounded-xl items-center justify-center mr-4 border border-[#4d0099]">
+              <View className="flex-row items-center mb-4 bg-[#1e1a29] p-4 rounded-2xl border border-[#3b3158]">
+                <View className="h-12 w-12 bg-white/5 rounded-xl items-center justify-center mr-4 border border-white/10">
                   <MaterialIcons name="calendar-today" size={24} color="#00e5ff" />
                 </View>
                 <View>
                   <Text className="text-base font-bold text-white">
                     {layout?.eventDate ? new Date(layout.eventDate).toLocaleString() : 'TBD'}
                   </Text>
-                  <Text className="text-sm text-[#b388ff]">Tap calendar icon to add</Text>
+                  <Text className="text-sm text-[#a59cba]">Tap calendar icon to add</Text>
                 </View>
               </View>
 
-              <View className="flex-row items-center mb-6 bg-[#1a0033] p-4 rounded-2xl border border-[#4d0099]">
-                <View className="h-12 w-12 bg-[#2a004d] rounded-xl items-center justify-center mr-4 border border-[#4d0099]">
+              <View className="flex-row items-center mb-6 bg-[#1e1a29] p-4 rounded-2xl border border-[#3b3158]">
+                <View className="h-12 w-12 bg-white/5 rounded-xl items-center justify-center mr-4 border border-white/10">
                   <MaterialIcons name="location-on" size={24} color="#d500f9" />
                 </View>
                 <View>
                   <Text className="text-base font-bold text-white">{layout?.eventLocation || 'TBD'}</Text>
-                  <Text className="text-sm text-[#b388ff]">Location</Text>
+                  <Text className="text-sm text-[#a59cba]">Location</Text>
                 </View>
               </View>
 
               <Text className="text-lg font-bold text-white mb-2">About Event</Text>
-              <Text className="text-[#b388ff] leading-6 mb-8">
+              <Text className="text-[#a59cba] leading-6 mb-8">
                 {layout?.eventDescription || 'No description available.'}
               </Text>
             </>
@@ -185,9 +192,9 @@ export default function EventDetail({ navigation, route }: any) {
         </View>
       </ScrollView>
 
-      <View className="p-6 bg-[#1a0033] border-t border-[#4d0099] flex-row items-center justify-between rounded-t-3xl">
+      <View className="p-6 bg-[#1e1a29] border-t border-white/10 flex-row items-center justify-between rounded-t-3xl">
         <View>
-          <Text className="text-sm text-[#b388ff] uppercase tracking-wider font-bold">Price</Text>
+          <Text className="text-sm text-[#a59cba] uppercase tracking-wider font-bold">Price</Text>
           <Text className="text-3xl font-black text-[#00e5ff]">
             {minPrice === null ? '--' : `$${minPrice}`}
           </Text>
@@ -198,9 +205,16 @@ export default function EventDetail({ navigation, route }: any) {
             navigation.navigate('TicketSelection', { eventId });
           }}
           disabled={loading || !!error || !eventId}
-          className={`bg-[#d500f9] px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(213,0,249,0.4)] ${loading || !!error || !eventId ? 'opacity-50' : ''}`}
+          className={`rounded-2xl shadow-[0_0_20px_rgba(134,85,246,0.4)] overflow-hidden ${loading || !!error || !eventId ? 'opacity-50' : ''}`}
         >
-          <Text className="text-white font-bold text-lg tracking-wide">Buy Tickets</Text>
+          <LinearGradient
+            colors={['#8655f6', '#a855f7']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            className="px-8 py-4 items-center justify-center"
+          >
+            <Text className="text-white font-bold text-lg tracking-wide">Buy Tickets</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </View>

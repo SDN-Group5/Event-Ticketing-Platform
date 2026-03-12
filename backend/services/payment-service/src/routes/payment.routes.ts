@@ -3,6 +3,8 @@ import {
   createPayment,
   getOrder,
   getUserOrders,
+  getOrganizerOrders,
+  getOrganizerCustomers,
   handleWebhook,
   cancelPayment,
   verifyPayment,
@@ -15,7 +17,9 @@ import {
   createVoucher,
   updateVoucher,
   deleteVoucher,
+  previewVoucher,
 } from '../controllers/voucher.controller';
+import { extractUserId, verifyOrganizer } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -40,17 +44,27 @@ router.post('/cancel/:orderCode', cancelPayment);
 // Huỷ đơn đã thanh toán nhưng cấp voucher 50% thay vì hoàn tiền
 router.post('/cancel-with-voucher/:orderCode', cancelPaidOrderWithVoucher);
 
+// ================== ORGANIZER - ORDERS & CUSTOMERS ==================
+// Lấy danh sách đơn hàng của organizer (tất cả sự kiện)
+router.get('/organizer/orders', extractUserId, verifyOrganizer, getOrganizerOrders);
+
+// Lấy danh sách khách hàng của organizer
+router.get('/organizer/customers', extractUserId, verifyOrganizer, getOrganizerCustomers);
+
+// Preview voucher cho khách trước khi tạo đơn
+router.post('/vouchers/preview', previewVoucher);
+
 // ================== VOUCHERS (ORGANIZER) ==================
 // Lấy danh sách voucher của organizer hiện tại
-router.get('/organizer/vouchers', getOrganizerVouchers);
+router.get('/organizer/vouchers', extractUserId, verifyOrganizer, getOrganizerVouchers);
 
 // Tạo voucher mới
-router.post('/organizer/vouchers', createVoucher);
+router.post('/organizer/vouchers', extractUserId, verifyOrganizer, createVoucher);
 
 // Cập nhật voucher
-router.put('/organizer/vouchers/:id', updateVoucher);
+router.put('/organizer/vouchers/:id', extractUserId, verifyOrganizer, updateVoucher);
 
 // Xoá voucher
-router.delete('/organizer/vouchers/:id', deleteVoucher);
+router.delete('/organizer/vouchers/:id', extractUserId, verifyOrganizer, deleteVoucher);
 
 export default router;

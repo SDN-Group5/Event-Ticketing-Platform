@@ -150,6 +150,9 @@ export const createPayment = async (req: Request, res: Response) => {
       data: {
         orderId: order._id,
         orderCode: order.orderCode,
+        subtotal: order.subtotal,
+        voucherDiscount: order.voucherDiscount,
+        voucherCode: order.voucherCode,
         totalAmount: order.totalAmount,
         commissionAmount: order.commissionAmount,
         organizerAmount: order.organizerAmount,
@@ -195,6 +198,138 @@ export const getUserOrders = async (req: Request, res: Response) => {
     return res.json({ success: true, data: orders });
   } catch (err: any) {
     console.error('[getUserOrders] Error:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ==================== GET ORGANIZER ORDERS ====================
+
+export const getOrganizerOrders = async (req: Request, res: Response) => {
+  try {
+    const organizerId = (req as any).userId;
+    if (!organizerId) {
+      return res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+    }
+
+    const { page = 1, limit = 20, eventId, status } = req.query;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const filter: any = { organizerId };
+    
+    if (eventId) filter.eventId = eventId;
+    if (status) filter.status = status;
+    else filter.status = { $in: ['paid', 'refunded', 'pending', 'processing', 'cancelled', 'expired'] };
+
+    const [orders, total] = await Promise.all([
+      Order.find(filter)
+        .sort({ paidAt: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Order.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    return res.json({
+      success: true,
+      data: orders,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+      },
+    });
+  } catch (err: any) {
+    console.error('[getOrganizerOrders] Error:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ==================== GET ORGANIZER CUSTOMERS ====================
+
+export const getOrganizerCustomers = async (req: Request, res: Response) => {
+  try {
+    const organizerId = (req as any).userId;
+    if (!organizerId) {
+      return res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+    }
+
+    const { page = 1, limit = 50, eventId } = req.query;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    // Tìm tất cả đơn hàng của organizer (chỉ đơn đã thanh toán)
+    let orderFilter: any = { organizerId, status: 'paid' };
+    if (eventId) orderFilter.eventId = eventId;
+
+    // Lấy tất cả đơn hàng
+    const orders = await Order.find(orderFilter).lean();
+
+    if (orders.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: { page: pageNum, limit: limitNum, total: 0, totalPages: 0 },
+      });
+    }
+
+    // Aggregate customer data từ orders
+    const customerMap = new Map<string, any>();
+
+    orders.forEach(order => {
+      if (!customerMap.has(order.userId)) {
+        customerMap.set(order.userId, {
+          userId: order.userId,
+          orderCount: 0,
+          totalSpent: 0,
+          lastOrderDate: null,
+          events: new Set<string>(),
+        });
+      }
+      const customer = customerMap.get(order.userId)!;
+      customer.orderCount++;
+      customer.totalSpent += order.totalAmount || 0;
+      if (!customer.lastOrderDate || new Date(order.paidAt!) > new Date(customer.lastOrderDate)) {
+        customer.lastOrderDate = order.paidAt;
+      }
+      customer.events.add(order.eventName);
+    });
+
+    // Convert Map to array, map events Set to array, sort by lastOrderDate descending
+    let customers = Array.from(customerMap.values())
+      .map(c => ({
+        ...c,
+        events: Array.from(c.events),
+      }))
+      .sort((a, b) => {
+        const dateA = a.lastOrderDate ? new Date(a.lastOrderDate).getTime() : 0;
+        const dateB = b.lastOrderDate ? new Date(b.lastOrderDate).getTime() : 0;
+        return dateB - dateA; // Newest first
+      });
+
+    // Lấy total trước khi paginate
+    const total = customers.length;
+    const totalPages = Math.ceil(total / limitNum);
+
+    // Áp dụng pagination
+    const paginatedCustomers = customers.slice(skip, skip + limitNum);
+
+    return res.json({
+      success: true,
+      data: paginatedCustomers,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+      },
+    });
+  } catch (err: any) {
+    console.error('[getOrganizerCustomers] Error:', err);
     return res.status(500).json({ success: false, message: err.message });
   }
 };

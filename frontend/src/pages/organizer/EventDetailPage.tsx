@@ -151,7 +151,7 @@ export const EventDetailPage: React.FC = () => {
                     <div className="text-center py-16">
                         <h2 className="text-xl font-semibold text-gray-400 mb-2">Event not found</h2>
                         <button
-                            onClick={() => navigate('/organizer')}
+                            onClick={() => navigate('/organizer/events')}
                             className="px-6 py-2 bg-[#8655f6] hover:bg-[#7644e0] text-white rounded-lg transition-colors"
                         >
                             Back to Events

@@ -33,6 +33,9 @@ export interface CreatePaymentInput {
 export interface PaymentResponse {
   orderId: string;
   orderCode: number;
+  subtotal: number;
+  voucherDiscount?: number;
+  voucherCode?: string;
   totalAmount: number;
   commissionAmount: number;
   organizerAmount: number;
@@ -45,6 +48,13 @@ export interface VerifyResponse {
   status: string;
   order: any;
   payosStatus?: string;
+}
+
+export interface VoucherPreviewResponse {
+  subtotal: number;
+  voucherDiscount: number;
+  totalAmount: number;
+  voucherCode?: string | null;
 }
 
 export const PaymentAPI = {
@@ -73,6 +83,16 @@ export const PaymentAPI = {
 
   async cancelPayment(orderCode: number | string) {
     const res = await paymentClient.post(`/cancel/${orderCode}`);
+    return res.data.data;
+  },
+
+  async previewVoucher(data: {
+    eventId?: string;
+    userId?: string;
+    items: { price: number; quantity: number }[];
+    voucherCode: string;
+  }): Promise<VoucherPreviewResponse> {
+    const res = await paymentClient.post('/vouchers/preview', data);
     return res.data.data;
   },
 };

@@ -30,6 +30,12 @@ export const ZoneSelectionPage: React.FC = () => {
     const [agreePreviewTerms, setAgreePreviewTerms] = useState(false);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [openPolicy, setOpenPolicy] = useState<'terms' | null>(null);
+    const [voucherPreview, setVoucherPreview] = useState<{
+        subtotal: number;
+        discount: number;
+        total: number;
+        code?: string | null;
+    } | null>(null);
     const socketRef = useRef<Socket | null>(null);
 
     const { startTimer, isTimerActive, cancelPayment: cancelActivePayment } = usePaymentTimer();
@@ -162,6 +168,7 @@ export const ZoneSelectionPage: React.FC = () => {
     const handleSeatToggle = (seat: SelectedSeat) => {
         setVoucherError(null);
         setError(null);
+        setVoucherPreview(null);
 
         setSelectedSeats(prev => {
             const exists = prev.find(s => s.id === seat.id);
@@ -192,6 +199,49 @@ export const ZoneSelectionPage: React.FC = () => {
             window.removeEventListener('payment-timer-expired', handleExpire);
         };
     }, []);
+
+    const handleApplyVoucher = useCallback(async () => {
+        if (!id) return;
+        if (!voucherCode.trim()) {
+            setVoucherError('Vui lòng nhập mã giảm giá trước khi áp dụng.');
+            setVoucherPreview(null);
+            return;
+        }
+        if (selectedSeats.length === 0) {
+            setVoucherError('Vui lòng chọn ít nhất 1 ghế trước khi áp dụng mã.');
+            setVoucherPreview(null);
+            return;
+        }
+
+        try {
+            setVoucherError(null);
+            const items = selectedSeats.map(seat => ({
+                price: seat.price,
+                quantity: 1,
+            }));
+
+            const preview = await PaymentAPI.previewVoucher({
+                eventId: id,
+                userId: user?.id,
+                items,
+                voucherCode: voucherCode.trim(),
+            });
+
+            setVoucherPreview({
+                subtotal: preview.subtotal,
+                discount: preview.voucherDiscount,
+                total: preview.totalAmount,
+                code: preview.voucherCode,
+            });
+        } catch (err: any) {
+            console.error('Error previewing voucher:', err);
+            const msg =
+                err?.response?.data?.message ||
+                'Không thể áp dụng mã giảm giá. Vui lòng thử lại.';
+            setVoucherError(msg);
+            setVoucherPreview(null);
+        }
+    }, [id, voucherCode, selectedSeats, user?.id]);
 
     const handleConfirmPayment = useCallback(async () => {
         if (!id || isProcessingPayment) return;
@@ -410,11 +460,21 @@ export const ZoneSelectionPage: React.FC = () => {
                                     type="text"
                                     placeholder="Nhập mã giảm giá"
                                     value={voucherCode}
-                                    onChange={(e) => setVoucherCode(e.target.value)}
-                                    className="w-full md:w-56 bg-[#201936] border border-[#3b3158] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#8655f6]"
+                                    onChange={(e) => {
+                                        setVoucherCode(e.target.value);
+                                        setVoucherPreview(null);
+                                    }}
+                                    className="w-full md:w-40 bg-[#201936] border border-[#3b3158] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#8655f6]"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={handleApplyVoucher}
+                                    className="px-3 py-2 rounded-lg bg-[#8655f6] text-xs font-semibold hover:bg-[#7644e0] transition-colors"
+                                >
+                                    Áp dụng
+                                </button>
                                 <span className="text-xs text-[#a59cba] hidden md:inline">
-                                    (Áp dụng khi tạo thanh toán)
+                                    (Giảm trực tiếp trên đơn này)
                                 </span>
                             </div>
                             {voucherError && (
@@ -447,7 +507,36 @@ export const ZoneSelectionPage: React.FC = () => {
                         <div className="flex items-center gap-4 md:gap-6">
                             <div className="text-right">
                                 <p className="text-xs text-[#a59cba] uppercase font-bold">Tạm tính</p>
-                                <p className="text-2xl font-black">{total.toLocaleString()} đ</p>
+                                <p className="text-sm font-semibold text-[#e5e7eb]">
+                                    {Number(
+                                        voucherPreview?.subtotal ?? total,
+                                    ).toLocaleString()}{' '}
+                                    đ
+                                </p>
+                                {voucherPreview && voucherPreview.discount > 0 && (
+                                    <>
+                                        <p className="text-xs text-[#a59cba] mt-1">
+                                            Giảm giá
+                                            {voucherPreview.code
+                                                ? ` (${voucherPreview.code})`
+                                                : ''}
+                                        </p>
+                                        <p className="text-sm font-semibold text-emerald-400">
+                                            -{voucherPreview.discount.toLocaleString()} đ
+                                        </p>
+                                        <p className="text-xs text-[#a59cba] mt-1 uppercase font-bold">
+                                            Sau giảm
+                                        </p>
+                                        <p className="text-2xl font-black text-white">
+                                            {voucherPreview.total.toLocaleString()} đ
+                                        </p>
+                                    </>
+                                )}
+                                {!voucherPreview && (
+                                    <p className="text-2xl font-black">
+                                        {total.toLocaleString()} đ
+                                    </p>
+                                )}
                             </div>
                             <button
                                 onClick={handleOpen360}

@@ -17,6 +17,7 @@ import {
   createVoucher,
   updateVoucher,
   deleteVoucher,
+  previewVoucher,
 } from '../controllers/voucher.controller';
 import { extractUserId, verifyOrganizer } from '../middleware/auth.middleware';
 
@@ -49,6 +50,9 @@ router.get('/organizer/orders', extractUserId, verifyOrganizer, getOrganizerOrde
 
 // Lấy danh sách khách hàng của organizer
 router.get('/organizer/customers', extractUserId, verifyOrganizer, getOrganizerCustomers);
+
+// Preview voucher cho khách trước khi tạo đơn
+router.post('/vouchers/preview', previewVoucher);
 
 // ================== VOUCHERS (ORGANIZER) ==================
 // Lấy danh sách voucher của organizer hiện tại

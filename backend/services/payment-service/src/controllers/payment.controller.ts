@@ -150,6 +150,9 @@ export const createPayment = async (req: Request, res: Response) => {
       data: {
         orderId: order._id,
         orderCode: order.orderCode,
+        subtotal: order.subtotal,
+        voucherDiscount: order.voucherDiscount,
+        voucherCode: order.voucherCode,
         totalAmount: order.totalAmount,
         commissionAmount: order.commissionAmount,
         organizerAmount: order.organizerAmount,

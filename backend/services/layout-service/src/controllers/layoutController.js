@@ -237,6 +237,23 @@ export const updateLayout = async (req, res) => {
         const newSeatZones = zones.filter(z => z.type === 'seats');
         console.log(`[Layout] Processing ${newSeatZones.length} seat zones. Old zone map has ${oldSeatZoneMap.size} entries.`);
 
+        // Find and delete seats for zones that were removed
+        const newSeatZoneIds = new Set(newSeatZones.map(z => z.id));
+        const deletedZoneIds = [...oldSeatZoneIds].filter(id => !newSeatZoneIds.has(id));
+        
+        if (deletedZoneIds.length > 0) {
+            try {
+                const Seat = (await import('../models/Seat.js')).default;
+                const deleteResult = await Seat.deleteMany({
+                    layoutId: layout._id,
+                    zoneId: { $in: deletedZoneIds }
+                });
+                console.log(`[Layout] Deleted ${deleteResult.deletedCount} seats for removed zones:`, deletedZoneIds);
+            } catch (err) {
+                console.error('[Layout] Error deleting seats for removed zones:', err);
+            }
+        }
+
         for (const newZone of newSeatZones) {
             const oldZone = oldSeatZoneMap.get(newZone.id);
             console.log(`[Layout] Zone "${newZone.name}" (${newZone.id}): oldZone=${oldZone ? `rows=${oldZone.rows},cols=${oldZone.seatsPerRow}` : 'NOT FOUND (NEW)'}, newZone: rows=${newZone.rows},cols=${newZone.seatsPerRow}`);
@@ -305,9 +322,11 @@ export const updateLayout = async (req, res) => {
 export const deleteLayout = async (req, res) => {
     try {
         const { eventId } = req.params;
-        const result = await EventLayout.deleteOne({ eventId });
+        
+        // Find layout first
+        const layout = await EventLayout.findOne({ eventId });
 
-        if (result.deletedCount === 0) {
+        if (!layout) {
             return res.status(404).json({
                 success: false,
                 error: {
@@ -320,11 +339,14 @@ export const deleteLayout = async (req, res) => {
         // ✨ CLEANUP: Delete all seats associated with this layout
         try {
             const Seat = (await import('../models/Seat.js')).default;
-            const deletedSeats = await Seat.deleteMany({ eventId });
-            console.log(`[Layout] Deleted ${deletedSeats.deletedCount} seats for event: ${eventId}`);
+            const deletedSeats = await Seat.deleteMany({ layoutId: layout._id });
+            console.log(`[Layout] Deleted ${deletedSeats.deletedCount} seats for layout: ${layout._id}`);
         } catch (seatError) {
             console.error('[Layout] Error deleting seats:', seatError);
         }
+
+        // Delete the layout document
+        await layout.deleteOne();
 
         res.status(200).json({
             success: true,

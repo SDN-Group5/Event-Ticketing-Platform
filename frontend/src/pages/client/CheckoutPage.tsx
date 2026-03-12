@@ -13,6 +13,9 @@ export const CheckoutPage: React.FC = () => {
     qrCode: string;
     checkoutUrl: string;
     orderCode: number;
+    subtotal?: number;
+    voucherDiscount?: number;
+    voucherCode?: string;
     totalAmount: number;
     commissionAmount: number;
     organizerAmount: number;
@@ -114,6 +117,9 @@ export const CheckoutPage: React.FC = () => {
         qrCode: normalizeQrCode(result.qrCode),
         checkoutUrl: result.checkoutUrl,
         orderCode: result.orderCode,
+        subtotal: result.subtotal,
+        voucherDiscount: result.voucherDiscount,
+        voucherCode: result.voucherCode,
         totalAmount: result.totalAmount,
         commissionAmount: result.commissionAmount,
         organizerAmount: result.organizerAmount,
@@ -390,14 +396,31 @@ export const CheckoutPage: React.FC = () => {
                   <span className="text-gray-400">
                     Vé ({ticketCount} × {formatVND(zone?.price || 0)})
                   </span>
-                  <span>{formatVND(total || ticketCount * (zone?.price || 0))}</span>
+                  <span>
+                    {formatVND(
+                      paymentData?.subtotal ?? (total || ticketCount * (zone?.price || 0)),
+                    )}
+                  </span>
                 </div>
+                {paymentData?.voucherDiscount && paymentData.voucherDiscount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">
+                      Giảm giá
+                      {paymentData.voucherCode ? ` (${paymentData.voucherCode})` : ''}
+                    </span>
+                    <span className="text-emerald-400">
+                      -{formatVND(paymentData.voucherDiscount)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-white/10 pt-4 flex justify-between items-end">
                 <span className="text-gray-400">Tổng cộng</span>
                 <span className="text-3xl font-bold bg-gradient-to-r from-[#8655f6] to-[#ec4899] bg-clip-text text-transparent">
-                  {formatVND(total || ticketCount * (zone?.price || 0))}
+                  {formatVND(
+                    paymentData?.totalAmount ?? (total || ticketCount * (zone?.price || 0)),
+                  )}
                 </span>
               </div>
 

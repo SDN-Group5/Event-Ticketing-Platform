@@ -40,6 +40,7 @@ export const ManageVouchersPage: React.FC = () => {
   });
   const [error, setError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
     const fetchVouchers = async () => {
@@ -145,6 +146,12 @@ export const ManageVouchersPage: React.FC = () => {
 
       if (!payload.code || !payload.discountValue || !payload.maxUses) {
         setError('Vui lòng nhập đủ mã, giá trị giảm và số lượt dùng');
+        setSaving(false);
+        return;
+      }
+
+      if (form.endDate && form.endDate < todayStr) {
+        setError('Expiry Date không được ở trong quá khứ.');
         setSaving(false);
         return;
       }
@@ -488,6 +495,7 @@ export const ManageVouchersPage: React.FC = () => {
                   <input
                     type="date"
                     className="w-full bg-[#2a2436] border border-[#3a3447] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#8655f6]"
+                    min={todayStr}
                     value={form.endDate}
                     onChange={(e) =>
                       handleFormChange('endDate', e.target.value)

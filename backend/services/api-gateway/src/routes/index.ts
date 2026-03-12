@@ -13,10 +13,11 @@ const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost
 // ============================================
 // PROXY OPTIONS
 // ============================================
-const createProxy = (target: string, pathRewrite?: Record<string, string>): Options => ({
+const createProxy = (target: string, pathRewrite?: Record<string, string>, ws: boolean = false): Options => ({
   target,
   changeOrigin: true,
   pathRewrite,
+  ws,
   /**
    * Tăng timeout để tránh gateway tự trả 408 trước khi service con xử lý xong.
    *  - timeout: thời gian chờ response từ upstream (ms)
@@ -44,6 +45,8 @@ const createProxy = (target: string, pathRewrite?: Record<string, string>): Opti
     }
   },
 } as Options);
+
+export const socketIoProxy = createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL, undefined, true));
 
 // ============================================
 // SETUP ROUTES
@@ -73,6 +76,7 @@ export const setupRoutes = (app: Express) => {
       version: '1.0.0',
       endpoints: [
         '/health',
+        '/socket.io',
         '/api/auth/*',
         '/api/users/*',
         '/api/v1/layouts/*',
@@ -86,6 +90,9 @@ export const setupRoutes = (app: Express) => {
   // ============================================
   // PROXY TO MICROSERVICES
   // ============================================
+
+  // WebSocket for Seat Service
+  app.use('/socket.io', socketIoProxy);
 
   // Auth Service: /api/auth/* -> auth-service:4001/login, /register, ...
   //  - Gateway prefix `/api/auth` được bỏ đi trước khi forward,

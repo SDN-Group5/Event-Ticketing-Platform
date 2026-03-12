@@ -1,4 +1,6 @@
-export type SeatStatus = 'available' | 'reserved' | 'sold' | 'blocked';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export type SeatStatus = 'available' | 'reserved' | 'sold' | 'blocked' | 'occupied';
 
 export type SeatData = {
   _id: string;
@@ -55,7 +57,7 @@ function getBaseUrl(): string {
 }
 const BASE_URL = getBaseUrl();
 
-async function requestSeats<T>(path: string, params?: Record<string, any>): Promise<T> {
+async function requestSeats<T>(path: string, params?: Record<string, any>, options?: RequestInit): Promise<T> {
   const url = new URL(path, BASE_URL);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -69,11 +71,20 @@ async function requestSeats<T>(path: string, params?: Record<string, any>): Prom
     url: url.toString(),
   });
 
+  const token = await AsyncStorage.getItem('auth_token');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options?.headers as Record<string, string>),
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    method: options?.method || 'GET',
+    headers,
+    body: options?.body,
   });
 
   const rawText = await response.text();
@@ -122,6 +133,19 @@ export const SeatAPI = {
     return requestSeats<SeatsResponse>(`/api/v1/events/${encodeURIComponent(eventId)}/seats`, {
       zoneId,
       ...(options || {}),
+    });
+  },
+
+  async reserveSeat(eventId: string, zoneId: string, row: number, seatNumber: number): Promise<SeatData> {
+    return requestSeats<SeatData>(`/api/v1/events/${encodeURIComponent(eventId)}/seats/reserve`, undefined, {
+      method: 'POST',
+      body: JSON.stringify({ zoneId, row, seatNumber }),
+    });
+  },
+
+  async releaseReservation(eventId: string, seatId: string): Promise<SeatData> {
+    return requestSeats<SeatData>(`/api/v1/events/${encodeURIComponent(eventId)}/seats/${seatId}/reservation`, undefined, {
+      method: 'PATCH',
     });
   },
 };

@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // Base URL must NOT include path - only protocol + host (prevents path duplication on Railway)
 function getBaseUrl(): string {
   const raw = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
@@ -57,12 +59,19 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
   const url = `${API_BASE_URL}${endpoint}`;
   console.log('[PaymentAPI] Request', { url, method: options.method || 'GET' });
 
+  const token = await AsyncStorage.getItem('auth_token');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
+    headers,
   });
 
   const rawText = await response.text();
@@ -121,6 +130,10 @@ export const PaymentAPI = {
 
   async getOrder(orderCode: number): Promise<Order> {
     return apiRequest<Order>(`/api/payments/order/${encodeURIComponent(String(orderCode))}`, { method: 'GET' });
+  },
+
+  async cancelPayment(orderCode: number | string): Promise<any> {
+    return apiRequest<any>(`/api/payments/cancel/${encodeURIComponent(String(orderCode))}`, { method: 'POST' });
   },
 };
 

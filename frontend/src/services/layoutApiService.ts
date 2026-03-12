@@ -103,6 +103,32 @@ export const LayoutAPI = {
         return data.data!;
     },
 
+    /** Upload event banner image (returns absolute URL) */
+    uploadBanner: async (file: File): Promise<string> => {
+        const formData = new FormData();
+        formData.append('banner', file);
+
+        const { data } = await api.post<ApiResponse<{ url: string }>>(
+            '/layouts/upload-banner',
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+
+        const relativeUrl = data.data?.url || '';
+        if (!relativeUrl) {
+            throw new Error('Upload banner failed: empty URL');
+        }
+
+        // Nếu backend trả absolute URL thì dùng luôn, nếu là relative thì prepend API_BASE (gateway)
+        return relativeUrl.startsWith('http')
+            ? relativeUrl
+            : `${API_BASE}${relativeUrl}`;
+    },
+
     /** Update existing layout (Regenerates seats if zones change) */
     updateLayout: async (eventId: string, layoutData: Partial<EventLayout>): Promise<EventLayout> => {
         const { data } = await api.put<ApiResponse<EventLayout>>(`/layouts/event/${eventId}`, layoutData);

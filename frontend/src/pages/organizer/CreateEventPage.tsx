@@ -17,6 +17,8 @@ export const CreateEventPage: React.FC = () => {
         description: '',
         category: 'music',
     });
+    const [bannerFile, setBannerFile] = useState<File | null>(null);
+    const [bannerPreview, setBannerPreview] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -66,11 +68,19 @@ export const CreateEventPage: React.FC = () => {
 
                 const realEventId = generateObjectId();
 
-                // Generate layout with empty zones array
+                // 3. Upload banner nếu có
+                let bannerUrl: string | undefined;
+                if (bannerFile) {
+                    const uploaded = await LayoutAPI.uploadBanner(bannerFile);
+                    bannerUrl = uploaded;
+                }
+
+                // 4. Generate layout with empty zones array
                 await LayoutAPI.createLayout({
                     eventId: realEventId,
                     eventName: formData.name,
                     eventDate: startTimeString,
+                    eventImage: bannerUrl,
                     eventLocation: formData.venue,
                     eventDescription: formData.description,
                     zones: [],
@@ -172,6 +182,45 @@ export const CreateEventPage: React.FC = () => {
                                     className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6] min-h-[120px]"
                                     placeholder="Describe your event..."
                                 />
+                            </div>
+
+                            {/* Banner upload */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-300 mb-2">Event Banner</label>
+                                <div className="flex flex-col md:flex-row gap-4 items-start">
+                                    <label className="inline-flex items-center px-4 py-2 rounded-xl bg-[#0f172a] border border-dashed border-slate-600 text-slate-300 cursor-pointer hover:border-[#8655f6] hover:text-white transition-colors">
+                                        <span className="material-symbols-outlined mr-2">upload</span>
+                                        <span>Upload image from your device</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) {
+                                                    setBannerFile(null);
+                                                    setBannerPreview(null);
+                                                    return;
+                                                }
+                                                setBannerFile(file);
+                                                setBannerPreview(URL.createObjectURL(file));
+                                            }}
+                                        />
+                                    </label>
+
+                                    {bannerPreview && (
+                                        <div className="w-full md:w-48 rounded-xl overflow-hidden border border-slate-700 bg-[#0f172a]">
+                                            <img
+                                                src={bannerPreview}
+                                                alt="Event banner preview"
+                                                className="w-full h-32 object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="mt-2 text-xs text-slate-500">
+                                    Recommended size: 1200x600px, max 5MB. Supported formats: JPG, PNG.
+                                </p>
                             </div>
                         </div>
                     )}
@@ -298,6 +347,20 @@ export const CreateEventPage: React.FC = () => {
                             </div>
 
                             {/* Date & Venue Summary End */}
+
+                            {/* Banner summary */}
+                            {bannerPreview && (
+                                <div>
+                                    <h4 className="text-sm font-semibold text-slate-400 mb-3">Event Banner</h4>
+                                    <div className="bg-[#0f172a] rounded-xl p-4 border border-slate-700">
+                                        <img
+                                            src={bannerPreview}
+                                            alt="Event banner preview"
+                                            className="w-full max-h-48 object-cover rounded-lg"
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             {!error && (
                                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">

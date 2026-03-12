@@ -8,11 +8,20 @@ import indexRoute from './src/routes/index.js';
 import { startSeatCleanupJob } from './src/jobs/seatCleanup.js';
 import { setIO } from './src/socket.js';
 import { connectRabbitMQ } from './src/config/rabbitmq.js'; // import rabiit mq
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 import { engine } from 'express-handlebars';
 
 const app = express();
 const port = config.port;
+
+// Static uploads directory for event banners
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsRoot = path.join(__dirname, 'uploads');
+fs.mkdirSync(uploadsRoot, { recursive: true });
 
 const allowedOrigins = [
     'http://localhost:3000',
@@ -34,6 +43,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Serve uploaded files
+app.use('/uploads', express.static(uploadsRoot));
 
 app.set('view engine', 'ejs');
 app.set('views', './src/views');

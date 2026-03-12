@@ -40,6 +40,7 @@ export interface SelectedSeat {
   id: string;
   row: string | number;
   number: number;
+  label?: string;
   zone: string;
   price: number;
 }

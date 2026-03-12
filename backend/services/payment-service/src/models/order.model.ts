@@ -17,6 +17,7 @@ export interface IOrder extends Document {
   items: {
     zoneName: string;
     seatId?: string;
+    seatLabel?: string;
     price: number;
     quantity: number;
   }[];
@@ -58,6 +59,7 @@ const OrderItemSchema = new Schema(
   {
     zoneName: { type: String, required: true },
     seatId: { type: String },
+    seatLabel: { type: String },
     price: { type: Number, required: true },
     quantity: { type: Number, required: true, default: 1 },
   },

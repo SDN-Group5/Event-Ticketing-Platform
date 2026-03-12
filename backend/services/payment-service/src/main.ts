@@ -12,6 +12,7 @@ import morgan from 'morgan';
 import { connectDB } from './config/db';
 import { connectRabbitMQ } from './config/rabbitmq';
 import paymentRoutes from './routes/payment.routes';
+import analyticsRoutes from './routes/analytics.routes';
 import { startOrderCleanupJob } from './jobs/orderCleanup';
 
 const app = express();
@@ -43,6 +44,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/payments', paymentRoutes);
+app.use('/api/analytics', analyticsRoutes);
 // When Railway path-based routing strips /api/payments, requests arrive at /
 app.use('/', paymentRoutes);
 

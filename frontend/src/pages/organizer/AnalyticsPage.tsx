@@ -114,28 +114,6 @@ export const AnalyticsPage: React.FC = () => {
     } catch (err: any) {
       console.error('Error fetching analytics:', err);
       setError('Failed to load analytics data');
-      
-      // Use mock data as fallback
-      setRevenueData([
-        { month: 'Jan', value: 4500 },
-        { month: 'Feb', value: 6200 },
-        { month: 'Mar', value: 8100 },
-        { month: 'Apr', value: 5800 },
-        { month: 'May', value: 9500 },
-        { month: 'Jun', value: 12400 },
-      ]);
-      
-      setTicketTypes([
-        { type: 'General', count: 1523, percentage: 54, color: '#3b82f6' },
-        { type: 'VIP', count: 987, percentage: 35, color: '#8655f6' },
-        { type: 'Backstage', count: 337, percentage: 11, color: '#ec4899' },
-      ]);
-
-      setTopEvents([
-        { name: 'Neon Nights Festival', revenue: '$18,450', tickets: 890, rating: 4.9 },
-        { name: 'Bass Drop Party', revenue: '$12,300', tickets: 560, rating: 4.7 },
-        { name: 'Electronic Dreams', revenue: '$9,800', tickets: 340, rating: 4.8 },
-      ]);
     } finally {
       setLoading(false);
     }
@@ -237,17 +215,70 @@ export const AnalyticsPage: React.FC = () => {
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-white">Revenue Overview</h2>
                         </div>
-                        <div className="flex items-end gap-2 h-64">
-                            {revenueData.map((data) => (
-                                <div key={data.month} className="flex-1 flex flex-col items-center gap-2">
-                                    <div
-                                        className="w-full bg-gradient-to-t from-[#8655f6] to-[#d946ef] rounded-t-lg transition-all hover:opacity-80 cursor-pointer"
-                                        style={{ height: `${(data.value / maxRevenue) * 100}%` }}
-                                        title={`${data.month}: $${data.value}`}
+                        <div className="relative w-full h-[256px] mt-4 z-10">
+                            {revenueData.length > 0 && (
+                                <svg viewBox="-5 -5 110 110" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                                    {/* Grid Lines */}
+                                    {[0, 25, 50, 75, 100].map(p => (
+                                        <line key={p} x1="0" y1={p} x2="100" y2={p} stroke="#3a3447" strokeWidth="0.5" strokeDasharray="3,3" />
+                                    ))}
+                                    
+                                    {/* Area Gradient */}
+                                    <defs>
+                                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stopColor="#8655f6" />
+                                            <stop offset="100%" stopColor="#d946ef" />
+                                        </linearGradient>
+                                        <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stopColor="#d946ef" stopOpacity="0.3" />
+                                            <stop offset="100%" stopColor="#8655f6" stopOpacity="0" />
+                                        </linearGradient>
+                                    </defs>
+
+                                    {/* Area under the line */}
+                                    <polygon
+                                        fill="url(#areaGradient)"
+                                        points={`0,100 ${revenueData.map((d, i) => `${(i / Math.max(1, revenueData.length - 1)) * 100},${100 - (d.value / maxRevenue) * 100}`).join(' ')} 100,100`}
+                                        className="transition-all duration-300"
                                     />
-                                    <span className="text-xs text-gray-400">{data.month}</span>
-                                </div>
-                            ))}
+                                    
+                                    {/* The Line */}
+                                    <polyline
+                                        fill="none"
+                                        stroke="url(#lineGradient)"
+                                        strokeWidth="3"
+                                        vectorEffect="non-scaling-stroke"
+                                        points={revenueData.map((d, i) => `${(i / Math.max(1, revenueData.length - 1)) * 100},${100 - (d.value / maxRevenue) * 100}`).join(' ')}
+                                        className="transition-all duration-300"
+                                    />
+
+                                    {/* Points/Nodes */}
+                                    {revenueData.map((d, i) => (
+                                        <circle
+                                            key={i}
+                                            cx={(i / Math.max(1, revenueData.length - 1)) * 100}
+                                            cy={100 - (d.value / maxRevenue) * 100}
+                                            r="4"
+                                            fill="#1e1828"
+                                            stroke="#d946ef"
+                                            strokeWidth="3"
+                                            vectorEffect="non-scaling-stroke"
+                                            className="hover:r-6 cursor-pointer transition-all duration-300"
+                                        >
+                                            <title>{d.month}: ${d.value}</title>
+                                        </circle>
+                                    ))}
+                                </svg>
+                            )}
+
+                            {/* X-Axis Labels */}
+                            <div className="absolute top-full left-0 right-0 flex justify-between mt-3 text-xs text-gray-400">
+                                {revenueData.map((data) => (
+                                    <span key={data.month} className="text-center" style={{ width: '40px', marginLeft: '-20px', marginRight: '-20px' }}>
+                                        {data.month}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     </div>
 

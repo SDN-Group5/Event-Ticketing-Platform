@@ -70,8 +70,8 @@ export default function SeatMapDesigner({ navigation, route }: any) {
 
     // Each seat is w-8 (32px) + mx-1 (8px) = 40px width
     // Height is h-8 (32px) + mb-3 (12px) = 44px
-    const mapWidth = Math.max(Dimensions.get('window').width, maxCol * 40 + 100);
-    const mapHeight = Math.max(Dimensions.get('window').height - 300, maxRow * 44 + 200);
+    const mapWidth = Math.max(Dimensions.get('window').width, maxCol * 40 + 600);
+    const mapHeight = Math.max(Dimensions.get('window').height - 300, maxRow * 44 + 600);
     return { width: mapWidth, height: mapHeight };
   }, [seatsByRow]);
 
@@ -111,17 +111,30 @@ export default function SeatMapDesigner({ navigation, route }: any) {
       savedTranslateY.value = translateY.value;
     })
     .onUpdate((event) => {
-      translateX.value = savedTranslateX.value + event.translationX;
-      translateY.value = savedTranslateY.value + event.translationY;
+      const limitX = mapDimensions.width / 2;
+      const limitY = mapDimensions.height / 2;
+      let nextX = savedTranslateX.value + event.translationX;
+      let nextY = savedTranslateY.value + event.translationY;
+
+      if (nextX > limitX) nextX = limitX;
+      else if (nextX < -limitX) nextX = -limitX;
+      
+      if (nextY > limitY) nextY = limitY;
+      else if (nextY < -limitY) nextY = -limitY;
+
+      translateX.value = nextX;
+      translateY.value = nextY;
     })
     .onEnd((event) => {
+        const limitX = mapDimensions.width / 2;
+        const limitY = mapDimensions.height / 2;
         translateX.value = withDecay({
             velocity: event.velocityX,
-            clamp: [-mapDimensions.width, mapDimensions.width],
+            clamp: [-limitX, limitX],
         });
         translateY.value = withDecay({
             velocity: event.velocityY,
-            clamp: [-mapDimensions.height, mapDimensions.height],
+            clamp: [-limitY, limitY],
         });
     });
 

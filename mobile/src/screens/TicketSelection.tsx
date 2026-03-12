@@ -112,7 +112,7 @@ export default function TicketSelection({ navigation, route }: any) {
         maxX = Math.max(maxX, x + w);
         maxY = Math.max(maxY, y + h);
     });
-    return { width: Math.max(Dimensions.get('window').width, maxX + 200), height: Math.max(Dimensions.get('window').height - 250, maxY + 200) };
+    return { width: Math.max(Dimensions.get('window').width, maxX + 600), height: Math.max(Dimensions.get('window').height - 250, maxY + 600) };
   }, [layout?.zones]);
 
   const scale = useSharedValue(1);
@@ -144,17 +144,30 @@ export default function TicketSelection({ navigation, route }: any) {
       savedTranslateY.value = translateY.value;
     })
     .onUpdate((event) => {
-      translateX.value = savedTranslateX.value + event.translationX;
-      translateY.value = savedTranslateY.value + event.translationY;
+      const limitX = mapDimensions.width / 2;
+      const limitY = mapDimensions.height / 2;
+      let nextX = savedTranslateX.value + event.translationX;
+      let nextY = savedTranslateY.value + event.translationY;
+
+      if (nextX > limitX) nextX = limitX;
+      else if (nextX < -limitX) nextX = -limitX;
+      
+      if (nextY > limitY) nextY = limitY;
+      else if (nextY < -limitY) nextY = -limitY;
+
+      translateX.value = nextX;
+      translateY.value = nextY;
     })
     .onEnd((event) => {
+        const limitX = mapDimensions.width / 2;
+        const limitY = mapDimensions.height / 2;
         translateX.value = withDecay({
             velocity: event.velocityX,
-            clamp: [-mapDimensions.width, mapDimensions.width],
+            clamp: [-limitX, limitX],
         });
         translateY.value = withDecay({
             velocity: event.velocityY,
-            clamp: [-mapDimensions.height, mapDimensions.height],
+            clamp: [-limitY, limitY],
         });
     });
 

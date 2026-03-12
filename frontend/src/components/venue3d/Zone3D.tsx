@@ -11,7 +11,6 @@ import {
     SEAT_HEIGHT_3D,
     SEAT_BACK_HEIGHT_3D,
 } from '../../constants/layoutConstants';
-import { Person3D } from './Person3D';
 
 interface Zone {
     id: string;
@@ -259,33 +258,7 @@ export function Zone3D({
                         ${zone.price}
                     </Text>
 
-                    {/* Render Random People in Standing Zone */}
-                    {showPeople && (
-                        <group>
-                            {/* Limit to 7-8 people per standing zone */}
-                            {Array.from({ length: 7 + (zone.name.length % 2) }).map((_, i) => {
-                                // Deterministic random based on index and zone id
-                                const seed = i * 123.45 + (zone.id.charCodeAt(0) || 0);
-                                const randX = (Math.sin(seed) * 0.5 + 0.5) * (zoneWidth - 2) - (zoneWidth - 2) / 2;
-                                const randZ = (Math.cos(seed * 1.5) * 0.5 + 0.5) * (zoneDepth - 2) - (zoneDepth - 2) / 2;
-                                const randRot = (Math.sin(seed * 3) * Math.PI);
-
-                                // Random shirt colors
-                                const shirtColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-                                const color = shirtColors[i % shirtColors.length];
-
-                                return (
-                                    <group key={`standing-person-${i}`} position={[randX, baseElevation, randZ]} rotation={[0, randRot, 0]}>
-                                        <Person3D
-                                            position={[0, 0, 0]}
-                                            color={color}
-                                            pose="standing"
-                                        />
-                                    </group>
-                                );
-                            })}
-                        </group>
-                    )}
+                    {/* Render Random People in Standing Zone (Centralized to Venue3DViewer) */}
                 </>
             )}
 
@@ -387,26 +360,7 @@ export function Zone3D({
                         </Html>
                     )}
 
-                    {/* 3D People on Booked Seats */}
-                    {showPeople && seatData.map((seat, index) => {
-                        if (!bookedSeats.includes(seat.id)) return null;
-
-                        // Random shirt colors for variety
-                        const shirtColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-                        const randomColor = shirtColors[index % shirtColors.length];
-
-                        return (
-                            <Person3D
-                                key={seat.id}
-                                position={[
-                                    seat.position[0],
-                                    seat.position[1] + 0.2, // Sit on the seat
-                                    seat.position[2]
-                                ]}
-                                color={randomColor}
-                            />
-                        );
-                    })}
+                    {/* 3D People on Booked Seats (Centralized to Venue3DViewer) */}
                 </>
             )}
         </group>

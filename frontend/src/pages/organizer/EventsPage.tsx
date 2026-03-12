@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
-import { EventAPI } from '../../services/eventApiService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../components/common/ToastProvider';
 import type { EventLayout, LayoutZone } from '../../types/layout';
 
 interface OrganizerEvent {
@@ -14,16 +14,20 @@ interface OrganizerEvent {
   ticketsSold: number;
   totalCapacity: number;
   revenue: number;
-  status: 'draft' | 'published' | 'completed' | 'rejected';
+  status: 'draft' | 'published' | 'rejected';
   rejectionReason?: string;
 }
 
 export const EventsPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'draft' | 'published' | 'completed' | 'rejected'>('all');
+  const [filter, setFilter] = useState<'all' | 'draft' | 'published' | 'rejected'>('all');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const sumSeatMetadata = (zones: LayoutZone[]) => {
     let totalCapacity = 0;
@@ -31,18 +35,23 @@ export const EventsPage: React.FC = () => {
     let revenue = 0;
 
     for (const z of zones || []) {
-      if (z.type !== 'seats') continue;
-      const meta = (z as any).seatMetadata as
-        | { totalSeats?: number; soldSeats?: number }
-        | undefined;
+      if (z.type === 'seats') {
+        const meta = (z as any).seatMetadata as
+          | { totalSeats?: number; soldSeats?: number }
+          | undefined;
 
-      const zoneTotal = meta?.totalSeats ?? 0;
-      const zoneSold = meta?.soldSeats ?? 0;
-      const price = typeof z.price === 'number' ? z.price : 0;
+        const zoneTotal = meta?.totalSeats ?? 0;
+        const zoneSold = meta?.soldSeats ?? 0;
+        const price = typeof z.price === 'number' ? z.price : 0;
 
-      totalCapacity += zoneTotal;
-      ticketsSold += zoneSold;
-      revenue += zoneSold * price;
+        totalCapacity += zoneTotal;
+        ticketsSold += zoneSold;
+        revenue += zoneSold * price;
+      } else if (z.type === 'standing') {
+        // For standing areas, calculate capacity from rows × seatsPerRow
+        const capacity = ((z as any).rows ?? 0) * ((z as any).seatsPerRow ?? 0);
+        totalCapacity += capacity;
+      }
     }
 
     return { totalCapacity, ticketsSold, revenue };
@@ -50,20 +59,21 @@ export const EventsPage: React.FC = () => {
 
   const mapLayoutToOrganizerEvent = (layout: EventLayout, eventStatus?: string, rejectionReason?: string): OrganizerEvent => {
     const { totalCapacity, ticketsSold, revenue } = sumSeatMetadata(layout.zones || []);
-    const eventDateMs = layout.eventDate ? new Date(layout.eventDate).getTime() : NaN;
     
-    let status: OrganizerEvent['status'] = 'published';
+    // Default to 'draft' for new events waiting admin approval
+    let status: OrganizerEvent['status'] = 'draft';
     
-    // Determine status from event data first, then fallback to date-based logic
-    if (eventStatus === 'draft') {
-      status = 'draft';
+    // Determine status from event data (from backend)
+    if (eventStatus === 'published') {
+      status = 'published';
     } else if (eventStatus === 'rejected') {
       status = 'rejected';
-    } else if (Number.isFinite(eventDateMs) && eventDateMs < Date.now()) {
-      status = 'completed';
-    } else if (eventStatus === 'published') {
-      status = 'published';
+    } else if (eventStatus === 'cancelled') {
+      status = 'rejected'; // Treat cancelled as rejected for UI
+    } else if (eventStatus === 'draft') {
+      status = 'draft';
     }
+    // If eventStatus is undefined, default to 'draft' (already set above)
 
     return {
       eventId: String(layout.eventId),
@@ -92,17 +102,6 @@ export const EventsPage: React.FC = () => {
         
         // Create a map of events for quick lookup
         const eventMap = new Map();
-        
-        // Try to get event details from API
-        try {
-          const myEventsResponse = await EventAPI.getAllEvents();
-          const myEvents = (myEventsResponse.data || []).filter((e: any) => e.organizerId === user.id);
-          myEvents.forEach((event: any) => {
-            eventMap.set(String(event._id), event);
-          });
-        } catch (error) {
-          console.error('Error fetching events from API:', error);
-        }
 
         // Map layouts to organizer events
         const mapped = (layouts || []).map(layout => {
@@ -124,12 +123,31 @@ export const EventsPage: React.FC = () => {
     };
 
     fetchEvents();
-  }, [user?.id]);
+  }, [user?.id, location.pathname]);
 
   const filteredEvents = events.filter(event => {
     if (filter === 'all') return true;
     return event.status === filter;
   });
+
+  const handleDeleteEvent = async (eventId: string) => {
+    setDeleting(true);
+    try {
+      // Delete layout
+      await LayoutAPI.deleteLayout(eventId);
+      
+      // Remove from local state
+      setEvents(events.filter(e => e.eventId !== eventId));
+      setDeleteConfirm(null);
+      
+      showToast('Event deleted successfully', 'success');
+    } catch (error: any) {
+      console.error('Error deleting event:', error);
+      showToast('Failed to delete event', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -137,8 +155,6 @@ export const EventsPage: React.FC = () => {
         return 'bg-yellow-500/20 text-yellow-400';
       case 'published':
         return 'bg-green-500/20 text-green-400';
-      case 'completed':
-        return 'bg-purple-500/20 text-purple-400';
       case 'rejected':
         return 'bg-red-500/20 text-red-400';
       default:
@@ -152,8 +168,6 @@ export const EventsPage: React.FC = () => {
         return 'edit';
       case 'published':
         return 'check_circle';
-      case 'completed':
-        return 'done_all';
       case 'rejected':
         return 'cancel';
       default:
@@ -189,7 +203,7 @@ export const EventsPage: React.FC = () => {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {(['all', 'draft', 'published', 'completed', 'rejected'] as const).map(status => (
+        {(['all', 'draft', 'published', 'rejected'] as const).map(status => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -304,27 +318,74 @@ export const EventsPage: React.FC = () => {
                   <div className="flex flex-wrap gap-2">
                     <button 
                       onClick={() => navigate(`/organizer/events/${event.eventId}`)}
-                      className="px-4 py-2 bg-[#8655f6]/20 hover:bg-[#8655f6]/30 text-[#8655f6] rounded-lg text-sm transition-colors"
+                      className="px-4 py-2 bg-[#8655f6]/20 hover:bg-[#8655f6]/30 text-[#8655f6] rounded-lg text-sm transition-colors flex items-center gap-1"
                     >
+                      <span className="material-symbols-outlined text-sm">info</span>
                       View Details
+                    </button>
+                    <button 
+                      onClick={() => navigate(`/organizer/stage-builder?eventId=${event.eventId}`)}
+                      className="px-4 py-2 bg-[#3a3447] hover:bg-[#3a3447]/80 text-gray-300 rounded-lg text-sm transition-colors flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">grid_on</span>
+                      Layout
+                    </button>
+                    <button 
+                      onClick={() => navigate(`/organizer/events/${event.eventId}/tickets`)}
+                      className="px-4 py-2 bg-[#3a3447] hover:bg-[#3a3447]/80 text-gray-300 rounded-lg text-sm transition-colors flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">confirmation_number</span>
+                      Tickets
                     </button>
                     {event.status === 'draft' && (
                       <button 
                         onClick={() => navigate(`/organizer/events/${event.eventId}/edit`)}
-                        className="px-4 py-2 bg-[#3a3447] hover:bg-[#3a3447]/80 text-gray-300 rounded-lg text-sm transition-colors"
+                        className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm transition-colors flex items-center gap-1"
                       >
+                        <span className="material-symbols-outlined text-sm">edit</span>
                         Edit
                       </button>
                     )}
                     {event.status === 'rejected' && (
                       <button 
                         onClick={() => navigate(`/organizer/events/${event.eventId}/edit`)}
-                        className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-sm transition-colors"
+                        className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-sm transition-colors flex items-center gap-1"
                       >
+                        <span className="material-symbols-outlined text-sm">edit</span>
                         Revise & Resubmit
                       </button>
                     )}
+                    <button 
+                      onClick={() => setDeleteConfirm(event.eventId)}
+                      className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                      Delete
+                    </button>
                   </div>
+
+                  {/* Delete Confirmation */}
+                  {deleteConfirm === event.eventId && (
+                    <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                      <p className="text-red-300 mb-3">This will delete the event and all associated layouts. This action cannot be undone.</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDeleteEvent(event.eventId)}
+                          disabled={deleting}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
+                        >
+                          {deleting ? 'Deleting...' : 'Confirm Delete'}
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(null)}
+                          disabled={deleting}
+                          className="px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

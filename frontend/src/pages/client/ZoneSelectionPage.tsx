@@ -80,7 +80,10 @@ export const ZoneSelectionPage: React.FC = () => {
     useEffect(() => {
         if (!id) return;
 
-        const socket = io('http://localhost:4002', { transports: ['websocket', 'polling'] });
+        const socketUrl = (import.meta as any).env.VITE_SEAT_API_URL || (import.meta as any).env.VITE_API_URL || 'http://localhost:4002';
+        // Remove trailing /api/v1 if present in the URL for socket connection
+        const normalizedSocketUrl = socketUrl.replace(/\/api\/v1\/?$/, '');
+        const socket = io(normalizedSocketUrl, { transports: ['websocket', 'polling'] });
         socketRef.current = socket;
 
         socket.on('connect', () => {

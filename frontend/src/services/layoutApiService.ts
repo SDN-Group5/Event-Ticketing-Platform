@@ -22,9 +22,12 @@ export interface SeatMetadata {
     lastUpdated: string;
 }
 
+// Get API base URL from Vite env variables or fallback to local gateway
+const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+
 // Setup axios instance
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4002/api/v1',
+    baseURL: `${API_BASE}/api/v1`,
     headers: {
         'Content-Type': 'application/json',
     },

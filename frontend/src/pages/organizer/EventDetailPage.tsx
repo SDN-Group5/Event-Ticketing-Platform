@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { EventAPI } from '../../services/eventApiService';
 import { LayoutAPI } from '../../services/layoutApiService';
+import ConfirmModal from '../../components/modals/ConfirmModal';
+import { useToast } from '../../components/common/ToastProvider';
 
 interface EventDetail {
     _id: string;
@@ -24,6 +25,7 @@ interface EventStats {
 export const EventDetailPage: React.FC = () => {
     const navigate = useNavigate();
     const { eventId } = useParams<{ eventId: string }>();
+    const { showToast } = useToast();
     const [event, setEvent] = useState<EventDetail | null>(null);
     const [stats, setStats] = useState<EventStats>({
         totalCapacity: 0,
@@ -32,6 +34,8 @@ export const EventDetailPage: React.FC = () => {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         const loadEventData = async () => {
@@ -41,12 +45,20 @@ export const EventDetailPage: React.FC = () => {
                     return;
                 }
 
-                const eventData = await EventAPI.getEventById(eventId);
-                setEvent(eventData.data || eventData);
-
-                // Load layout stats
+                // Load layout and map to event
                 try {
                     const layout = await LayoutAPI.getLayout(eventId);
+                    setEvent({
+                        _id: layout.eventId || eventId,
+                        title: layout.eventName || 'Unnamed Event',
+                        description: layout.eventDescription || '',
+                        category: 'Event',
+                        location: layout.eventLocation || 'TBD',
+                        startTime: layout.eventDate || new Date().toISOString(),
+                        endTime: layout.eventDate || new Date().toISOString(),
+                        createdAt: (layout as any).createdAt || new Date().toISOString(),
+                        updatedAt: (layout as any).updatedAt || new Date().toISOString(),
+                    });
                     if (layout && layout.zones) {
                         let totalCapacity = 0;
                         let ticketsSold = 0;
@@ -58,6 +70,10 @@ export const EventDetailPage: React.FC = () => {
                                 totalCapacity += meta?.totalSeats ?? 0;
                                 ticketsSold += meta?.soldSeats ?? 0;
                                 revenue += (meta?.soldSeats ?? 0) * (zone.price ?? 0);
+                            } else if (zone.type === 'standing') {
+                                // For standing areas, calculate capacity from rows × seatsPerRow
+                                const capacity = (zone.rows ?? 0) * (zone.seatsPerRow ?? 0);
+                                totalCapacity += capacity;
                             }
                         });
 
@@ -82,14 +98,23 @@ export const EventDetailPage: React.FC = () => {
     };
 
     const handleDelete = async () => {
-        if (window.confirm('Are you sure you want to delete this event?')) {
+        setIsDeleting(true);
+        try {
+            // Delete layout
             try {
-                await EventAPI.deleteEvent(eventId!);
-                navigate('/organizer');
-            } catch (err: any) {
-                const errorMessage = err.response?.data?.message || 'Failed to delete event';
-                setError(errorMessage);
+                await LayoutAPI.deleteLayout(eventId!);
+            } catch (err) {
+                console.error('Error deleting layout:', err);
             }
+            showToast('Event deleted successfully', 'success');
+            navigate('/organizer/events');
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Failed to delete event';
+            showToast(errorMessage, 'error');
+            setError(errorMessage);
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteConfirmOpen(false);
         }
     };
 
@@ -165,7 +190,7 @@ export const EventDetailPage: React.FC = () => {
                             Edit
                         </button>
                         <button
-                            onClick={handleDelete}
+                            onClick={() => setIsDeleteConfirmOpen(true)}
                             className="flex-1 md:flex-none px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
                             <span className="material-symbols-outlined">delete</span>
@@ -291,7 +316,7 @@ export const EventDetailPage: React.FC = () => {
                         Manage Layout
                     </button>
                     <button
-                        onClick={() => navigate('/organizer')}
+                        onClick={() => navigate('/organizer/events')}
                         className="px-6 py-3 bg-[#2a2436] hover:bg-[#3a3446] text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                         <span className="material-symbols-outlined">arrow_back</span>
@@ -299,6 +324,18 @@ export const EventDetailPage: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={isDeleteConfirmOpen}
+                title="Delete Event"
+                message="Are you sure you want to delete this event? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                isDangerous={true}
+                isLoading={isDeleting}
+                onConfirm={handleDelete}
+                onCancel={() => setIsDeleteConfirmOpen(false)}
+            />
         </div>
     );
 };

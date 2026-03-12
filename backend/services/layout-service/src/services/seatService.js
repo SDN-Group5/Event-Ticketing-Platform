@@ -11,7 +11,18 @@ class SeatService {
         const seats = [];
         const totalSeats = zone.rows * zone.seatsPerRow;
 
+        const getRowLetters = (num) => {
+            let letters = '';
+            while (num > 0) {
+                let remainder = (num - 1) % 26;
+                letters = String.fromCharCode(65 + remainder) + letters;
+                num = Math.floor((num - 1) / 26);
+            }
+            return letters;
+        };
+
         for (let row = 1; row <= zone.rows; row++) {
+            const rowLabel = getRowLetters(row);
             for (let seatNum = 1; seatNum <= zone.seatsPerRow; seatNum++) {
                 seats.push({
                     eventId,
@@ -19,7 +30,7 @@ class SeatService {
                     zoneId: zone.id,
                     row,
                     seatNumber: seatNum,
-                    seatLabel: `${zone.name}-R${row}S${seatNum}`,
+                    seatLabel: `${rowLabel}${seatNum}`,
                     price: zone.price || 0,
                     status: 'available'
                 });

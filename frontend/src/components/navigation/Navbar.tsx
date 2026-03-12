@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { SearchInput } from '../common/Input';
 import { Button } from '../common/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../constants/routes';
+import { NavbarSearch } from './NavbarSearch';
 
 interface NavbarProps {
     showSearch?: boolean;
@@ -53,14 +53,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 {/* Search */}
                 {showSearch && (
-                    <div className="hidden md:flex flex-1 max-w-lg mx-4">
-                        <SearchInput placeholder="Search events, artists, or venues..." />
+                    <div className="flex-1 max-w-xl mx-2">
+                        <NavbarSearch />
                     </div>
                 )}
 
                 {/* Khi đăng nhập (customer): Vé | Sự kiện | Lịch sử thanh toán */}
                 {isCustomer && (
-                    <nav className="hidden md:flex items-center gap-1">
+                    <nav className="hidden lg:flex items-center gap-1">
                         <Link
                             to={ROUTES.MY_TICKETS}
                             className="px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-[#2a2436] transition-colors"

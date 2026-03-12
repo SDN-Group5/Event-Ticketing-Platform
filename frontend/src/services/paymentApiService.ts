@@ -24,6 +24,7 @@ export interface CreatePaymentInput {
   items: {
     zoneName: string;
     seatId?: string;
+    seatLabel?: string;
     price: number;
     quantity: number;
   }[];

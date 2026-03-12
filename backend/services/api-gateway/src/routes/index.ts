@@ -112,8 +112,8 @@ export const setupRoutes = (app: Express) => {
   //  - Upstream:  auth-service expose `/api/users/...` (xem user.routes.ts)
   app.use(
     '/api/users',
-    // Không cần pathRewrite, giữ nguyên `/api/users/...` cho auth-service
-    createProxyMiddleware(createProxy(AUTH_SERVICE_URL))
+    // Thêm prefix `/api/users` vào trước path vì app.use đã loại bỏ nó
+    createProxyMiddleware(createProxy(AUTH_SERVICE_URL, { '^/(?!api/users)': '/api/users/' }))
   );
 
 
@@ -152,7 +152,14 @@ export const setupRoutes = (app: Express) => {
   app.use(
     '/api/payments',
     createProxyMiddleware(
-      createProxy(PAYMENT_SERVICE_URL, { '^/(?!api/payments)': '/api/payments/' })
+      createProxy(PAYMENT_SERVICE_URL, { '^/(?!api/payments|api/analytics)': '/api/payments/' })
+    )
+  );
+
+  app.use(
+    '/api/analytics',
+    createProxyMiddleware(
+      createProxy(PAYMENT_SERVICE_URL, { '^/(?!api/analytics)': '/api/analytics/' })
     )
   );
 

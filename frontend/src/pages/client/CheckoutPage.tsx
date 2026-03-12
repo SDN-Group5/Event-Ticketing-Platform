@@ -80,10 +80,11 @@ export const CheckoutPage: React.FC = () => {
     setError(null);
 
     try {
-      const items = seats?.length
+          const items = seats?.length
         ? seats.map((seat: any) => ({
             zoneName: zone.name,
             seatId: seat.id,
+            seatLabel: seat.label || `${seat.row}${seat.number}`,
             price: zone.price,
             quantity: 1,
           }))
@@ -383,7 +384,7 @@ export const CheckoutPage: React.FC = () => {
                         key={seat.id}
                         className="text-[10px] px-2 py-1 rounded bg-white/10 text-gray-300"
                       >
-                        R{seat.row}-{seat.number}
+                        {seat.label || `${seat.row}${seat.number}`}
                       </span>
                     ))}
                   </div>

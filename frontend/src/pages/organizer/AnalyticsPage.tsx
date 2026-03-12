@@ -114,28 +114,6 @@ export const AnalyticsPage: React.FC = () => {
     } catch (err: any) {
       console.error('Error fetching analytics:', err);
       setError('Failed to load analytics data');
-      
-      // Use mock data as fallback
-      setRevenueData([
-        { month: 'Jan', value: 4500 },
-        { month: 'Feb', value: 6200 },
-        { month: 'Mar', value: 8100 },
-        { month: 'Apr', value: 5800 },
-        { month: 'May', value: 9500 },
-        { month: 'Jun', value: 12400 },
-      ]);
-      
-      setTicketTypes([
-        { type: 'General', count: 1523, percentage: 54, color: '#3b82f6' },
-        { type: 'VIP', count: 987, percentage: 35, color: '#8655f6' },
-        { type: 'Backstage', count: 337, percentage: 11, color: '#ec4899' },
-      ]);
-
-      setTopEvents([
-        { name: 'Neon Nights Festival', revenue: '$18,450', tickets: 890, rating: 4.9 },
-        { name: 'Bass Drop Party', revenue: '$12,300', tickets: 560, rating: 4.7 },
-        { name: 'Electronic Dreams', revenue: '$9,800', tickets: 340, rating: 4.8 },
-      ]);
     } finally {
       setLoading(false);
     }
@@ -238,16 +216,22 @@ export const AnalyticsPage: React.FC = () => {
                             <h2 className="text-xl font-bold text-white">Revenue Overview</h2>
                         </div>
                         <div className="flex items-end gap-2 h-64">
-                            {revenueData.map((data) => (
-                                <div key={data.month} className="flex-1 flex flex-col items-center gap-2">
+                            {revenueData.map((data) => {
+                                let label = data.month;
+                                if (label.length === 10 && label.includes('-')) {
+                                    label = label.substring(5); // MM-DD
+                                }
+                                return (
+                                <div key={data.month} className="flex-1 flex flex-col items-center justify-end gap-2 h-full">
                                     <div
                                         className="w-full bg-gradient-to-t from-[#8655f6] to-[#d946ef] rounded-t-lg transition-all hover:opacity-80 cursor-pointer"
                                         style={{ height: `${(data.value / maxRevenue) * 100}%` }}
                                         title={`${data.month}: $${data.value}`}
                                     />
-                                    <span className="text-xs text-gray-400">{data.month}</span>
+                                    <span className="text-xs text-gray-400 max-w-full overflow-hidden text-ellipsis whitespace-nowrap" title={label}>{label}</span>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 

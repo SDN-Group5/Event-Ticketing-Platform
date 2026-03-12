@@ -64,7 +64,7 @@ interface AnalyticsDetail {
 }
 
 const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('auth_token');
   return {
     headers: {
       Authorization: `Bearer ${token}`

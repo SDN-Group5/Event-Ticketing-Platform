@@ -10,6 +10,8 @@ export interface TicketPopupData {
   ticketCode: string;
   /** Row (hàng) - optional, hiển thị "—" nếu không có */
   row?: string;
+  eventId?: string;
+  zoneId?: string; // Tên phân loại hoặc ID gốc của Khu Vực để tìm ảnh thiết kế
 }
 
 interface TicketPopupProps {
@@ -38,6 +40,23 @@ export const TicketPopup: React.FC<TicketPopupProps> = ({ isOpen, onClose, ticke
   const nameParts = fullName.split(' ');
   const highlightWord = nameParts.length > 1 ? nameParts.pop() as string : '';
   const baseTitle = nameParts.join(' ');
+  // Handle dynamically extracting design image
+  const ticketDesignsStore = 
+    ticket?.eventId 
+      ? localStorage.getItem(`ticket_designs_${ticket.eventId}`) 
+      : null;
+  const ticketDesigns = ticketDesignsStore ? JSON.parse(ticketDesignsStore) : {};
+  // Attempt to use zone mapping, matching by name if zoneId isn't purely ID
+  // Lấy ảnh thiết kế từ LocalStorage, dùng zone (tên) hoặc zoneId
+  const zoneKey = ticket?.zone; // e.g. "VIP A"
+  const designImage = ticketDesigns ? (
+    Object.keys(ticketDesigns).find(key => key === ticket?.zoneId)
+    ? ticketDesigns[ticket!.zoneId!]
+    : Object.keys(ticketDesigns).find(key => ticketDesigns[key] && key === zoneKey) 
+      ? ticketDesigns[zoneKey!]
+      // Try to find if zone name matches key loosely
+      : Object.values(ticketDesigns)[0]
+  ) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -82,15 +101,29 @@ export const TicketPopup: React.FC<TicketPopupProps> = ({ isOpen, onClose, ticke
           </div>
 
           {/* Phần vé chính - nền xanh tím + QR lớn bên phải */}
-          <div className="flex-1 min-w-0 relative bg-gradient-to-br from-[#1b1235] via-[#110d25] to-[#1b1030] rounded-r-3xl overflow-hidden">
-            {/* Bokeh effect */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute -top-8 -right-6 w-32 h-32 rounded-full bg-[#7c3aed]/45 blur-3xl" />
-              <div className="absolute bottom-0 left-[-40px] w-40 h-40 rounded-full bg-[#ec4899]/30 blur-3xl" />
-              <div className="absolute top-1/3 right-1/4 w-20 h-20 rounded-full bg-[#22d3ee]/30 blur-2xl" />
-            </div>
+          <div 
+            className="flex-1 min-w-0 relative bg-[#1b1235] rounded-r-3xl overflow-hidden" 
+            style={designImage ? {
+              backgroundImage: `url(${designImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            } : {
+              background: 'linear-gradient(to bottom right, #1b1235, #110d25, #1b1030)'
+            }}
+          >
+            {/* Lớp overlay làm tối nền để rực chữ nếu có ảnh thiết kế */}
+            {designImage && <div className="absolute inset-0 bg-black/50" />}
 
-            <div className="relative p-5 flex h-full gap-6">
+            {/* Bokeh effect - Chỉ hiện khi KO có hình nền tuỳ chỉnh */}
+            {!designImage && (
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -top-8 -right-6 w-32 h-32 rounded-full bg-[#7c3aed]/45 blur-3xl" />
+                <div className="absolute bottom-0 left-[-40px] w-40 h-40 rounded-full bg-[#ec4899]/30 blur-3xl" />
+                <div className="absolute top-1/3 right-1/4 w-20 h-20 rounded-full bg-[#22d3ee]/30 blur-2xl" />
+              </div>
+            )}
+
+            <div className="relative p-5 flex h-full gap-6 z-10">
               {/* Thông tin bên trái */}
               <div className="flex-1 flex flex-col">
                 <p className="text-white/70 text-[10px] uppercase tracking-[0.18em] mb-1">

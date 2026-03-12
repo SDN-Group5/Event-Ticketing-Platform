@@ -41,6 +41,7 @@ export const ManageTicketPage: React.FC = () => {
   });
   const [filterStatus, setFilterStatus] = useState<'all' | 'available' | 'sold' | 'reserved' | 'blocked'>('all');
   const [ticketImages, setTicketImages] = useState<TicketImage>({});
+  const [savedTicketImages, setSavedTicketImages] = useState<TicketImage>({});
   const [editingZoneId, setEditingZoneId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'list' | 'design'>('list');
@@ -61,6 +62,12 @@ export const ManageTicketPage: React.FC = () => {
           // Set first zone as selected
           if (layoutData.zones && layoutData.zones.length > 0) {
             setSelectedZone(layoutData.zones[0].id);
+          }
+
+          // Load mocked ticket designs since Event API is disabled
+          const stored = localStorage.getItem(`ticket_designs_${eventId}`);
+          if (stored) {
+            setSavedTicketImages(JSON.parse(stored));
           }
         } catch (err) {
           console.error('Error fetching layout:', err);
@@ -139,8 +146,15 @@ export const ManageTicketPage: React.FC = () => {
 
     setUploading(true);
     try {
-      // Feature disabled since EventService is removed
-      showToast('Saving ticket image is not supported in Layout mode yet', 'info');
+      // Feature disabled since EventService is removed, mock saving via localStorage:
+      const newSaved = {
+        ...savedTicketImages,
+        [zoneId]: ticketImages[zoneId]
+      };
+      setSavedTicketImages(newSaved);
+      localStorage.setItem(`ticket_designs_${eventId}`, JSON.stringify(newSaved));
+      
+      showToast('Ticket image saved successfully!', 'success');
       setEditingZoneId(null);
     } catch (err: any) {
       console.error('Error saving ticket image:', err);
@@ -470,11 +484,11 @@ export const ManageTicketPage: React.FC = () => {
                   ) : (
                     // View Mode
                     <div className="space-y-3">
-                      {event?.ticketImages?.[zone.id] ? (
+                      {savedTicketImages[zone.id] ? (
                         <div className="space-y-3">
                           <div className="relative w-full h-40 rounded-lg overflow-hidden bg-gray-900">
                             <img
-                              src={event.ticketImages[zone.id]}
+                              src={savedTicketImages[zone.id]}
                               alt={zone.name}
                               className="w-full h-full object-cover"
                             />
@@ -491,11 +505,17 @@ export const ManageTicketPage: React.FC = () => {
                         </div>
                       )}
                       <button
-                        onClick={() => setEditingZoneId(zone.id)}
+                        onClick={() => {
+                          setEditingZoneId(zone.id);
+                          // pre-fill the edit view with the saved image if there isn't a draft
+                          if (!ticketImages[zone.id] && savedTicketImages[zone.id]) {
+                            setTicketImages(prev => ({ ...prev, [zone.id]: savedTicketImages[zone.id] }));
+                          }
+                        }}
                         className="w-full px-4 py-2 bg-[#8655f6]/20 hover:bg-[#8655f6]/30 text-[#8655f6] rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
                         <span className="material-symbols-outlined text-sm">edit</span>
-                        {event?.ticketImages?.[zone.id] ? 'Change Image' : 'Set Image'}
+                        {savedTicketImages[zone.id] ? 'Change Image' : 'Set Image'}
                       </button>
                     </div>
                   )}

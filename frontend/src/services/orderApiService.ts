@@ -19,12 +19,14 @@ export interface Order {
   _id: string;
   orderCode: number;
   userId: string;
+  customerName?: string;
   eventId: string;
   eventName: string;
   organizerId: string;
   items: {
     zoneName: string;
     seatId?: string;
+    seatLabel?: string;
     price: number;
     quantity: number;
   }[];
@@ -40,6 +42,7 @@ export interface Order {
 
 export interface Customer {
   userId: string;
+  customerName?: string;
   orderCount: number;
   totalSpent: number;
   lastOrderDate: Date;
@@ -114,9 +117,10 @@ export const OrganizerOrderAPI = {
     const customers: Customer[] = res.data.data;
 
     // Tạo CSV content
-    const headers = ['Mã Khách', 'Số Đơn', 'Tổng Chi Tiêu', 'Lần Cuối Mua', 'Sự Kiện'];
+    const headers = ['Mã Khách', 'Tên Khách', 'Số Đơn', 'Tổng Chi Tiêu', 'Lần Cuối Mua', 'Sự Kiện'];
     const rows = customers.map((c) => [
       c.userId,
+      c.customerName || 'N/A',
       c.orderCount,
       c.totalSpent.toLocaleString('vi-VN'),
       new Date(c.lastOrderDate).toLocaleDateString('vi-VN'),
@@ -144,10 +148,11 @@ export const OrganizerOrderAPI = {
     const orders: Order[] = res.data.data;
 
     // Tạo CSV content
-    const headers = ['Mã Đơn', 'Mã Khách', 'Sự Kiện', 'Số Vé', 'Tổng Tiền', 'Trạng Thái', 'Ngày Thanh Toán'];
+    const headers = ['Mã Đơn', 'Mã Khách', 'Tên Khách', 'Sự Kiện', 'Số Vé', 'Tổng Tiền', 'Trạng Thái', 'Ngày Thanh Toán'];
     const rows = orders.map((o) => [
       o.orderCode,
       o.userId,
+      o.customerName || 'N/A',
       o.eventName,
       o.items.reduce((sum, item) => sum + item.quantity, 0),
       o.totalAmount.toLocaleString('vi-VN'),

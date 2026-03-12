@@ -59,7 +59,7 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                     id: `${seatData.zoneId}-${seatData.row}-${seatData.seatNumber}`,
                     row: String(seatData.row),
                     number: seatData.seatNumber,
-                    label: `${getRowLetter(seatData.row)}${seatData.seatNumber}`,
+                    label: seatData.seatLabel || `${getRowLetter(seatData.row)}${seatData.seatNumber}`,
                     zone: zone.id,
                     status,
                     price: zone.price || seatData.price,

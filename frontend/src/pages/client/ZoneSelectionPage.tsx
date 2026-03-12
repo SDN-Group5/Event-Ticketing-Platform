@@ -268,6 +268,7 @@ export const ZoneSelectionPage: React.FC = () => {
             return {
                 zoneName: seat.zone,
                 seatId: seat.id,
+                seatLabel: seat.label,
                 price: seat.price,
                 quantity: 1,
             };

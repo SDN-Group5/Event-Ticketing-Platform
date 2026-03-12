@@ -7,6 +7,7 @@ import { createPaymentCompleteSaga } from '../saga/paymentCompleteSaga';
 import { createCancelSaga } from '../saga/cancelSaga';
 import { createCancelVoucherSaga } from '../saga/cancelVoucherSaga';
 import { SagaResult } from '../saga/sagaOrchestrator';
+import axios from 'axios';
 
 const COMMISSION_RATE = 0.05;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -66,6 +67,41 @@ function verifyWebhookWithMultipleKeys(body: any): { data: any; channel: PayOSCh
 
   return null;
 }
+
+const getCustomerInfo = async (userId: string) => {
+  try {
+    // Lưu ý: Thay đổi port 4000 thành cổng chạy API Gateway hoặc Auth Service của bạn
+    const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4001'; 
+    const res = await axios.get(`${AUTH_URL}/api/users/${userId}`);
+    const user = res.data?.data;
+    
+    if (user) {
+      return {
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        email: user.email || '',
+        phone: user.phone || ''
+      };
+    }
+  } catch (error) {
+    // Im lặng bỏ qua nếu lỗi mạng hoặc không tìm thấy user
+  }
+  return { 
+    name: `Khách hàng (ID: ${userId.substring(0, 5)}...)`, 
+    email: 'N/A', 
+    phone: 'N/A' 
+  };
+};
+
+// 2. Helper: Làm đẹp chi tiết khu vực và ghế ngồi
+const formatOrderDetails = (items: any[]) => {
+  if (!items || !items.length) return [];
+  return items.map(item => ({
+    zoneName: item.zoneName || 'Khu vực chung',
+    seat: item.seatLabel || item.seatId || 'Ghế tự do (Không có số)',
+    quantity: item.quantity || 1,
+    price: item.price || 0
+  }));
+};
 
 async function saveSagaLog(order: any, sagaName: string, result: SagaResult): Promise<void> {
   try {
@@ -232,9 +268,19 @@ export const getOrganizerOrders = async (req: Request, res: Response) => {
 
     const totalPages = Math.ceil(total / limitNum);
 
+    const ordersWithCustomerInfo = await Promise.all(
+      orders.map(async (order) => {
+        const userInfo = await getCustomerInfo(order.userId);
+        return {
+          ...order.toObject(),
+          customerName: userInfo.name,
+        };
+      })
+    );
+
     return res.json({
       success: true,
-      data: orders,
+      data: ordersWithCustomerInfo,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -299,17 +345,26 @@ export const getOrganizerCustomers = async (req: Request, res: Response) => {
       customer.events.add(order.eventName);
     });
 
-    // Convert Map to array, map events Set to array, sort by lastOrderDate descending
-    let customers = Array.from(customerMap.values())
-      .map(c => ({
-        ...c,
-        events: Array.from(c.events),
-      }))
-      .sort((a, b) => {
-        const dateA = a.lastOrderDate ? new Date(a.lastOrderDate).getTime() : 0;
-        const dateB = b.lastOrderDate ? new Date(b.lastOrderDate).getTime() : 0;
-        return dateB - dateA; // Newest first
-      });
+    // Convert Map to array, map events Set to array
+    let customersData = Array.from(customerMap.values());
+    
+    // Fetch customer names concurrently
+    let customers = await Promise.all(
+      customersData.map(async (c) => {
+        const userInfo = await getCustomerInfo(c.userId);
+        return {
+          ...c,
+          customerName: userInfo.name,
+          events: Array.from(c.events),
+        };
+      })
+    );
+
+    customers.sort((a, b) => {
+      const dateA = a.lastOrderDate ? new Date(a.lastOrderDate).getTime() : 0;
+      const dateB = b.lastOrderDate ? new Date(b.lastOrderDate).getTime() : 0;
+      return dateB - dateA; // Newest first
+    });
 
     // Lấy total trước khi paginate
     const total = customers.length;

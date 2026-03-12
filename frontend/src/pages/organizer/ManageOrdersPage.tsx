@@ -219,7 +219,7 @@ export const ManageOrdersPage: React.FC = () => {
                   setOrderStatus(e.target.value);
                   setOrderPage(1);
                 }}
-                className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-[#8655f6]"
+                className="px-4 py-2 bg-[#1e293b] text-white border border-white/10 rounded-lg focus:outline-none focus:border-[#8655f6]"
               >
                 <option value="">Tất cả trạng thái</option>
                 <option value="paid">Đã thanh toán</option>
@@ -260,35 +260,54 @@ export const ManageOrdersPage: React.FC = () => {
                     key={order._id}
                     className="bg-white/5 border border-white/10 rounded-lg p-4 hover:border-white/20 transition-colors"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-8 gap-4 items-center">
                       <div>
-                        <p className="text-xs text-gray-400">Mã Đơn</p>
-                        <p className="font-bold text-lg">#{order.orderCode}</p>
+                        <p className="text-xs text-gray-400">Khách Hàng</p>
+                        <p className="font-semibold text-sm truncate" title={order.customerName || order.userId}>
+                          {order.customerName || order.userId}
+                        </p>
+                        <p className="text-xs text-gray-500">#{order.orderCode}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Sự Kiện</p>
-                        <p className="font-semibold truncate">{order.eventName}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Số Vé</p>
-                        <p className="font-semibold">
-                          {order.items.reduce((sum, item) => sum + item.quantity, 0)}
+                        <p className="font-semibold truncate text-sm" title={order.eventName}>
+                          {order.eventName}
                         </p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <p className="text-xs text-gray-400">Chi Tiết Vé</p>
+                        <div className="max-h-20 overflow-y-auto pr-1">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="text-xs mb-1">
+                              <span className="text-purple-400 font-medium">{item.zoneName}</span>
+                              {item.seatLabel ? (
+                                <span className="text-gray-300"> - {item.seatLabel}</span>
+                              ) : item.seatId && item.seatId.length !== 24 ? (
+                                <span className="text-gray-300"> - Ghế {item.seatId}</span>
+                              ) : item.seatId && item.seatId.length === 24 ? (
+                                <span className="text-gray-300"> - Ghế chọn sẵn</span>
+                              ) : (
+                                <span className="text-gray-500 italic"> - Tự do</span>
+                              )}
+                              <span className="text-gray-400 ml-1">x{item.quantity}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Tổng Tiền</p>
-                        <p className="font-bold text-emerald-400">{formatVND(order.totalAmount)}</p>
+                        <p className="font-bold text-emerald-400 text-sm">{formatVND(order.totalAmount)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Ngày</p>
-                        <p className="text-sm">
+                        <p className="text-xs">
                           {order.paidAt ? formatDate(order.paidAt) : formatDate(order.createdAt)}
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Trạng Thái</p>
                         <span
-                          className={`inline-block px-3 py-1 rounded text-xs font-semibold ${getStatusColor(
+                          className={`inline-block px-2 py-1 rounded text-[10px] md:text-xs font-semibold ${getStatusColor(
                             order.status
                           )}`}
                         >
@@ -307,7 +326,7 @@ export const ManageOrdersPage: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Doanh Thu</p>
-                        <p className="font-bold text-[#8655f6]">
+                        <p className="font-bold text-[#8655f6] text-sm">
                           {formatVND(order.organizerAmount)}
                         </p>
                       </div>
@@ -412,8 +431,15 @@ export const ManageOrdersPage: React.FC = () => {
                   >
                     <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
                       <div>
-                        <p className="text-xs text-gray-400">Mã Khách</p>
-                        <p className="font-mono text-sm truncate">{customer.userId}</p>
+                        <p className="text-xs text-gray-400">Khách Hàng</p>
+                        <p className="font-semibold text-sm truncate" title={customer.customerName || customer.userId}>
+                          {customer.customerName || customer.userId}
+                        </p>
+                        {customer.customerName && (
+                          <p className="text-[10px] text-gray-500 font-mono truncate" title={customer.userId}>
+                            {customer.userId}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Số Đơn</p>

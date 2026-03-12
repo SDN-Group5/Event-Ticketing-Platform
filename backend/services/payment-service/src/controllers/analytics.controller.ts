@@ -40,16 +40,21 @@ export const getOverviewAnalytics = async (req: Request, res: Response) => {
     // 1. KPI Data
     const totalRevenueAggr = await Order.aggregate([
       { $match: matchPaid },
-      { $group: { _id: null, total: { $sum: '$totalAmount' }, tickets: { $sum: { $sum: '$items.quantity' } }, events: { $addToSet: '$eventId' } } }
+      { $group: { _id: null, total: { $sum: '$totalAmount' }, tickets: { $sum: { $sum: '$items.quantity' } } } }
     ]);
     const overallRevenue = totalRevenueAggr[0] ? totalRevenueAggr[0].total : 0;
     const overallTickets = totalRevenueAggr[0] ? totalRevenueAggr[0].tickets : 0;
-    const activeEventsCount = totalRevenueAggr[0] ? totalRevenueAggr[0].events.length : 0;
 
-    // 2. Revenue By Month
-    let groupByFormat = '%Y-%m';
-    if (period === 'year') {
-      groupByFormat = '%Y';
+    const activeEventsAggr = await Order.aggregate([
+      { $match: { organizerId } },
+      { $group: { _id: '$eventId' } }
+    ]);
+    const activeEventsCount = activeEventsAggr.length;
+
+    // 2. Revenue Breakdown
+    let groupByFormat = '%Y-%m-%d';
+    if (period === 'year' || period === 'quarter') {
+      groupByFormat = '%Y-%m';
     }
     
     const revenueByMonthRaw = await Order.aggregate([

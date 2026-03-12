@@ -66,6 +66,9 @@ interface SearchInputProps {
     value?: string;
     onChange?: (value: string) => void;
     className?: string;
+    onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+    onFocus?: React.FocusEventHandler<HTMLInputElement>;
+    onBlur?: React.FocusEventHandler<HTMLInputElement>;
 }
 
 export const SearchInput: React.FC<SearchInputProps> = ({
@@ -73,6 +76,9 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     value,
     onChange,
     className = '',
+    onKeyDown,
+    onFocus,
+    onBlur,
 }) => {
     return (
         <label className={`flex w-full items-center h-11 rounded-xl bg-[#2d2839]/50 border border-white/5 focus-within:border-[#8655f6]/50 focus-within:ring-1 focus-within:ring-[#8655f6]/50 transition-all overflow-hidden ${className}`}>
@@ -84,6 +90,9 @@ export const SearchInput: React.FC<SearchInputProps> = ({
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => onChange?.(e.target.value)}
+                onKeyDown={onKeyDown}
+                onFocus={onFocus}
+                onBlur={onBlur}
             />
         </label>
     );

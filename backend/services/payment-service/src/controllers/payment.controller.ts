@@ -203,7 +203,7 @@ export const getUserOrders = async (req: Request, res: Response) => {
 
 export const getOrganizerOrders = async (req: Request, res: Response) => {
   try {
-    const organizerId = req.headers['x-user-id'] as string || req.body.organizerId;
+    const organizerId = (req as any).userId;
     if (!organizerId) {
       return res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
     }
@@ -249,25 +249,24 @@ export const getOrganizerOrders = async (req: Request, res: Response) => {
 
 export const getOrganizerCustomers = async (req: Request, res: Response) => {
   try {
-    const organizerId = req.headers['x-user-id'] as string || req.body.organizerId;
+    const organizerId = (req as any).userId;
     if (!organizerId) {
       return res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
     }
 
-    const { page = 1, limit = 50, eventId, search } = req.query;
+    const { page = 1, limit = 50, eventId } = req.query;
     const pageNum = Math.max(1, parseInt(page as string) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 50));
     const skip = (pageNum - 1) * limitNum;
 
-    // Tìm tất cả đơn hàng của organizer
+    // Tìm tất cả đơn hàng của organizer (chỉ đơn đã thanh toán)
     let orderFilter: any = { organizerId, status: 'paid' };
     if (eventId) orderFilter.eventId = eventId;
 
-    // Lấy userIds từ đơn hàng đã thanh toán
+    // Lấy tất cả đơn hàng
     const orders = await Order.find(orderFilter).lean();
-    const userIds = [...new Set(orders.map(o => o.userId))];
 
-    if (userIds.length === 0) {
+    if (orders.length === 0) {
       return res.json({
         success: true,
         data: [],
@@ -275,8 +274,7 @@ export const getOrganizerCustomers = async (req: Request, res: Response) => {
       });
     }
 
-    // Nếu có tìm kiếm, lọc theo email (cần gọi auth service)
-    // Tạm thời trả về danh sách user IDs với thông tin từ orders
+    // Aggregate customer data từ orders
     const customerMap = new Map<string, any>();
 
     orders.forEach(order => {
@@ -292,26 +290,34 @@ export const getOrganizerCustomers = async (req: Request, res: Response) => {
       const customer = customerMap.get(order.userId)!;
       customer.orderCount++;
       customer.totalSpent += order.totalAmount || 0;
-      if (!customer.lastOrderDate || new Date(order.paidAt) > new Date(customer.lastOrderDate)) {
+      if (!customer.lastOrderDate || new Date(order.paidAt!) > new Date(customer.lastOrderDate)) {
         customer.lastOrderDate = order.paidAt;
       }
       customer.events.add(order.eventName);
     });
 
-    // Convert Map to array và sort
-    let customers = Array.from(customerMap.values()).map(c => ({
-      ...c,
-      events: Array.from(c.events),
-    }));
+    // Convert Map to array, map events Set to array, sort by lastOrderDate descending
+    let customers = Array.from(customerMap.values())
+      .map(c => ({
+        ...c,
+        events: Array.from(c.events),
+      }))
+      .sort((a, b) => {
+        const dateA = a.lastOrderDate ? new Date(a.lastOrderDate).getTime() : 0;
+        const dateB = b.lastOrderDate ? new Date(b.lastOrderDate).getTime() : 0;
+        return dateB - dateA; // Newest first
+      });
 
-    // Áp dụng pagination
+    // Lấy total trước khi paginate
     const total = customers.length;
     const totalPages = Math.ceil(total / limitNum);
-    customers = customers.slice(skip, skip + limitNum);
+
+    // Áp dụng pagination
+    const paginatedCustomers = customers.slice(skip, skip + limitNum);
 
     return res.json({
       success: true,
-      data: customers,
+      data: paginatedCustomers,
       pagination: {
         page: pageNum,
         limit: limitNum,

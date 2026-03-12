@@ -9,11 +9,8 @@ const orderClient = axios.create({
 
 orderClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token');
-  const userId = localStorage.getItem('user_id');
-  
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    config.headers['x-user-id'] = userId;
   }
   return config;
 });

@@ -1,8 +1,9 @@
 import { SagaOrchestrator, SagaStep } from './sagaOrchestrator';
 import { publishEvent } from '../config/rabbitmq';
 import { transferToOrganizerBank } from '../services/bankTransfer.service';
-import { sendPaymentConfirmationEmail } from '../services/email.service';
+import { sendPaymentConfirmationEmail, sendTicketQREmail } from '../services/email.service';
 import { getUserFromAuthService } from '../services/user.service';
+import { createTicketsForOrder } from '../services/ticket.service';
 
 export interface PaymentCompleteContext {
   order: any;
@@ -166,11 +167,90 @@ const sendEmailStep: SagaStep<PaymentCompleteContext> = {
   },
 };
 
+const createTicketsStep: SagaStep<PaymentCompleteContext> = {
+  name: 'create-tickets',
+  async execute(ctx) {
+    try {
+      const order = ctx.order;
+      
+      // Create tickets with QR codes for each item
+      const tickets = await createTicketsForOrder(
+        order._id.toString(),
+        order.orderCode,
+        order.userId,
+        order.eventId,
+        order.eventName,
+        order.items || []
+      );
+
+      // Store tickets in context for next step
+      (ctx as any).tickets = tickets;
+
+      return ctx;
+    } catch (err: any) {
+      console.error('[PaymentCompleteSaga] Error in create-tickets step:', err?.message);
+      // Don't fail saga if ticket creation fails - order is already paid
+      return ctx;
+    }
+  },
+  async compensate(ctx) {
+    // Ticket creation doesn't need compensation for now
+    // In future, could mark tickets as cancelled
+  },
+};
+
+const sendTicketQRStep: SagaStep<PaymentCompleteContext> = {
+  name: 'send-ticket-qr-email',
+  async execute(ctx) {
+    try {
+      const order = ctx.order;
+      const tickets = (ctx as any).tickets;
+
+      if (!tickets || tickets.length === 0) {
+        console.warn(`[PaymentCompleteSaga] No tickets found for order ${order.orderCode}, skipping QR email`);
+        return ctx;
+      }
+
+      // Fetch user information
+      const user = await getUserFromAuthService(order.userId);
+      
+      if (!user || !user.email) {
+        console.warn(`[PaymentCompleteSaga] Could not fetch user ${order.userId} email, skipping QR email`);
+        return ctx;
+      }
+
+      // Send ticket QR email
+      const qrEmailSent = await sendTicketQREmail({
+        to: user.email,
+        firstName: user.firstName,
+        eventName: order.eventName,
+        orderCode: order.orderCode,
+        tickets,
+      });
+
+      if (!qrEmailSent) {
+        console.warn(`[PaymentCompleteSaga] Failed to send ticket QR email to ${user.email}, but continuing...`);
+      }
+
+      return ctx;
+    } catch (err: any) {
+      console.error('[PaymentCompleteSaga] Error in send-ticket-qr-email step:', err?.message);
+      // Don't fail the saga if email fails - it's not critical
+      return ctx;
+    }
+  },
+  async compensate(ctx) {
+    // Email doesn't need compensation
+  },
+};
+
 export function createPaymentCompleteSaga() {
   return new SagaOrchestrator<PaymentCompleteContext>('PaymentCompleteSaga', [
     markPaidStep,
     markSeatsSoldStep,
     autoPayoutStep,
     sendEmailStep,
+    createTicketsStep,
+    sendTicketQRStep,
   ]);
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,11 +7,6 @@ export const CreateEventPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
     const [step, setStep] = useState(1);
-    const [suggestedVenues, setSuggestedVenues] = useState<string[]>([]);
-    const [loadingVenues, setLoadingVenues] = useState(true);
-    const [venueAvailability, setVenueAvailability] = useState<any>(null);
-    const [checkingAvailability, setCheckingAvailability] = useState(false);
-    
     const [formData, setFormData] = useState({
         name: '',
         dateStart: '',
@@ -21,7 +16,6 @@ export const CreateEventPage: React.FC = () => {
         venue: '',
         description: '',
         category: 'music',
-        banners: [] as { url: string; title: string }[],
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -36,35 +30,30 @@ export const CreateEventPage: React.FC = () => {
         if (step < 3) {
             setStep(step + 1);
         } else {
-            submitEvent();
-        }
-    };
+            // Submit and redirect
+            setIsSubmitting(true);
+            setError(null);
+            try {
+                // Check quyền ngay trên UI cho rõ ràng (backend cũng sẽ check)
+                if (!isAuthenticated) {
+                    setError('Bạn cần đăng nhập để tạo sự kiện');
+                    navigate('/login');
+                    return;
+                }
+                if (user?.role !== 'organizer' && user?.role !== 'admin') {
+                    setError('Tài khoản của bạn không có quyền Organizer/Admin để tạo sự kiện');
+                    navigate('/');
+                    return;
+                }
 
-    const submitEvent = async () => {
-        // Submit and redirect
-        setIsSubmitting(true);
-        setError(null);
-        try {
-            // Check quyền ngay trên UI cho rõ ràng (backend cũng sẽ check)
-            if (!isAuthenticated) {
-                setError('Bạn cần đăng nhập để tạo sự kiện');
-                navigate('/login');
-                return;
-            }
-            if (user?.role !== 'organizer' && user?.role !== 'admin') {
-                setError('Tài khoản của bạn không có quyền Organizer/Admin để tạo sự kiện');
-                navigate('/');
-                return;
-            }
+                // 1. Gộp ngày và giờ thành chuẩn ISO String cho startTime
+                const startTimeString = formData.dateStart && formData.time 
+                    ? new Date(`${formData.dateStart}T${formData.time}:00`).toISOString()
+                    : new Date().toISOString();
 
-            // 1. Gộp ngày và giờ thành chuẩn ISO String cho startTime
-            const startTimeString = formData.dateStart && formData.time 
-                ? new Date(`${formData.dateStart}T${formData.time}:00`).toISOString()
-                : new Date().toISOString();
-
-            const endTimeString = formData.dateEnd && formData.timeEnd
-                ? new Date(`${formData.dateEnd}T${formData.timeEnd}:00`).toISOString()
-                : undefined;
+                const endTimeString = formData.dateEnd && formData.timeEnd
+                    ? new Date(`${formData.dateEnd}T${formData.timeEnd}:00`).toISOString()
+                    : undefined;
 
                 // 2. Tạo MongoDB ObjectId giả định (24 hex chars)
                 const generateObjectId = () => {
@@ -91,15 +80,16 @@ export const CreateEventPage: React.FC = () => {
                 });
 
                 navigate('/organizer/events');
-        } catch (err: any) {
-            console.error("Failed to create event:", err);
-            const errorMessage = err.response?.data?.error?.message 
-                              || err.response?.data?.message 
-                              || err.message 
-                              || "Failed to create event";
-            setError(errorMessage);
-        } finally {
-            setIsSubmitting(false);
+            } catch (err: any) {
+                console.error("Failed to create event:", err);
+                const errorMessage = err.response?.data?.error?.message 
+                                  || err.response?.data?.message 
+                                  || err.message 
+                                  || "Failed to create event";
+                setError(errorMessage);
+            } finally {
+                setIsSubmitting(false);
+            }
         }
     };
 
@@ -152,14 +142,11 @@ export const CreateEventPage: React.FC = () => {
                     {step === 1 && (
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2">Event Name * <span className="text-xs text-slate-500">(min 5 characters)</span></label>
+                                <label className="block text-sm font-bold text-slate-300 mb-2">Event Name *</label>
                                 <input
                                     type="text"
                                     value={formData.name}
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, name: e.target.value });
-                                        setError(null);
-                                    }}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6] focus:ring-2 focus:ring-[#8655f6]/20"
                                     placeholder="Enter event name"
                                 />
@@ -186,58 +173,6 @@ export const CreateEventPage: React.FC = () => {
                                     placeholder="Describe your event..."
                                 />
                             </div>
-
-                            {/* Banners Section */}
-                            <div className="border-t border-slate-700 pt-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <label className="block text-sm font-bold text-slate-300">Event Banners</label>
-                                    <button
-                                        onClick={addBanner}
-                                        className="text-xs px-3 py-1.5 bg-[#8655f6]/20 border border-[#8655f6]/50 text-[#a78bfa] rounded-lg hover:bg-[#8655f6]/30 transition-colors flex items-center gap-1"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">add</span>
-                                        Add Banner
-                                    </button>
-                                </div>
-                                
-                                {formData.banners.map((banner, idx) => (
-                                    <div key={idx} className="bg-[#0f172a] rounded-lg border border-slate-700 p-4 mb-3">
-                                        <div className="flex gap-3">
-                                            <div className="flex-1">
-                                                <label className="block text-xs text-slate-500 mb-1">Banner Image URL</label>
-                                                <input
-                                                    type="url"
-                                                    placeholder="https://example.com/banner.jpg"
-                                                    value={banner.url}
-                                                    onChange={(e) => updateBanner(idx, 'url', e.target.value)}
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:border-[#8655f6]"
-                                                />
-                                            </div>
-                                            <div className="flex-1">
-                                                <label className="block text-xs text-slate-500 mb-1">Title (optional)</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Banner title"
-                                                    value={banner.title}
-                                                    onChange={(e) => updateBanner(idx, 'title', e.target.value)}
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:border-[#8655f6]"
-                                                />
-                                            </div>
-                                            <button
-                                                onClick={() => removeBanner(idx)}
-                                                className="self-end px-3 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
-                                            >
-                                                <span className="material-symbols-outlined text-sm">delete</span>
-                                            </button>
-                                        </div>
-                                        {banner.url && (
-                                            <div className="mt-2 text-xs text-slate-500">
-                                                <img src={banner.url} alt="preview" className="w-full h-24 object-cover rounded mt-1 opacity-60" onError={() => {}} />
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
                         </div>
                     )}
 
@@ -245,83 +180,59 @@ export const CreateEventPage: React.FC = () => {
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date Start *</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date Start</label>
                                     <input
                                         type="date"
                                         value={formData.dateStart}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, dateStart: e.target.value });
-                                            setError(null);
-                                        }}
+                                        onChange={(e) => setFormData({ ...formData, dateStart: e.target.value })}
                                         className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time Start *</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time Start</label>
                                     <input
                                         type="time"
                                         value={formData.time}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, time: e.target.value });
-                                            setError(null);
-                                        }}
+                                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                                         className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date End *</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date End</label>
                                     <input
                                         type="date"
                                         value={formData.dateEnd}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, dateEnd: e.target.value });
-                                            setError(null);
-                                        }}
+                                        onChange={(e) => setFormData({ ...formData, dateEnd: e.target.value })}
                                         className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time End *</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time End</label>
                                     <input
                                         type="time"
                                         value={formData.timeEnd}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, timeEnd: e.target.value });
-                                            setError(null);
-                                        }}
+                                        onChange={(e) => setFormData({ ...formData, timeEnd: e.target.value })}
                                         className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     />
                                 </div>
                             </div>
-
-                            {/* Venue Input */}
                             <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2">Venue * {checkingAvailability && <span className="text-xs text-blue-400">(checking availability...)</span>}</label>
+                                <label className="block text-sm font-bold text-slate-300 mb-2">Venue *</label>
                                 <input
                                     type="text"
                                     value={formData.venue}
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, venue: e.target.value });
-                                        setError(null);
-                                    }}
-                                    className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6] placeholder-slate-600"
+                                    onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                                    className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
                                     placeholder="Enter venue name or address"
                                 />
                             </div>
-
-                            {/* Suggested Venues */}
                             <div className="bg-[#0f172a] rounded-xl p-4 border border-slate-700">
-                                <p className="text-sm text-slate-400 mb-3">
-                                    {loadingVenues ? '⏳ Loading suggested venues...' : '💡 Or select from popular venues:'}
-                                </p>
+                                <p className="text-sm text-slate-400 mb-3">Or select from popular venues:</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {suggestedVenues.map(venue => (
+                                    {['Grand Arena', 'City Hall', 'Riverside Park', 'Convention Center'].map(venue => (
                                         <button
                                             key={venue}
-                                            onClick={() => {
-                                                setFormData({ ...formData, venue });
-                                                setError(null);
-                                            }}
+                                            onClick={() => setFormData({ ...formData, venue })}
                                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${formData.venue === venue
                                                 ? 'bg-[#8655f6] text-white'
                                                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -362,12 +273,6 @@ export const CreateEventPage: React.FC = () => {
                                         <div className="flex justify-between">
                                             <span className="text-slate-400">Description</span>
                                             <span className="font-medium text-white">{formData.description.substring(0, 40) + (formData.description.length > 40 ? '...' : '')}</span>
-                                        </div>
-                                    )}
-                                    {formData.banners && formData.banners.length > 0 && (
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400">Promotional Banners</span>
-                                            <span className="font-medium text-white">{formData.banners.length} image{formData.banners.length !== 1 ? 's' : ''}</span>
                                         </div>
                                     )}
                                 </div>

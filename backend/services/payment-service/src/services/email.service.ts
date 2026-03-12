@@ -237,3 +237,151 @@ export const sendRefundEmail = async ({
     return false;
   }
 };
+
+// ============================================
+// SEND TICKET QR CODE EMAIL
+// ============================================
+interface TicketQREmailParams {
+  to: string;
+  firstName: string;
+  eventName: string;
+  orderCode: number;
+  tickets: Array<{
+    ticketId: string;
+    zoneName: string;
+    seatLabel?: string;
+    qrCodeBuffer: Buffer; // Buffer for email attachment
+  }>;
+}
+
+export const sendTicketQREmail = async ({
+  to,
+  firstName,
+  eventName,
+  orderCode,
+  tickets,
+}: TicketQREmailParams): Promise<boolean> => {
+  if (!EMAIL_USER || !EMAIL_PASSWORD) {
+    console.warn('⚠️  [EMAIL] Email credentials not configured.');
+    console.log(`📧 [EMAIL] Would send ticket QR email to ${to} for order ${orderCode}`);
+    return false;
+  }
+
+  try {
+    // Build attachments array and generate HTML sections with CID references
+    const attachments: any[] = [];
+    const ticketQRSections = tickets
+      .map((ticket, idx) => {
+        const cid = `qrcode-${idx}`;
+        
+        // Add attachment for this QR code
+        attachments.push({
+          filename: `qr-${ticket.ticketId}.png`,
+          content: ticket.qrCodeBuffer,
+          cid: cid,
+        });
+
+        return `
+          <div style="
+            flex: 0 0 calc(50% - 10px);
+            margin: 5px;
+            padding: 15px;
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #a855f7;
+          ">
+            <p style="color: #a855f7; font-weight: bold; margin: 0 0 10px 0; font-size: 13px;">
+              Vé #${idx + 1} - ${ticket.zoneName}
+            </p>
+            <div style="margin-bottom: 10px;">
+              <img src="cid:${cid}" alt="QR Code" style="width: 150px; height: 150px; border-radius: 8px;" />
+            </div>
+            <p style="color: #d1d5db; font-size: 12px; margin: 8px 0 0 0;">
+              <strong>${ticket.ticketId}</strong>
+            </p>
+            ${ticket.seatLabel ? `<p style="color: #9ca3af; font-size: 11px; margin: 4px 0 0 0;">Ghế: ${ticket.seatLabel}</p>` : ''}
+          </div>
+        `;
+      })
+      .join('');
+
+    const mailOptions = {
+      from: `"TicketVibe" <${EMAIL_USER}>`,
+      to,
+      subject: '🎫 Mã QR vé của bạn - TicketVibe',
+      attachments, // Attach QR code images
+      html: `
+        <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #a855f7; margin: 0; font-size: 28px;">🎫 TicketVibe</h1>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+              <span style="font-size: 32px;">✨</span>
+              <h2 style="color: #22c55e; margin: 0; font-size: 24px;">Vé của bạn đã sẵn sàng!</h2>
+            </div>
+
+            <p style="color: #d1d5db; font-size: 16px; line-height: 1.6; margin-top: 0;">
+              Xin chào <strong>${firstName}</strong>,
+            </p>
+            <p style="color: #d1d5db; font-size: 16px; line-height: 1.6;">
+              Dưới đây là mã QR vé của bạn cho sự kiện <strong>${eventName}</strong>. 
+              Vui lòng lưu hoặc in mã QR này để quét tại cổng vào sự kiện.
+            </p>
+
+            <!-- Event Info -->
+            <div style="background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%); border-radius: 12px; padding: 20px; text-align: center; margin: 25px 0;">
+              <p style="color: #ffffff; font-size: 14px; margin: 0 0 5px 0; opacity: 0.9;">Sự kiện</p>
+              <h3 style="color: #ffffff; margin: 0; font-size: 20px;">${eventName}</h3>
+              <p style="color: #ffffff; font-size: 13px; margin: 8px 0 0 0; opacity: 0.9;">Mã đơn: #${orderCode}</p>
+            </div>
+
+            <!-- Tickets Grid -->
+            <p style="color: #a855f7; font-weight: bold; margin: 25px 0 15px 0; font-size: 14px;">📋 Mã QR vé của bạn</p>
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0; margin-bottom: 20px;">
+              ${ticketQRSections}
+            </div>
+
+            <!-- Instructions -->
+            <div style="background: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="color: #22c55e; font-weight: bold; margin-top: 0; margin-bottom: 10px;">📱 Hướng dẫn sử dụng</p>
+              <ul style="color: #d1d5db; margin: 0; padding-left: 20px; font-size: 14px;">
+                <li style="margin-bottom: 8px;">✓ Lưu email này hoặc tải xuống các mã QR</li>
+                <li style="margin-bottom: 8px;">✓ Đến sự kiện và quét mã QR tại cổng vào</li>
+                <li style="margin-bottom: 8px;">✓ Hoặc sử dụng ứng dụng TicketVibe để hiển thị mã QR</li>
+                <li>✓ Một vé chỉ có thể sử dụng một lần</li>
+              </ul>
+            </div>
+
+            <!-- Note -->
+            <div style="background: rgba(168, 85, 247, 0.1); border-left: 4px solid #a855f7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="color: #a855f7; font-weight: bold; margin-top: 0; margin-bottom: 10px;">⚠️ Lưu ý quan trọng</p>
+              <p style="color: #d1d5db; margin: 0; font-size: 14px;">
+                Hãy giữ kỹ các mã QR này. Nếu bạn muốn hoàn lại vé, vui lòng liên hệ bộ phận hỗ trợ trước ngày sự kiện diễn ra.
+              </p>
+            </div>
+
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+              <p style="color: #9ca3af; font-size: 13px; line-height: 1.6; margin: 0;">
+                Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email hoặc truy cập trang hỗ trợ của TicketVibe.
+              </p>
+              <p style="color: #6b7280; font-size: 12px; margin-top: 10px; margin-bottom: 0;">
+                © 2024 TicketVibe. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ [EMAIL] Ticket QR email sent to ${to} (Order #${orderCode}) - ${tickets.length} tickets`);
+    return true;
+  } catch (error) {
+    console.error('❌ [EMAIL] Failed to send ticket QR email:', error);
+    console.log(`📧 [EMAIL] Fallback - Ticket QR email for ${to} - Order #${orderCode}`);
+    return false;
+  }
+};

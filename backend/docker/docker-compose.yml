@@ -65,6 +65,7 @@ services:
     environment:
       - NODE_ENV=development
       - PAYMENT_SERVICE_PORT=4004
+      - AUTH_SERVICE_URL=http://auth-service:4001
       - LAYOUT_SERVICE_URL=http://layout-service:4002
       - RABBITMQ_URL=amqp://ticketing:ticketing123@rabbitmq:5672
     depends_on:

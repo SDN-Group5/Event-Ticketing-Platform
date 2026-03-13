@@ -39,6 +39,20 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
     // FIX: After mapping real seats, we inject "ghost" placeholder cells for any missing
     // seat numbers (rows × seatsPerRow). Ghost cells render as empty/greyed-out spaces.
     const getSeatsForZone = (zone: any): Seat[] => {
+        if (zone.type === 'standing') {
+            return seats
+                .filter(s => s.zoneId === zone.id)
+                .map(seatData => ({
+                    id: seatData._id || `${seatData.zoneId}-${seatData.row}-${seatData.seatNumber}`,
+                    row: String(seatData.row),
+                    number: seatData.seatNumber,
+                    label: seatData.seatLabel || `S${seatData.seatNumber}`,
+                    zone: zone.id,
+                    status: (seatData.status === 'sold' || seatData.status === 'reserved' || seatData.status === 'blocked') ? seatData.status : 'available',
+                    price: zone.price || seatData.price,
+                } as unknown as Seat));
+        }
+
         if (zone.type !== 'seats' || !zone.rows || !zone.seatsPerRow) return [];
         if (seats.length > 0) {
             const zoneSeats = seats.filter(s => s.zoneId === zone.id);
@@ -148,7 +162,7 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                                 transform: `rotate(${zone.rotation || 0}deg)`,
                             }}
                             onClick={() => {
-                                if (isSeats) setOpenZoneId(zone.id);
+                                if (isSeats || zone.type === 'standing') setOpenZoneId(zone.id);
                             }}
                         >
                             <div
@@ -225,9 +239,15 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                                 <h3 className="font-bold text-lg text-white" style={{ color: (openZone as any).color }}>
                                     {(openZone as any).name}
                                 </h3>
-                                <p className="text-slate-400 text-sm">
-                                    {openZoneSeats.filter(s => s.status === 'available').length} available · ${(openZone as any).price}/seat
-                                </p>
+                                {openZone.type === 'standing' ? (
+                                    <p className="text-slate-400 text-sm">
+                                        {((openZone as any).capacity || 0) - openZoneSeats.filter(s => s.status !== 'available').length} / {(openZone as any).capacity || 0} available · ${(openZone as any).price}/ticket
+                                    </p>
+                                ) : (
+                                    <p className="text-slate-400 text-sm">
+                                        {openZoneSeats.filter(s => s.status === 'available').length} available · ${(openZone as any).price}/seat
+                                    </p>
+                                )}
                             </div>
                             <button
                                 onClick={() => setOpenZoneId(null)}
@@ -257,55 +277,108 @@ export const EventLayoutViewer: React.FC<EventLayoutViewerProps> = ({
                             </span>
                         </div>
 
-                        {/* Seat Grid */}
-                        <div
-                            className="grid gap-1"
-                            style={{ gridTemplateColumns: `repeat(${(openZone as any).seatsPerRow}, minmax(0, 1fr))` }}
-                        >
-                            {openZoneSeats.map(seat => {
-                                const isGhost = (seat as any)._isGhost === true;
-                                // Ghost seat = invisible spacer to preserve grid column positions
-                                if (isGhost) {
+                        {/* Content */}
+                        {openZone.type === 'standing' ? (
+                            <div className="py-8 flex flex-col items-center">
+                                <div className="text-center mb-6">
+                                    <p className="text-slate-300 mb-2">How many standing tickets would you like?</p>
+                                    <div className="flex items-center gap-6 justify-center">
+                                        <button
+                                            onClick={() => {
+                                                const currentInZone = selectedSeats.filter(s => s.zone === openZone.id);
+                                                if (currentInZone.length > 0) {
+                                                    onSeatToggle(currentInZone[currentInZone.length - 1]);
+                                                }
+                                            }}
+                                            className="w-12 h-12 rounded-full border border-slate-600 flex items-center justify-center hover:bg-white/5 disabled:opacity-30"
+                                            disabled={selectedSeats.filter(s => s.zone === openZone.id).length === 0}
+                                        >
+                                            <span className="material-symbols-outlined">remove</span>
+                                        </button>
+                                        <span className="text-3xl font-bold w-12 text-center">
+                                            {selectedSeats.filter(s => s.zone === openZone.id).length}
+                                        </span>
+                                        <button
+                                            onClick={() => {
+                                                const currentInZone = selectedSeats.filter(s => s.zone === openZone.id);
+                                                const totalCap = (openZone as any).capacity || 0;
+                                                const bookedCount = openZoneSeats.filter(s => s.status !== 'available').length;
+                                                const availableInZone = totalCap - bookedCount;
+                                                
+                                                if (currentInZone.length < 10 && currentInZone.length < availableInZone) {
+                                                    onSeatToggle({
+                                                        id: `standing:${openZone.id}:${Date.now()}`,
+                                                        row: '',
+                                                        number: 0,
+                                                        label: 'Standing',
+                                                        zone: openZone.id,
+                                                        price: (openZone as any).price
+                                                    } as any);
+                                                }
+                                            }}
+                                            className="w-12 h-12 rounded-full border border-slate-600 flex items-center justify-center hover:bg-white/5 disabled:opacity-30"
+                                            disabled={selectedSeats.filter(s => s.zone === openZone.id).length >= 10}
+                                        >
+                                            <span className="material-symbols-outlined">add</span>
+                                        </button>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 mt-4 leading-relaxed">
+                                        * Max 10 tickets per order. Tickets are for the standing area only.
+                                        No reserved seats in this zone.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            /* Seat Grid */
+                            <div
+                                className="grid gap-1"
+                                style={{ gridTemplateColumns: `repeat(${(openZone as any).seatsPerRow}, minmax(0, 1fr))` }}
+                            >
+                                {openZoneSeats.map(seat => {
+                                    const isGhost = (seat as any)._isGhost === true;
+                                    // Ghost seat = invisible spacer to preserve grid column positions
+                                    if (isGhost) {
+                                        return (
+                                            <div
+                                                key={seat.id}
+                                                className="aspect-square"
+                                                style={{ backgroundColor: 'transparent' }}
+                                            />
+                                        );
+                                    }
+                                    const isSelected = selectedSeats.some(s => s.id === seat.id);
+                                    const isOccupied = seat.status === 'occupied' || seat.status === 'sold' || seat.status === 'reserved';
+                                    const isSold = seat.status === 'sold' || seat.status === 'occupied';
+                                    const isReserved = seat.status === 'reserved';
+                                    const isBlocked = seat.status === 'blocked';
+                                    const isInteractive = !isOccupied && !isBlocked;
+
                                     return (
                                         <div
                                             key={seat.id}
-                                            className="aspect-square"
-                                            style={{ backgroundColor: 'transparent' }}
-                                        />
+                                            onClick={() => {
+                                                if (isInteractive) {
+                                                    onSeatToggle(seat as unknown as SelectedSeat);
+                                                }
+                                            }}
+                                            className={`
+                                                aspect-square rounded-t-lg rounded-b-sm flex items-center justify-center text-[11px] font-bold select-none transition-all
+                                                ${isInteractive ? 'cursor-pointer hover:brightness-125 hover:scale-110' : 'cursor-not-allowed opacity-60'}
+                                                ${isSelected ? 'scale-110 shadow-lg' : ''}
+                                            `}
+                                            style={{
+                                                backgroundColor: isSelected ? '#ffffff' : isSold ? '#4b5563' : isReserved ? '#9ca3af' : isBlocked ? '#f59e0b' : (openZone as any).color,
+                                                color: isSelected ? (openZone as any).color : 'white',
+                                                boxShadow: isSelected ? `0 0 10px ${(openZone as any).color}` : 'none',
+                                            }}
+                                            title={`Row ${seat.row}, Seat ${seat.number}`}
+                                        >
+                                            <span className="whitespace-nowrap tracking-tighter sm:tracking-normal">{seat.label || seat.number}</span>
+                                        </div>
                                     );
-                                }
-                                const isSelected = selectedSeats.some(s => s.id === seat.id);
-                                const isOccupied = seat.status === 'occupied' || seat.status === 'sold' || seat.status === 'reserved';
-                                const isSold = seat.status === 'sold' || seat.status === 'occupied';
-                                const isReserved = seat.status === 'reserved';
-                                const isBlocked = seat.status === 'blocked';
-                                const isInteractive = !isOccupied && !isBlocked;
-
-                                return (
-                                    <div
-                                        key={seat.id}
-                                        onClick={() => {
-                                            if (isInteractive) {
-                                                onSeatToggle(seat as unknown as SelectedSeat);
-                                            }
-                                        }}
-                                        className={`
-                                            aspect-square rounded-t-lg rounded-b-sm flex items-center justify-center text-[11px] font-bold select-none transition-all
-                                            ${isInteractive ? 'cursor-pointer hover:brightness-125 hover:scale-110' : 'cursor-not-allowed opacity-60'}
-                                            ${isSelected ? 'scale-110 shadow-lg' : ''}
-                                        `}
-                                        style={{
-                                            backgroundColor: isSelected ? '#ffffff' : isSold ? '#4b5563' : isReserved ? '#9ca3af' : isBlocked ? '#f59e0b' : (openZone as any).color,
-                                            color: isSelected ? (openZone as any).color : 'white',
-                                            boxShadow: isSelected ? `0 0 10px ${(openZone as any).color}` : 'none',
-                                        }}
-                                        title={`Row ${seat.row}, Seat ${seat.number}`}
-                                    >
-                                        <span className="whitespace-nowrap tracking-tighter sm:tracking-normal">{seat.label || seat.number}</span>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                })}
+                            </div>
+                        )}
 
                         {/* Footer */}
                         <div className="mt-4 flex justify-end">

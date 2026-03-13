@@ -30,6 +30,7 @@ export interface LayoutZone {
   rows?: number;
   seatsPerRow?: number;
   price?: number;
+  capacity?: number;
   elevation?: number;
   hideScreen?: boolean;
   screenHeight?: number;

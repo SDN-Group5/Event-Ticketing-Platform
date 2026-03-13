@@ -34,6 +34,8 @@ export interface SeatZone {
   };
   // Optional 360 view URL
   view360Url?: string;
+  // Capacity for standing zones
+  capacity?: number;
 }
 
 export interface SelectedSeat {

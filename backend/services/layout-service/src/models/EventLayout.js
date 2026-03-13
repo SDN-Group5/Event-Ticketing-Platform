@@ -56,6 +56,12 @@ const layoutZoneSchema = new mongoose.Schema({
         type: Number,
         min: 0
     },
+    // Standing zone specific
+    capacity: {
+        type: Number,
+        min: 1,
+        max: 1000
+    },
 
     // ✨ HYBRID: Cache metadata for performance
     seatMetadata: seatMetadataSchema,
@@ -209,6 +215,10 @@ eventLayoutSchema.pre('save', async function () {
         if (zone.type === 'seats') {
             if (!zone.rows || !zone.seatsPerRow) {
                 throw new Error('Seat zones must have rows and seatsPerRow');
+            }
+        } else if (zone.type === 'standing') {
+            if (!zone.capacity) {
+                throw new Error('Standing zones must have a capacity');
             }
         }
     }

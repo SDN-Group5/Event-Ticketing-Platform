@@ -152,8 +152,8 @@ export const SeatAPI = {
     reserveSeat: async (
         eventId: string,
         zoneId: string,
-        row: number,
-        seatNumber: number
+        row?: number,
+        seatNumber?: number
     ): Promise<SeatData> => {
         const { data } = await api.post<SeatData>(`/events/${eventId}/seats/reserve`, {
             zoneId,

@@ -72,47 +72,79 @@ export default function Checkout({ navigation, route }: any) {
 
       setIsPaying(true);
 
-      const isSelectSeatMode = orderDraft.selectedSeats && orderDraft.selectedSeats.length > 0;
-      const items = isSelectSeatMode
-        ? orderDraft.selectedSeats!.map((s) => ({
-            zoneName: orderDraft.zoneName,
-            seatId: s.seatId,
-            price: Number(s.price || 0),
-            quantity: 1,
-          }))
-        : [
-            {
-              zoneName: orderDraft.zoneName,
-              price: Number(orderDraft.price || 0),
-              quantity: Number(orderDraft.quantity || 1),
-            },
-          ];
+      const isSelectSeatMode = !!(orderDraft.selectedSeats && orderDraft.selectedSeats.length > 0);
 
-      // Reserve seats if needed
-      const reservedSeatIds: string[] = [];
-      if (isSelectSeatMode) {
-        let lockFailed = false;
-        for (const s of orderDraft.selectedSeats!) {
-          try {
-            await SeatAPI.reserveSeat(orderDraft.eventId, s.zoneId, s.row, s.seatNumber);
-            reservedSeatIds.push(s.seatId);
-          } catch (e: any) {
-            console.error('Failed to reserve seat:', s.seatId, e?.message);
-            lockFailed = true;
-          }
-        }
+      // 1) Reserve seats (individual or standing)
+      const reservedMongoIds: string[] = [];
+      const finalItems: any[] = [];
+      let lockFailed = false;
 
-        if (lockFailed) {
-          // Rollback
-          for (const sid of reservedSeatIds) {
-            await SeatAPI.releaseReservation(orderDraft.eventId, sid).catch(() => {});
+      // Handle standing/auto-select: fetch available seats first to satisfy strict backend validation
+      let availableStandingSeats: any[] = [];
+      if (!isSelectSeatMode) {
+        try {
+          const res = await SeatAPI.getSeatsByZone(orderDraft.eventId, orderDraft.zoneId, { status: 'available', limit: 50 });
+          availableStandingSeats = res.seats || [];
+          if (availableStandingSeats.length < orderDraft.quantity) {
+            Alert.alert('Thất bại', 'Không đủ chỗ đứng khả dụng.');
+            setIsPaying(false);
+            return;
           }
-          Alert.alert('Thất bại', 'Một số ghế đã bị người khác chọn. Vui lòng thử lại.');
-          setIsPaying(false);
-          return;
+        } catch (e) {
+          console.error('Failed to fetch standing seats:', e);
         }
       }
 
+      const itemsToReserve: { zoneId: string; row?: number; seatNumber?: number; label: string; price: number }[] = [];
+      if (isSelectSeatMode) {
+        orderDraft.selectedSeats!.forEach(s => {
+          itemsToReserve.push({ zoneId: s.zoneId, row: s.row, seatNumber: s.seatNumber, label: s.seatLabel, price: s.price });
+        });
+      } else {
+        for (let i = 0; i < orderDraft.quantity; i++) {
+          const seat = availableStandingSeats[i];
+          itemsToReserve.push({ 
+            zoneId: orderDraft.zoneId, 
+            row: seat?.row || 1, 
+            seatNumber: seat?.seatNumber || (i + 1), 
+            label: seat?.seatLabel || orderDraft.zoneName, 
+            price: orderDraft.price 
+          });
+        }
+      }
+
+      for (const item of itemsToReserve) {
+        try {
+          // Gửi đầy đủ row/seatNumber để vượt qua backend validation cũ (nếu có)
+          const res = await SeatAPI.reserveSeat(orderDraft.eventId, item.zoneId, item.row, item.seatNumber);
+          if (res?._id) {
+            reservedMongoIds.push(res._id);
+            finalItems.push({
+              zoneName: item.label,
+              seatId: res._id,
+              seatLabel: res.seatLabel || item.label,
+              price: item.price,
+              quantity: 1,
+            });
+          }
+        } catch (e: any) {
+          console.error('Failed to reserve seat:', item.zoneId, e?.message);
+          lockFailed = true;
+          break;
+        }
+      }
+
+      if (lockFailed) {
+        // Rollback: Giải phóng các ghế đã reserve thành công trước đó
+        for (const mid of reservedMongoIds) {
+          await SeatAPI.releaseReservation(orderDraft.eventId, mid).catch(() => {});
+        }
+        Alert.alert('Thất bại', 'Ghế hoặc chỗ đứng đã bị người khác chọn. Vui lòng thử lại.');
+        setIsPaying(false);
+        return;
+      }
+
+      // 2) Tạo payment (sử dụng MongoDB _id chính xác)
       let result;
       try {
         result = await PaymentAPI.createPayment({
@@ -120,14 +152,14 @@ export default function Checkout({ navigation, route }: any) {
           eventId: orderDraft.eventId,
           eventName: displayName,
           organizerId: orderDraft.organizerId,
-          items,
+          items: finalItems,
           channel: 'mobile',
           voucherCode: promoCode.trim() ? promoCode.trim() : undefined,
         });
       } catch (e: any) {
         // Rollback seats if payment creation fails
-        for (const sid of reservedSeatIds) {
-          await SeatAPI.releaseReservation(orderDraft.eventId, sid).catch(() => {});
+        for (const mid of reservedMongoIds) {
+          await SeatAPI.releaseReservation(orderDraft.eventId, mid).catch(() => {});
         }
         throw e;
       }

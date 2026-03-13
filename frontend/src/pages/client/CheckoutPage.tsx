@@ -84,7 +84,7 @@ export const CheckoutPage: React.FC = () => {
         ? seats.map((seat: any) => ({
             zoneName: zone.name,
             seatId: seat.id,
-            seatLabel: seat.label || `${seat.row}${seat.number}`,
+            seatLabel: seat.label || (zone.type === 'standing' ? `S${seat.number}` : `${seat.row}${seat.number}`),
             price: zone.price,
             quantity: 1,
           }))

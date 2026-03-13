@@ -5,6 +5,7 @@ export type LayoutZone = {
   name: string;
   type: LayoutZoneType;
   price?: number;
+  capacity?: number; // Tối đa cho standing
   rows?: number;
   seatsPerRow?: number;
   seatMetadata?: {

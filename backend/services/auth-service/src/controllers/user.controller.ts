@@ -38,7 +38,7 @@ export const updateCurrentUser = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { firstName, lastName, phone, address } = req.body;
+    const { firstName, lastName, phone, address, avatar } = req.body;
 
     const user = await User.findById(userId);
 
@@ -49,6 +49,7 @@ export const updateCurrentUser = async (req: Request, res: Response) => {
     if (firstName !== undefined) user.firstName = firstName;
     if (lastName !== undefined) user.lastName = lastName;
     if (phone !== undefined) user.phone = phone;
+    if (avatar !== undefined) user.avatar = avatar;
     if (address !== undefined) {
       user.address = {
         ...user.address,

@@ -238,4 +238,23 @@ export const AuthAPI = {
       method: 'POST',
     });
   },
+
+  /**
+   * Get current user profile
+   */
+  async getMe(token: string): Promise<any> {
+    return authenticatedRequest<any>('/api/users/me', token, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Update current user profile
+   */
+  async updateProfile(token: string, data: any): Promise<any> {
+    return authenticatedRequest<any>('/api/users/me', token, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
 };

@@ -1,14 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ImageBackground, StyleSheet, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { EventLayout, LayoutAPI } from '../../services/layoutApiService';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function UserScreen({ navigation }: any) {
-  const { logout } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const [events, setEvents] = useState<EventLayout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshUser();
+    }, [refreshUser])
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -62,15 +69,18 @@ export default function UserScreen({ navigation }: any) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.avatarWrapper}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Profile')}
+            style={styles.avatarWrapper}
+          >
             <ImageBackground 
-              source={{ uri: 'https://i.pravatar.cc/150?img=68' }} 
+              source={{ uri: user?.avatar || 'https://i.pravatar.cc/150?img=68' }} 
               style={styles.avatarImage}
             />
-          </View>
+          </TouchableOpacity>
           <View style={styles.headerTextContainer}>
             <Text style={styles.helloText}>Hello,</Text>
-            <Text style={styles.userName}>Alex Johnson</Text>
+            <Text style={styles.userName}>{user ? `${user.firstName} ${user.lastName}` : 'Guest'}</Text>
           </View>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.notificationButton}>
@@ -91,7 +101,7 @@ export default function UserScreen({ navigation }: any) {
           </TouchableOpacity>
           
           <TouchableOpacity 
-            onPress={() => navigation.navigate('MyTickets')}
+            onPress={() => navigation.navigate('Tickets')}
             style={[styles.quickActionCard, styles.quickActionTickets]}
           >
             <MaterialIcons name="local-activity" size={32} color="#00e5ff" />
@@ -102,7 +112,7 @@ export default function UserScreen({ navigation }: any) {
         {/* Upcoming Event */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Up Next</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('MyTickets')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Tickets')}>
             <Text style={styles.sectionAction}>View All</Text>
           </TouchableOpacity>
         </View>

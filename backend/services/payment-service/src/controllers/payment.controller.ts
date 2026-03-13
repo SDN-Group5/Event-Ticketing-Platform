@@ -7,6 +7,7 @@ import { createPaymentCompleteSaga } from '../saga/paymentCompleteSaga';
 import { createCancelSaga } from '../saga/cancelSaga';
 import { createCancelVoucherSaga } from '../saga/cancelVoucherSaga';
 import { SagaResult } from '../saga/sagaOrchestrator';
+import { getTicketsByOrderId } from '../services/ticket.service';
 import axios from 'axios';
 
 const COMMISSION_RATE = 0.05;
@@ -214,7 +215,22 @@ export const getOrder = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
     }
 
-    return res.json({ success: true, data: order });
+    // Lấy danh sách vé (nếu đã được phát hành) để client hiển thị QR code
+    let tickets = [];
+    try {
+      tickets = await getTicketsByOrderId(order._id.toString());
+    } catch (e) {
+      // Không chặn API nếu lỗi lấy vé
+      console.warn('[getOrder] Failed to fetch tickets for order', order.orderCode);
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        ...(order.toObject ? order.toObject() : order),
+        tickets,
+      },
+    });
   } catch (err: any) {
     console.error('[getOrder] Error:', err);
     return res.status(500).json({ success: false, message: err.message });
@@ -498,10 +514,25 @@ export const verifyPayment = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
     }
 
+    // Lấy vé (nếu có) để đồng bộ xuống client
+    let tickets = [];
+    try {
+      tickets = await getTicketsByOrderId(order._id.toString());
+    } catch (e) {
+      console.warn('[verifyPayment] Failed to fetch tickets for order', orderCode);
+    }
+
     if (!order.payosPaymentLinkId) {
       return res.json({
         success: true,
-        data: { status: order.status, order, payosStatus: 'UNKNOWN' },
+        data: {
+          status: order.status,
+          order: {
+            ...(order.toObject ? order.toObject() : order),
+            tickets,
+          },
+          payosStatus: 'UNKNOWN',
+        },
       });
     }
 
@@ -512,9 +543,23 @@ export const verifyPayment = async (req: Request, res: Response) => {
     if (paymentInfo.status === 'PAID' && currentStatus !== 'paid') {
       await handlePaidOrder(order);
 
+      // Sau khi handlePaidOrder, vé có thể đã được tạo; thử lấy lại
+      try {
+        tickets = await getTicketsByOrderId(order._id.toString());
+      } catch (e) {
+        console.warn('[verifyPayment] Failed to fetch tickets after handlePaidOrder', orderCode);
+      }
+
       return res.json({
         success: true,
-        data: { status: 'paid', order, payosStatus: paymentInfo.status },
+        data: {
+          status: 'paid',
+          order: {
+            ...(order.toObject ? order.toObject() : order),
+            tickets,
+          },
+          payosStatus: paymentInfo.status,
+        },
       });
     }
 
@@ -530,7 +575,14 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
     return res.json({
       success: true,
-      data: { status: currentStatus, order, payosStatus: paymentInfo.status },
+      data: {
+        status: currentStatus,
+        order: {
+          ...(order.toObject ? order.toObject() : order),
+          tickets,
+        },
+        payosStatus: paymentInfo.status,
+      },
     });
   } catch (err: any) {
     console.error('[verifyPayment] Error:', err);

@@ -1,4 +1,3 @@
-import QRCode from 'qrcode';
 import { Ticket, ITicket } from '../models/ticket.model';
 
 export interface TicketData {
@@ -7,7 +6,7 @@ export interface TicketData {
   eventName: string;
   zoneName: string;
   seatLabel?: string;
-  qrCodeBuffer: Buffer; // Buffer for email attachment
+  qrCodePayload: string; // Client sẽ tự render QR từ payload
 }
 
 /**
@@ -51,22 +50,6 @@ export const createTicketsForOrder = async (
           orderCode,
         });
 
-        // Generate QR code as PNG Buffer (for email attachment)
-        const qrCodeBuffer = ( await QRCode.toBuffer(qrPayload, {
-          errorCorrectionLevel: 'H',
-          type: 'png',
-          margin: 1,
-          width: 200,
-        })) as Buffer;
-
-        // Also store as data URL for database
-        const qrCodeImage = await QRCode.toDataURL(qrPayload, {
-          errorCorrectionLevel: 'H',
-          type: 'image/png',
-          margin: 1,
-          width: 200,
-        });
-
         // Create ticket document for database
         const ticketDoc: ITicket = new Ticket({
           ticketId,
@@ -80,7 +63,6 @@ export const createTicketsForOrder = async (
           seatLabel: item.seatId ? `${item.zoneName}-${i + 1}` : undefined,
           price: item.price,
           qrCodePayload: qrPayload,
-          qrCodeImage, // Store base64 for quick access
           status: 'issued',
         });
 
@@ -93,7 +75,7 @@ export const createTicketsForOrder = async (
           eventName,
           zoneName: item.zoneName,
           seatLabel: item.seatId ? `${item.zoneName}-${i + 1}` : undefined,
-          qrCodeBuffer, // Buffer for email attachment
+          qrCodePayload: qrPayload, // cái ni dùng để render QR code trong mobile
         });
       }
     }

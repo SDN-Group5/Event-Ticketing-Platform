@@ -7,10 +7,12 @@ import {
   Image,
   ActivityIndicator,
   FlatList,
-  Dimensions
+  Dimensions,
+  Share
 } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { PaymentAPI } from '../services/paymentApiService';
+import QRCode from 'react-native-qrcode-svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -37,11 +39,14 @@ export default function TicketDetail({ navigation, route }: any) {
           setOrder(fallbackData);
         }
       } catch (error) {
-        console.error('Error fetching/verifying order detail:', error);
         try {
+          // Verify có thể fail (PayOS không có mã), nhưng DB vẫn có order → fallback nhẹ nhàng
+          console.warn('Verify payment failed, fallback to getOrder:', (error as any)?.message || error);
           const fallbackData = await PaymentAPI.getOrder(Number(orderCode));
           setOrder(fallbackData);
-        } catch (e) { }
+        } catch (e) {
+          console.error('Error fetching order detail:', e);
+        }
       } finally {
         setLoading(false);
       }
@@ -87,6 +92,25 @@ export default function TicketDetail({ navigation, route }: any) {
 
   const statusInfo = getStatusInfo(order.status);
 
+  // Map tickets (có QR payload) theo thứ tự để hiển thị
+  const tickets = (order as any).tickets || [];
+
+  const webBaseUrl = process.env.EXPO_PUBLIC_WEB_URL || 'https://event-ticketing-platform-six.vercel.app';
+  const activeTicket = tickets[activeIndex];
+
+  const handleShareTicket = async () => {
+    if (!activeTicket?.ticketId) return;
+    const url = `${webBaseUrl}/t/${encodeURIComponent(String(activeTicket.ticketId))}`;
+    try {
+      await Share.share({
+        message: `Vé điện tử của bạn: ${url}`,
+        url,
+      });
+    } catch (e) {
+      // ignore share cancel/errors
+    }
+  };
+
   return (
     <View className="flex-1 bg-[#0a0014]">
       {/* Header */}
@@ -110,7 +134,20 @@ export default function TicketDetail({ navigation, route }: any) {
               setActiveIndex(index);
             }}
             keyExtractor={(_, index) => index.toString()}
-            renderItem={({ item, index }) => (
+            renderItem={({ item, index }) => {
+              // Tìm vé tương ứng (ưu tiên cùng seatId, nếu không có thì dùng index)
+              const matchingTicket =
+                tickets.find(
+                  (t: any) =>
+                    (t.seatId && item.seatId && t.seatId === item.seatId) ||
+                    (t.zoneName && item.zoneName && t.zoneName === item.zoneName)
+                ) || tickets[index];
+              const qrValue =
+                matchingTicket?.qrCodePayload ||
+                (matchingTicket?.ticketId ? `ticket:${matchingTicket.ticketId}` : '') ||
+                '';
+
+              return (
               <View style={{ width: SCREEN_WIDTH }} className="px-4">
                 <View className="bg-[#1a0033] rounded-3xl overflow-hidden border border-[#d500f9] shadow-[0_0_20px_rgba(213,0,249,0.3)] mb-4">
                   <Image
@@ -181,12 +218,10 @@ export default function TicketDetail({ navigation, route }: any) {
 
                     <View className="items-center bg-white p-6 rounded-2xl mb-2">
                       <Text className="text-[#0a0014]/40 text-[9px] font-black uppercase mb-4 tracking-[3px]">Official Digital Ticket</Text>
-                      {order.qrCode ? (
-                        <Image
-                          source={{ uri: order.qrCode }}
-                          className="w-44 h-44"
-                          resizeMode="contain"
-                        />
+                      {qrValue ? (
+                        <View className="w-44 h-44 items-center justify-center">
+                          <QRCode value={qrValue} size={176} />
+                        </View>
                       ) : (
                         <FontAwesome5 name="qrcode" size={120} color="black" />
                       )}
@@ -199,13 +234,13 @@ export default function TicketDetail({ navigation, route }: any) {
                   </View>
                 </View>
               </View>
-            )}
+            )}}
           />
 
           {/* Pagination Indicator */}
           {order.items && order.items.length > 1 && (
             <View className="flex-row justify-center mb-8">
-              {order.items.map((_, i) => (
+              {order.items.map((_: any, i: number) => (
                 <View
                   key={i}
                   className={`w-1.5 h-1.5 rounded-full mx-1 ${i === activeIndex ? 'bg-[#00e5ff] w-4' : 'bg-[#4d0099]'}`}
@@ -216,7 +251,11 @@ export default function TicketDetail({ navigation, route }: any) {
         </View>
 
         <View className="px-4 pb-12">
-          <TouchableOpacity className="bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 mb-4 flex-row items-center justify-center">
+          <TouchableOpacity
+            onPress={handleShareTicket}
+            disabled={!activeTicket?.ticketId}
+            className={`bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 mb-4 flex-row items-center justify-center ${!activeTicket?.ticketId ? 'opacity-50' : ''}`}
+          >
             <MaterialIcons name="share" size={20} color="#00e5ff" />
             <Text className="text-[#00e5ff] font-bold text-lg ml-2">Chia sẻ vé</Text>
           </TouchableOpacity>

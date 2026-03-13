@@ -201,12 +201,24 @@ export default function TicketSelection({ navigation, route }: any) {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View className="flex-1 bg-[#151022]">
-        <View className="flex-row items-center p-4 pt-12 bg-[#1e1a29] border-b border-white/10">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-white/5 rounded-full items-center justify-center border border-white/10">
-          <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
-        </TouchableOpacity>
-        <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Select Tickets</Text>
-      </View>
+        <View
+          className="flex-row items-center p-4 pt-12 bg-[#1e1a29] border-b border-white/10"
+          style={{ zIndex: 20, elevation: 20 }}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.navigate('EventDetail', { eventId });
+              }
+            }}
+            className="w-10 h-10 bg-white/5 rounded-full items-center justify-center border border-white/10"
+          >
+            <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
+          </TouchableOpacity>
+          <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Select Tickets</Text>
+        </View>
 
       <View className="flex-1">
         {loading ? (

@@ -69,14 +69,20 @@ export default function Profile({ navigation }: any) {
           </View>
 
           <View className="bg-[#1a0033] rounded-2xl border border-[#4d0099] overflow-hidden mb-8">
-            <TouchableOpacity className="flex-row items-center p-4 border-b border-[#4d0099]">
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('HelpSupport')}
+              className="flex-row items-center p-4 border-b border-[#4d0099]"
+            >
               <View className="w-10 h-10 rounded-full bg-[#b388ff]/20 items-center justify-center mr-4">
                 <MaterialIcons name="help-outline" size={24} color="#b388ff" />
               </View>
               <Text className="flex-1 text-base font-bold text-white">Trợ giúp & Hỗ trợ</Text>
               <MaterialIcons name="chevron-right" size={24} color="#b388ff" />
             </TouchableOpacity>
-            <TouchableOpacity className="flex-row items-center p-4">
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('AboutEventix')}
+              className="flex-row items-center p-4"
+            >
               <View className="w-10 h-10 rounded-full bg-[#b388ff]/20 items-center justify-center mr-4">
                 <MaterialIcons name="info-outline" size={24} color="#b388ff" />
               </View>

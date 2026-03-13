@@ -101,13 +101,10 @@ export const setupRoutes = (app: Express) => {
   // Auth Service: /api/auth/* -> auth-service:4001/login, /register, ...
   //  - Gateway prefix `/api/auth` được bỏ đi trước khi forward,
   //  - Auth-service expose các route `/login`, `/register`, ...
+  // Auth Service: Chuyển tiếp sạch sẽ tới auth-service:4001
   app.use(
     '/api/auth',
-    createProxyMiddleware(
-      createProxy(AUTH_SERVICE_URL, {
-        '^/api/auth': '',
-      }),
-    )
+    createProxyMiddleware(createProxy(AUTH_SERVICE_URL, { '^/api/auth': '/api/auth' }))
   );
 
   // User Service (Auth Service) - current user & admin user management

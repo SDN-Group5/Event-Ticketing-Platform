@@ -49,12 +49,10 @@ app.use(morgan('combined', {
 }));
 
 // ============================================
-// ROUTES
-// ============================================
+// Routes
 app.use('/health', healthRoutes);
-// Giữ nguyên prefix /api/auth cho các client hiện có
+// Mount trên cả /api/auth (chuẩn) và / (để khớp khi gateway strip prefix)
 app.use('/api/auth', authRoutes);
-// Đồng thời expose các route gốc (/login, /register, ...) để gateway sau khi pathRewrite có thể gọi trực tiếp
 app.use('/', authRoutes);
 app.use('/api/users', userRoutes);
 
@@ -64,6 +62,24 @@ app.get('/', (req, res) => {
     service: SERVICE_NAME,
     version: '1.0.0',
     endpoints: ['/health', '/api/auth', '/api/users'],
+  });
+});
+
+// JSON 404 Handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Auth Service: Route ${req.originalUrl} not found`,
+  });
+});
+
+// Global Error Handler
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('💥 [AUTH-SERVICE] Global Error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error',
+    error: err.message,
   });
 });
 

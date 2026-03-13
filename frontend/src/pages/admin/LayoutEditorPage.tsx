@@ -34,6 +34,7 @@ interface Zone {
     screenHeight?: number; // Screen height
     screenWidthRatio?: number; // Screen width ratio (0-1)
     view360Url?: string; // URL for 360 viewer
+    capacity?: number; // Capacity for standing zones
 }
 
 interface Seat {
@@ -453,6 +454,7 @@ export const LayoutEditorPage: React.FC = () => {
                 if (zone.seatsPerRow !== undefined) cleanZone.seatsPerRow = zone.seatsPerRow;
                 if (zone.elevation !== undefined) cleanZone.elevation = zone.elevation;
                 if (zone.view360Url !== undefined) cleanZone.view360Url = zone.view360Url;
+                if (zone.capacity !== undefined) cleanZone.capacity = zone.capacity;
 
                 return cleanZone;
             });
@@ -601,7 +603,7 @@ export const LayoutEditorPage: React.FC = () => {
                                 </span>
                             )}
                             {zone.type === 'standing' && (
-                                <span className="text-[10px] text-slate-400 mt-1">Standing</span>
+                                <span className="text-[10px] text-slate-400 mt-1">Standing {zone.capacity ? `(${zone.capacity})` : ''}</span>
                             )}
                         </>
                     )}
@@ -855,6 +857,22 @@ export const LayoutEditorPage: React.FC = () => {
                                     </>
                                 )}
 
+                                {selectedZone.type === 'standing' && (
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase mb-1.5 block">Total Capacity</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={selectedZone.capacity || 0}
+                                            onChange={(e) => updateZone(selectedZone.id, { capacity: parseInt(e.target.value) || 0 })}
+                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
+                                        />
+                                        <p className="text-[10px] text-slate-500 mt-1">
+                                            Max number of people allowed in this standing area.
+                                        </p>
+                                    </div>
+                                )}
+
                                 {selectedZone.price !== undefined && (
                                     <div>
                                         <label className="text-xs text-slate-500 uppercase mb-1.5 block">Price ($)</label>
@@ -1087,7 +1105,9 @@ export const LayoutEditorPage: React.FC = () => {
                             Show Seats
                         </label>
                         <button
-                            onClick={() => selectedEventId ? navigate(`/event/${selectedEventId}/venue-3d`) : null}
+                            onClick={() => selectedEventId ? navigate(`/event/${selectedEventId}/venue-3d`, { 
+                                state: { returnTo: `/organizer/stage-builder?eventId=${selectedEventId}` } 
+                            }) : null}
                             disabled={!selectedEventId}
                             className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:brightness-110 transition-all flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             title={!selectedEventId ? "Select an event to preview 3D venue" : "View 360°"}

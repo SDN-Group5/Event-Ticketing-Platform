@@ -100,7 +100,8 @@ export const createLayout = async (req, res) => {
     try {
         const {
             eventId, zones, canvasWidth, canvasHeight, canvasColor,
-            eventName, eventDate, eventImage, eventLocation, eventDescription, minPrice
+            eventName, eventDate, eventImage, eventLocation, eventDescription, minPrice,
+            payoutInfo, invoiceInfo
         } = req.body;
         const userId = req.user ? req.user.id : null; // Assuming auth middleware sets req.user
 
@@ -128,18 +129,21 @@ export const createLayout = async (req, res) => {
             canvasWidth,
             canvasHeight,
             canvasColor,
+            payoutInfo,
+            invoiceInfo,
             createdBy: userId,
             version: 1
         });
 
         await newLayout.save();
 
-        // ✨ AUTO-GENERATE SEATS: Generate seats for all seat zones
-        const seatZones = newLayout.zones.filter(zone => zone.type === 'seats');
+        // ✨ AUTO-GENERATE SEATS: Generate seats for all seat-based zones (seats and standing)
+        const seatZones = newLayout.zones.filter(zone => zone.type === 'seats' || zone.type === 'standing');
         for (const zone of seatZones) {
             try {
                 await seatService.generateSeatsForZone(eventId, newLayout._id, zone);
-                console.log(`[Layout] Generated ${zone.rows * zone.seatsPerRow} seats for zone: ${zone.name}`);
+                const seatCount = zone.type === 'standing' ? zone.capacity : (zone.rows * zone.seatsPerRow);
+                console.log(`[Layout] Generated ${seatCount} seats for zone: ${zone.name} (${zone.type})`);
             } catch (seatError) {
                 console.error(`[Layout] Error generating seats for zone ${zone.name}:`, seatError);
                 // Continue with other zones even if one fails
@@ -207,12 +211,12 @@ export const updateLayout = async (req, res) => {
         // ✨ Capture old seat zone IDs BEFORE overwriting layout.zones
         const oldSeatZoneIds = new Set(
             layout.zones
-                .filter(z => z.type === 'seats')
+                .filter(z => z.type === 'seats' || z.type === 'standing')
                 .map(z => z.id)
         );
         const oldSeatZoneMap = new Map(
             layout.zones
-                .filter(z => z.type === 'seats')
+                .filter(z => z.type === 'seats' || z.type === 'standing')
                 .map(z => [z.id, typeof z.toObject === 'function' ? z.toObject() : z])
         );
 
@@ -233,17 +237,38 @@ export const updateLayout = async (req, res) => {
 
         await layout.save();
 
-        // ✨ AUTO-GENERATE SEATS: Handle seat zones for updates
-        const newSeatZones = zones.filter(z => z.type === 'seats');
+        // ✨ AUTO-GENERATE SEATS: Handle seat-based zones for updates
+        const newSeatZones = zones.filter(z => z.type === 'seats' || z.type === 'standing');
         console.log(`[Layout] Processing ${newSeatZones.length} seat zones. Old zone map has ${oldSeatZoneMap.size} entries.`);
+
+        // Find and delete seats for zones that were removed
+        const newSeatZoneIds = new Set(newSeatZones.map(z => z.id));
+        const deletedZoneIds = [...oldSeatZoneIds].filter(id => !newSeatZoneIds.has(id));
+        
+        if (deletedZoneIds.length > 0) {
+            try {
+                const Seat = (await import('../models/Seat.js')).default;
+                const deleteResult = await Seat.deleteMany({
+                    layoutId: layout._id,
+                    zoneId: { $in: deletedZoneIds }
+                });
+                console.log(`[Layout] Deleted ${deleteResult.deletedCount} seats for removed zones:`, deletedZoneIds);
+            } catch (err) {
+                console.error('[Layout] Error deleting seats for removed zones:', err);
+            }
+        }
 
         for (const newZone of newSeatZones) {
             const oldZone = oldSeatZoneMap.get(newZone.id);
-            console.log(`[Layout] Zone "${newZone.name}" (${newZone.id}): oldZone=${oldZone ? `rows=${oldZone.rows},cols=${oldZone.seatsPerRow}` : 'NOT FOUND (NEW)'}, newZone: rows=${newZone.rows},cols=${newZone.seatsPerRow}`);
+            console.log(`[Layout] Zone "${newZone.name}" (${newZone.id}): oldZone=${oldZone ? `type=${oldZone.type},rows=${oldZone.rows},cols=${oldZone.seatsPerRow},cap=${oldZone.capacity}` : 'NOT FOUND (NEW)'}, newZone: type=${newZone.type},rows=${newZone.rows},cols=${newZone.seatsPerRow},cap=${newZone.capacity}`);
 
             // Generate seats if it's a new zone or seat configuration changed
-            if (!oldZone || oldZone.rows !== newZone.rows || oldZone.seatsPerRow !== newZone.seatsPerRow) {
-                console.log(`[Layout] Triggering seat (re)generation for zone "${newZone.name}"`);
+            const isSeatsChanged = oldZone?.type === 'seats' && newZone.type === 'seats' && (oldZone.rows !== newZone.rows || oldZone.seatsPerRow !== newZone.seatsPerRow);
+            const isStandingChanged = oldZone?.type === 'standing' && newZone.type === 'standing' && oldZone.capacity !== newZone.capacity;
+            const isTypeChanged = oldZone && oldZone.type !== newZone.type;
+
+            if (!oldZone || isSeatsChanged || isStandingChanged || isTypeChanged) {
+                console.log(`[Layout] Triggering seat (re)generation for zone "${newZone.name}" (${newZone.type})`);
                 try {
                     // Delete old seats for this zone if reconfigured
                     if (oldZone) {
@@ -254,7 +279,8 @@ export const updateLayout = async (req, res) => {
 
                     // Generate new seats
                     await seatService.generateSeatsForZone(eventId, layout._id, newZone);
-                    console.log(`[Layout] Generated ${newZone.rows * newZone.seatsPerRow} seats for zone: ${newZone.name}`);
+                    const seatCount = newZone.type === 'standing' ? newZone.capacity : (newZone.rows * newZone.seatsPerRow);
+                    console.log(`[Layout] Generated ${seatCount} seats for zone: ${newZone.name}`);
                 } catch (seatError) {
                     console.error(`[Layout] Error generating seats for zone ${newZone.name}:`, seatError);
                 }
@@ -305,9 +331,11 @@ export const updateLayout = async (req, res) => {
 export const deleteLayout = async (req, res) => {
     try {
         const { eventId } = req.params;
-        const result = await EventLayout.deleteOne({ eventId });
+        
+        // Find layout first
+        const layout = await EventLayout.findOne({ eventId });
 
-        if (result.deletedCount === 0) {
+        if (!layout) {
             return res.status(404).json({
                 success: false,
                 error: {
@@ -320,11 +348,14 @@ export const deleteLayout = async (req, res) => {
         // ✨ CLEANUP: Delete all seats associated with this layout
         try {
             const Seat = (await import('../models/Seat.js')).default;
-            const deletedSeats = await Seat.deleteMany({ eventId });
-            console.log(`[Layout] Deleted ${deletedSeats.deletedCount} seats for event: ${eventId}`);
+            const deletedSeats = await Seat.deleteMany({ layoutId: layout._id });
+            console.log(`[Layout] Deleted ${deletedSeats.deletedCount} seats for layout: ${layout._id}`);
         } catch (seatError) {
             console.error('[Layout] Error deleting seats:', seatError);
         }
+
+        // Delete the layout document
+        await layout.deleteOne();
 
         res.status(200).json({
             success: true,

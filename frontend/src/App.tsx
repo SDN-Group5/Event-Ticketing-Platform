@@ -56,11 +56,10 @@ import {
 // Admin Pages
 import {
   PayoutsPage,
-  EventQueuePage,
   UsersPage,
   LayoutEditorPage,
   LayoutApiTestPage,
-  EventApprovalsPage,
+  EventApprovalPage,
   RefundRequestsPage,
   AdminAnalyticsPage,
   AdminSettingsPage,
@@ -301,14 +300,6 @@ const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path={ROUTES.ADMIN_EVENT_QUEUE}
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout title="Event Queue"><EventQueuePage /></AdminLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path={ROUTES.ADMIN_USERS}
         element={
           <ProtectedRoute allowedRoles={['admin']}>
@@ -329,7 +320,7 @@ const AppRoutes: React.FC = () => {
         path={ROUTES.ADMIN_EVENT_APPROVALS}
         element={
           <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout title="Event Approvals"><EventApprovalsPage /></AdminLayout>
+            <AdminLayout title="Event Approvals"><EventApprovalPage /></AdminLayout>
           </ProtectedRoute>
         }
       />

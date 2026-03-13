@@ -124,19 +124,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 })}
             </nav>
 
-            {/* Logout Footer - Only for Organizer */}
-            {variant === 'organizer' && <LogoutFooter isCollapsed={isCollapsed} />}
+            {/* Logout Footer - For Admin and Organizer */}
+            {(variant === 'organizer' || variant === 'admin') && (
+                <LogoutFooter isCollapsed={isCollapsed} variant={variant} />
+            )}
         </aside>
     );
 };
 
 interface LogoutFooterProps {
     isCollapsed: boolean;
+    variant: 'default' | 'admin' | 'organizer';
 }
 
-const LogoutFooter: React.FC<LogoutFooterProps> = ({ isCollapsed }) => {
+const LogoutFooter: React.FC<LogoutFooterProps> = ({ isCollapsed, variant }) => {
     const navigate = useNavigate();
     const { logout } = useAuth();
+
+    const borderClasses = {
+        default: 'border-[#2d2839]',
+        admin: 'border-slate-800',
+        organizer: 'border-[#342f42]',
+    };
 
     const handleLogout = () => {
         logout();
@@ -144,7 +153,7 @@ const LogoutFooter: React.FC<LogoutFooterProps> = ({ isCollapsed }) => {
     };
 
     return (
-        <div className="border-t border-[#342f42] p-3 mt-auto">
+        <div className={`border-t ${borderClasses[variant]} p-3 mt-auto`}>
             <button
                 onClick={handleLogout}
                 className={`

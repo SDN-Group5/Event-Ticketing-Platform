@@ -63,6 +63,12 @@ function ordersToTickets(orders: any[]): Ticket[] {
         if (match) {
           row = match[1];
           seatNumber = match[2];
+          // If Row is 1, it's likely a standing zone or single-row zone
+          // For standing zones, we prefer to show just the seat number (Spot)
+          if (row === '1' && (item.zoneName || '').toLowerCase().includes('standing')) {
+            row = undefined;
+            seatNumber = `S${seatNumber}`;
+          }
         } else if (item.seatId.length > 10) {
           // Fallback: cắt bớt chuỗi cho gọn nếu không đúng pattern
           seatNumber = item.seatId.slice(-6);

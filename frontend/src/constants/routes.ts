@@ -38,7 +38,6 @@ export const ROUTES = {
 
   // Admin routes
   ADMIN_PAYOUTS: '/admin/payouts',
-  ADMIN_EVENT_QUEUE: '/admin/events',
   ADMIN_USERS: '/admin/users',
   LAYOUT_EDITOR: '/admin/layout-editor',
   LAYOUT_API_TEST: '/admin/layout-api-test',

@@ -44,20 +44,6 @@ export const eventsData: MockEvent[] = [
     status: 'published',
   },
   {
-    id: '3',
-    title: 'Cyber Tech Conference',
-    description: 'Future technology trends and networking.',
-    date: '2026-05-10T09:00:00',
-    location: 'Tech Convention Center',
-    image:
-      'https://images.unsplash.com/photo-1540575467063-178a50918e7f?auto=format&fit=crop&q=80&w=1000',
-    organizerId: 'u2',
-    seatMapId: 'sm3',
-    minPrice: 150,
-    maxPrice: 500,
-    status: 'draft',
-  },
-  {
     id: '4',
     title: 'Indie Night Market Live',
     description: 'Food stalls, live bands, and indie vibes all night.',

@@ -109,7 +109,13 @@ export const ZoneSelectionPage: React.FC = () => {
             const currentUserId = user?.id;
             setSelectedSeats(prev => {
                 return prev.filter(sel => {
-                    const parts = String(sel.id).split('-');
+                    const idStr = String(sel.id);
+                    if (idStr.startsWith('standing:')) {
+                        // Standing zones might not have specific seat updates in the same way,
+                        // but we rely on the backend validation during reservation.
+                        return true;
+                    }
+                    const parts = idStr.split('-');
                     const seatNum = Number(parts.pop());
                     const rowNum = Number(parts.pop());
                     const zId = parts.join('-');
@@ -144,6 +150,7 @@ export const ZoneSelectionPage: React.FC = () => {
                 color: zone.color,
                 rows: zone.rows || 1,
                 seatsPerRow: zone.seatsPerRow || 1,
+                capacity: zone.capacity || 0,
                 position: zone.position,
                 size: zone.size,
                 rotation: zone.rotation || 0,
@@ -264,15 +271,16 @@ export const ZoneSelectionPage: React.FC = () => {
 
         setVoucherError(null);
 
-        const items = selectedSeats.map(seat => {
-            return {
-                zoneName: seat.zone,
-                seatId: seat.id,
-                seatLabel: seat.label,
-                price: seat.price,
-                quantity: 1,
-            };
-        });
+        const reservedMongoIds: string[] = [];
+
+        const releaseReservedSeats = async () => {
+            console.log(`[ZoneSelectionPage] Releasing ${reservedMongoIds.length} reserved seats:`, reservedMongoIds);
+            for (const mongoId of reservedMongoIds) {
+                await SeatAPI.releaseReservation(id!, mongoId).catch(err => {
+                    console.error(`[ZoneSelectionPage] Failed to release seat ${mongoId}:`, err);
+                });
+            }
+        };
 
         try {
             setIsProcessingPayment(true);
@@ -285,41 +293,48 @@ export const ZoneSelectionPage: React.FC = () => {
             }
 
             // 1) Reserve tất cả ghế trong DB (lock) trước khi tạo payment
-            const reservedSeatIds: string[] = [];
 
-            const releaseReservedSeats = async () => {
-                for (const seatId of reservedSeatIds) {
-                    const parts = String(seatId).split('-');
-                    const seatNumber = Number(parts.pop());
-                    const rowNumber = Number(parts.pop());
-                    const zoneId = parts.join('-');
-                    const seatObj = await SeatAPI.getSeatsByZone(id!, zoneId).catch(() => null);
-                    if (!seatObj) continue;
-                    // Lấy seatId Mongo để gọi PATCH release
-                    const found = (seatObj as any)?.seats?.find((s: any) => s.row === rowNumber && s.seatNumber === seatNumber);
-                    if (found?._id) {
-                        await SeatAPI.releaseReservation(id!, found._id).catch(() => { });
-                    }
-                }
-            };
-
-            const reserveResults: boolean[] = [];
+            const reserveResults: { uiId: string; mongoId: string; success: boolean; label: string; zone: string; price: number }[] = [];
             for (const seat of selectedSeats) {
-                const parts = String(seat.id).split('-');
-                const seatNumber = Number(parts.pop());
-                const rowNumber = Number(parts.pop());
-                const zoneId = parts.join('-');
+                const idStr = String(seat.id);
                 try {
-                    await SeatAPI.reserveSeat(id, zoneId, rowNumber, seatNumber);
-                    reservedSeatIds.push(seat.id);
-                    reserveResults.push(true);
+                    let reserveRes;
+                    if (idStr.startsWith('standing:')) {
+                        const [, zoneId] = idStr.split(':');
+                        reserveRes = await SeatAPI.reserveSeat(id!, zoneId);
+                    } else {
+                        const parts = idStr.split('-');
+                        const seatNumber = Number(parts.pop());
+                        const rowNumber = Number(parts.pop());
+                        const zoneId = parts.join('-');
+                        reserveRes = await SeatAPI.reserveSeat(id!, zoneId, rowNumber, seatNumber);
+                    }
+                    
+                    if (reserveRes?._id) {
+                        reservedMongoIds.push(reserveRes._id);
+                        reserveResults.push({
+                            uiId: seat.id,
+                            mongoId: reserveRes._id,
+                            success: true,
+                            label: reserveRes.seatLabel || seat.label,
+                            zone: seat.zone,
+                            price: seat.price
+                        });
+                    }
                 } catch (err: any) {
                     console.error('Reserve failed for', seat.id, err?.response?.data);
-                    reserveResults.push(false);
+                    reserveResults.push({
+                        uiId: seat.id,
+                        mongoId: '',
+                        success: false,
+                        label: seat.label,
+                        zone: seat.zone,
+                        price: seat.price
+                    });
                 }
             }
 
-            const failedCount = reserveResults.filter(r => !r).length;
+            const failedCount = reserveResults.filter(r => !r.success).length;
             if (failedCount > 0) {
                 // Release các ghế đã reserve thành công trước đó để tránh bị kẹt xám
                 await releaseReservedSeats();
@@ -328,13 +343,21 @@ export const ZoneSelectionPage: React.FC = () => {
                 return;
             }
 
-            // 2) Tạo payment (ghế đã locked trong DB)
+            // 2) Tạo payment (sử dụng MongoDB _id chính xác)
+            const orderItems = reserveResults.map(res => ({
+                zoneName: res.zone,
+                seatId: res.mongoId, // QUAN TRỌNG: Dùng _id của MongoDB thay vì UI ID
+                seatLabel: res.label,
+                price: res.price,
+                quantity: 1,
+            }));
+
             const result = await PaymentAPI.createPayment({
                 userId: user.id,
                 eventId: id,
                 eventName: event?.title || layoutData?.eventName || 'Event',
                 organizerId: layoutData?.organizerId || event?.organizerId || 'unknown',
-                items,
+                items: orderItems,
                 voucherCode: voucherCode.trim() || undefined,
             });
 
@@ -353,17 +376,8 @@ export const ZoneSelectionPage: React.FC = () => {
         } catch (err: any) {
             console.error('Error creating payment from ZoneSelectionPage:', err);
             // Release các ghế đã reserve trước đó để chúng không bị kẹt xám
-            for (const seat of selectedSeats) {
-                const parts = String(seat.id).split('-');
-                const seatNumber = Number(parts.pop());
-                const rowNumber = Number(parts.pop());
-                const zoneId = parts.join('-');
-                const seatObj = await SeatAPI.getSeatsByZone(id!, zoneId).catch(() => null);
-                const found = (seatObj as any)?.seats?.find((s: any) => s.row === rowNumber && s.seatNumber === seatNumber);
-                if (found?._id) {
-                    await SeatAPI.releaseReservation(id!, found._id).catch(() => { });
-                }
-            }
+            // (Nếu luồng tạo Order/Payment bị lỗi)
+            await releaseReservedSeats();
             const msg = err?.response?.data?.message || 'Không thể tạo thanh toán. Vui lòng thử lại.';
             setVoucherError(msg);
         } finally {

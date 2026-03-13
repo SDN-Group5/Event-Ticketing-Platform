@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { EventApprovalAPI } from '../../services/eventApprovalApiService';
-
+import { ROUTES } from '../../constants/routes';
+import React, { useState, useEffect } from 'react';
 interface PendingEvent {
     _id: string;
     title: string;
@@ -11,9 +12,23 @@ interface PendingEvent {
     startTime: string;
     endTime: string;
     createdAt: string;
+    bannerUrl?: string;
+    payoutInfo?: {
+        accountName?: string;
+        accountNumber?: string;
+        bankName?: string;
+        branchName?: string;
+    };
+    invoiceInfo?: {
+        businessType?: 'individual' | 'company';
+        fullName?: string;
+        address?: string;
+        taxCode?: string;
+    };
 }
 
 export const EventApprovalPage: React.FC = () => {
+    const navigate = useNavigate();
     const [events, setEvents] = useState<PendingEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -52,10 +67,6 @@ export const EventApprovalPage: React.FC = () => {
     }, [search]);
 
     const handleApprove = async (eventId: string) => {
-        if (!window.confirm('Are you sure you want to approve this event?')) {
-            return;
-        }
-
         try {
             setError(null);
             await EventApprovalAPI.approveEvent(eventId);
@@ -73,11 +84,6 @@ export const EventApprovalPage: React.FC = () => {
             setError('Please provide a rejection reason');
             return;
         }
-
-        if (!window.confirm('Are you sure you want to reject this event?')) {
-            return;
-        }
-
         try {
             setError(null);
             await EventApprovalAPI.rejectEvent(eventId, rejectionReason);
@@ -121,7 +127,7 @@ export const EventApprovalPage: React.FC = () => {
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-white mb-2">Event Approval Center</h1>
                     <p className="text-gray-400">
-                        Review and approve pending events from organizers
+                        Review and approve draft events from organizers
                     </p>
                 </div>
 
@@ -152,7 +158,7 @@ export const EventApprovalPage: React.FC = () => {
                 <div className="mb-8 bg-[#2a2436] rounded-xl p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">Pending Events Awaiting Review</p>
+                            <p className="text-gray-400 text-sm">Events Awaiting Review (Drafts)</p>
                             <p className="text-4xl font-bold text-white mt-2">{total}</p>
                         </div>
                         <span className="material-symbols-outlined text-6xl text-[#8655f6]">event_note</span>
@@ -179,6 +185,17 @@ export const EventApprovalPage: React.FC = () => {
                                     className="p-6 cursor-pointer hover:bg-[#3a3446] transition-colors"
                                 >
                                     <div className="flex items-start justify-between gap-4">
+                                        {/* Banner thumbnail */}
+                                        {event.bannerUrl && (
+                                            <div className="hidden md:block w-40 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-[#3a3446] bg-[#15101f]">
+                                                <img
+                                                    src={event.bannerUrl}
+                                                    alt={event.title}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        )}
+
                                         <div className="flex-1">
                                             <h3 className="text-xl font-bold text-white mb-2">
                                                 {event.title}
@@ -225,6 +242,95 @@ export const EventApprovalPage: React.FC = () => {
                                 {/* Expanded Details */}
                                 {expandedEventId === event._id && (
                                     <div className="border-t border-[#3a3446] p-6 bg-[#1f1a27]">
+                                        {/* Large banner preview */}
+                                        {event.bannerUrl && (
+                                            <div className="mb-6">
+                                                <h4 className="text-sm font-semibold text-gray-400 mb-2">
+                                                    Event Banner
+                                                </h4>
+                                                <div className="rounded-xl overflow-hidden border border-[#3a3446] bg-[#15101f]">
+                                                    <img
+                                                        src={event.bannerUrl}
+                                                        alt={event.title}
+                                                        className="w-full max-h-64 object-cover"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Payout / Bank info */}
+                                        {(event.payoutInfo || event.invoiceInfo) && (
+                                            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {event.payoutInfo && (
+                                                    <div className="bg-[#15101f] rounded-xl p-4 border border-[#3a3446]">
+                                                        <h4 className="text-sm font-semibold text-gray-300 mb-3">
+                                                            Bank Account (Payout)
+                                                        </h4>
+                                                        <div className="space-y-1 text-sm">
+                                                            {event.payoutInfo.accountName && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Account Name: </span>
+                                                                    {event.payoutInfo.accountName}
+                                                                </p>
+                                                            )}
+                                                            {event.payoutInfo.accountNumber && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Account Number: </span>
+                                                                    {event.payoutInfo.accountNumber}
+                                                                </p>
+                                                            )}
+                                                            {event.payoutInfo.bankName && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Bank: </span>
+                                                                    {event.payoutInfo.bankName}
+                                                                </p>
+                                                            )}
+                                                            {event.payoutInfo.branchName && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Branch: </span>
+                                                                    {event.payoutInfo.branchName}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {event.invoiceInfo && (
+                                                    <div className="bg-[#15101f] rounded-xl p-4 border border-[#3a3446]">
+                                                        <h4 className="text-sm font-semibold text-gray-300 mb-3">
+                                                            Invoice Information
+                                                        </h4>
+                                                        <div className="space-y-1 text-sm">
+                                                            {event.invoiceInfo.businessType && (
+                                                                <p className="text-gray-300 capitalize">
+                                                                    <span className="text-gray-500">Type: </span>
+                                                                    {event.invoiceInfo.businessType}
+                                                                </p>
+                                                            )}
+                                                            {event.invoiceInfo.fullName && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Name: </span>
+                                                                    {event.invoiceInfo.fullName}
+                                                                </p>
+                                                            )}
+                                                            {event.invoiceInfo.address && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Address: </span>
+                                                                    {event.invoiceInfo.address}
+                                                                </p>
+                                                            )}
+                                                            {event.invoiceInfo.taxCode && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Tax Code: </span>
+                                                                    {event.invoiceInfo.taxCode}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {/* Full Description */}
                                         <div className="mb-6">
                                             <h4 className="text-sm font-semibold text-gray-400 mb-2">
@@ -281,6 +387,15 @@ export const EventApprovalPage: React.FC = () => {
                                                             check_circle
                                                         </span>
                                                         Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigate(`${ROUTES.LAYOUT_EDITOR}?eventId=${event._id}`)}
+                                                        className="flex-1 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                                                    >
+                                                        <span className="material-symbols-outlined text-lg">
+                                                            visibility
+                                                        </span>
+                                                        Review Layout
                                                     </button>
                                                     <button
                                                         onClick={() => setRejectingEventId(event._id)}

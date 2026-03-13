@@ -56,6 +56,12 @@ const layoutZoneSchema = new mongoose.Schema({
         type: Number,
         min: 0
     },
+    // Standing zone specific
+    capacity: {
+        type: Number,
+        min: 1,
+        max: 1000
+    },
 
     // ✨ HYBRID: Cache metadata for performance
     seatMetadata: seatMetadataSchema,
@@ -154,6 +160,36 @@ const eventLayoutSchema = new mongoose.Schema({
         type: Number,
         required: true,
         default: 1
+    },
+    status: {
+        type: String,
+        enum: ['draft', 'published', 'rejected', 'completed'],
+        default: 'draft'
+    },
+    rejectionReason: {
+        type: String,
+        maxlength: 500
+    },
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    approvedAt: {
+        type: Date
+    },
+    // Payout / bank info for organizer
+    payoutInfo: {
+        accountName: { type: String, maxlength: 100 },
+        accountNumber: { type: String, maxlength: 50 },
+        bankName: { type: String, maxlength: 100 },
+        branchName: { type: String, maxlength: 100 }
+    },
+    // Invoice / billing info
+    invoiceInfo: {
+        businessType: { type: String, enum: ['individual', 'company'], default: 'individual' },
+        fullName: { type: String, maxlength: 100 },
+        address: { type: String, maxlength: 200 },
+        taxCode: { type: String, maxlength: 50 }
     }
 }, {
     timestamps: true  // Automatically adds createdAt and updatedAt
@@ -168,13 +204,19 @@ eventLayoutSchema.pre('save', async function () {
             if (!zone.rows || !zone.seatsPerRow) {
                 throw new Error('Seat zones must have rows and seatsPerRow');
             }
+        } else if (zone.type === 'standing') {
+            if (!zone.capacity) {
+                throw new Error('Standing zones must have a capacity');
+            }
         }
     }
 });
 
 // Increment version on update
-eventLayoutSchema.pre('findOneAndUpdate', async function () {
-    this.update({}, { $inc: { version: 1 } });
+eventLayoutSchema.pre('findOneAndUpdate', function () {
+    // In Mongoose query middleware, `this` là Query instance
+    // dùng this.set() để merge update hiện tại với $inc version
+    this.set({ $inc: { version: 1 } });
 });
 
 const EventLayout = mongoose.model('EventLayout', eventLayoutSchema);

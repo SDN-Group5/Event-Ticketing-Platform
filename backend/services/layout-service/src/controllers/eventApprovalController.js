@@ -1,0 +1,136 @@
+import EventLayout from '../models/EventLayout.js';
+
+// [GET] /api/events/admin/pending
+export const getPendingEvents = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const query = { status: 'draft' };
+        if (req.query.search) {
+            query.eventName = { $regex: req.query.search, $options: 'i' };
+        }
+
+        const events = await EventLayout.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const formattedEvents = events.map(event => ({
+            _id: event.eventId || event._id, // frontend uses event._id for API calls
+            title: event.eventName,
+            description: event.eventDescription,
+            category: 'general', // Defaulting as category doesn't exist on EventLayout
+            location: event.eventLocation,
+            organizerId: event.createdBy,
+            startTime: event.eventDate,
+            endTime: event.eventDate,
+            createdAt: event.createdAt,
+            status: event.status,
+            bannerUrl: event.eventImage,
+            payoutInfo: event.payoutInfo,
+            invoiceInfo: event.invoiceInfo
+        }));
+
+        const total = await EventLayout.countDocuments(query);
+
+        res.status(200).json({
+            success: true,
+            data: formattedEvents,
+            pagination: {
+                total,
+                page,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error getting pending events:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error retrieving pending events'
+        });
+    }
+};
+
+// [GET] /api/events/:eventId/review - Get event details for review
+export const getEventForReview = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const event = await EventLayout.findOne({
+            $or: [{ eventId }, { _id: eventId }]
+        }).populate('createdBy', 'name email');
+
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        res.status(200).json({ success: true, data: event });
+    } catch (error) {
+        console.error('Error getting event for review:', error);
+        res.status(500).json({ success: false, message: 'Server error retrieving event' });
+    }
+};
+
+// [PATCH] /api/events/:eventId/approve
+export const approveEvent = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const adminId = req.user ? req.user.id : null;
+
+        const event = await EventLayout.findOneAndUpdate(
+            { $or: [{ eventId }, { _id: eventId }] },
+            {
+                status: 'published',
+                approvedBy: adminId,
+                approvedAt: new Date(),
+                rejectionReason: null
+            },
+            { new: true }
+        );
+
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        res.status(200).json({ success: true, data: event });
+    } catch (error) {
+        console.error('Error approving event:', error);
+        res.status(500).json({ success: false, message: 'Server error approving event' });
+    }
+};
+
+// [PATCH] /api/events/:eventId/reject
+export const rejectEvent = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { rejectionReason } = req.body;
+
+        if (!rejectionReason || rejectionReason.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rejection reason is required'
+            });
+        }
+
+        const event = await EventLayout.findOneAndUpdate(
+            { $or: [{ eventId }, { _id: eventId }] },
+            {
+                status: 'rejected',
+                rejectionReason: rejectionReason.trim(),
+                approvedBy: null,
+                approvedAt: null
+            },
+            { new: true }
+        );
+
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        res.status(200).json({ success: true, data: event });
+    } catch (error) {
+        console.error('Error rejecting event:', error);
+        res.status(500).json({ success: false, message: 'Server error rejecting event' });
+    }
+};

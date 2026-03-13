@@ -13,6 +13,18 @@ interface PendingEvent {
     endTime: string;
     createdAt: string;
     bannerUrl?: string;
+    payoutInfo?: {
+        accountName?: string;
+        accountNumber?: string;
+        bankName?: string;
+        branchName?: string;
+    };
+    invoiceInfo?: {
+        businessType?: 'individual' | 'company';
+        fullName?: string;
+        address?: string;
+        taxCode?: string;
+    };
 }
 
 export const EventApprovalPage: React.FC = () => {
@@ -55,10 +67,6 @@ export const EventApprovalPage: React.FC = () => {
     }, [search]);
 
     const handleApprove = async (eventId: string) => {
-        if (!window.confirm('Are you sure you want to approve this event?')) {
-            return;
-        }
-
         try {
             setError(null);
             await EventApprovalAPI.approveEvent(eventId);
@@ -76,11 +84,6 @@ export const EventApprovalPage: React.FC = () => {
             setError('Please provide a rejection reason');
             return;
         }
-
-        if (!window.confirm('Are you sure you want to reject this event?')) {
-            return;
-        }
-
         try {
             setError(null);
             await EventApprovalAPI.rejectEvent(eventId, rejectionReason);
@@ -252,6 +255,79 @@ export const EventApprovalPage: React.FC = () => {
                                                         className="w-full max-h-64 object-cover"
                                                     />
                                                 </div>
+                                            </div>
+                                        )}
+
+                                        {/* Payout / Bank info */}
+                                        {(event.payoutInfo || event.invoiceInfo) && (
+                                            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {event.payoutInfo && (
+                                                    <div className="bg-[#15101f] rounded-xl p-4 border border-[#3a3446]">
+                                                        <h4 className="text-sm font-semibold text-gray-300 mb-3">
+                                                            Bank Account (Payout)
+                                                        </h4>
+                                                        <div className="space-y-1 text-sm">
+                                                            {event.payoutInfo.accountName && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Account Name: </span>
+                                                                    {event.payoutInfo.accountName}
+                                                                </p>
+                                                            )}
+                                                            {event.payoutInfo.accountNumber && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Account Number: </span>
+                                                                    {event.payoutInfo.accountNumber}
+                                                                </p>
+                                                            )}
+                                                            {event.payoutInfo.bankName && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Bank: </span>
+                                                                    {event.payoutInfo.bankName}
+                                                                </p>
+                                                            )}
+                                                            {event.payoutInfo.branchName && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Branch: </span>
+                                                                    {event.payoutInfo.branchName}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {event.invoiceInfo && (
+                                                    <div className="bg-[#15101f] rounded-xl p-4 border border-[#3a3446]">
+                                                        <h4 className="text-sm font-semibold text-gray-300 mb-3">
+                                                            Invoice Information
+                                                        </h4>
+                                                        <div className="space-y-1 text-sm">
+                                                            {event.invoiceInfo.businessType && (
+                                                                <p className="text-gray-300 capitalize">
+                                                                    <span className="text-gray-500">Type: </span>
+                                                                    {event.invoiceInfo.businessType}
+                                                                </p>
+                                                            )}
+                                                            {event.invoiceInfo.fullName && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Name: </span>
+                                                                    {event.invoiceInfo.fullName}
+                                                                </p>
+                                                            )}
+                                                            {event.invoiceInfo.address && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Address: </span>
+                                                                    {event.invoiceInfo.address}
+                                                                </p>
+                                                            )}
+                                                            {event.invoiceInfo.taxCode && (
+                                                                <p className="text-gray-300">
+                                                                    <span className="text-gray-500">Tax Code: </span>
+                                                                    {event.invoiceInfo.taxCode}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 

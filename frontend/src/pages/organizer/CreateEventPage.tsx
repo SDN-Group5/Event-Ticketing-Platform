@@ -16,20 +16,36 @@ export const CreateEventPage: React.FC = () => {
         venue: '',
         description: '',
         category: 'music',
+        // Bank / payout info
+        payoutAccountName: '',
+        payoutAccountNumber: '',
+        payoutBankName: '',
+        payoutBranchName: '',
+        // Invoice info
+        invoiceBusinessType: 'individual',
+        invoiceFullName: '',
+        invoiceAddress: '',
+        invoiceTaxCode: '',
     });
     const [bannerFile, setBannerFile] = useState<File | null>(null);
     const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+    const [bannerError, setBannerError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const steps = [
         { num: 1, label: 'Basic Info' },
         { num: 2, label: 'Date & Venue' },
-        { num: 3, label: 'Review' },
+        { num: 3, label: 'Payment Info' },
+        { num: 4, label: 'Review' },
     ];
 
     const handleNext = async () => {
-        if (step < 3) {
+        // Chặn ở bước 1 nếu banner không đúng tỉ lệ
+        if (step === 1 && bannerError) {
+            return;
+        }
+        if (step < 4) {
             setStep(step + 1);
         } else {
             // Submit and redirect
@@ -49,7 +65,7 @@ export const CreateEventPage: React.FC = () => {
                 }
 
                 // 1. Gộp ngày và giờ thành chuẩn ISO String cho startTime
-                const startTimeString = formData.dateStart && formData.time 
+                const startTimeString = formData.dateStart && formData.time
                     ? new Date(`${formData.dateStart}T${formData.time}:00`).toISOString()
                     : new Date().toISOString();
 
@@ -60,7 +76,7 @@ export const CreateEventPage: React.FC = () => {
                 // 2. Tạo MongoDB ObjectId giả định (24 hex chars)
                 const generateObjectId = () => {
                     const timestamp = Math.floor(Date.now() / 1000).toString(16);
-                    const randomVal = 'xxxxxxxxxxxxxxxx'.replace(/[x]/g, () => 
+                    const randomVal = 'xxxxxxxxxxxxxxxx'.replace(/[x]/g, () =>
                         (Math.random() * 16 | 0).toString(16)
                     );
                     return (timestamp + randomVal).toLowerCase();
@@ -75,7 +91,22 @@ export const CreateEventPage: React.FC = () => {
                     bannerUrl = uploaded;
                 }
 
-                // 4. Generate layout with empty zones array
+                // 4. Chuẩn hóa payout / invoice info gửi lên backend
+                const payoutInfo = {
+                    accountName: formData.payoutAccountName || undefined,
+                    accountNumber: formData.payoutAccountNumber || undefined,
+                    bankName: formData.payoutBankName || undefined,
+                    branchName: formData.payoutBranchName || undefined,
+                };
+
+                const invoiceInfo = {
+                    businessType: formData.invoiceBusinessType || 'individual',
+                    fullName: formData.invoiceFullName || undefined,
+                    address: formData.invoiceAddress || undefined,
+                    taxCode: formData.invoiceTaxCode || undefined,
+                };
+
+                // 5. Generate layout with empty zones array
                 await LayoutAPI.createLayout({
                     eventId: realEventId,
                     eventName: formData.name,
@@ -83,6 +114,8 @@ export const CreateEventPage: React.FC = () => {
                     eventImage: bannerUrl,
                     eventLocation: formData.venue,
                     eventDescription: formData.description,
+                    payoutInfo,
+                    invoiceInfo,
                     zones: [],
                     canvasWidth: 800,
                     canvasHeight: 600,
@@ -92,10 +125,10 @@ export const CreateEventPage: React.FC = () => {
                 navigate('/organizer/events');
             } catch (err: any) {
                 console.error("Failed to create event:", err);
-                const errorMessage = err.response?.data?.error?.message 
-                                  || err.response?.data?.message 
-                                  || err.message 
-                                  || "Failed to create event";
+                const errorMessage = err.response?.data?.error?.message
+                    || err.response?.data?.message
+                    || err.message
+                    || "Failed to create event";
                 setError(errorMessage);
             } finally {
                 setIsSubmitting(false);
@@ -200,10 +233,42 @@ export const CreateEventPage: React.FC = () => {
                                                 if (!file) {
                                                     setBannerFile(null);
                                                     setBannerPreview(null);
+                                                    setBannerError(null);
                                                     return;
                                                 }
-                                                setBannerFile(file);
-                                                setBannerPreview(URL.createObjectURL(file));
+
+                                                // Kiểm tra tỉ lệ ảnh 2:1 (1200x600)
+                                                const objectUrl = URL.createObjectURL(file);
+                                                const img = new Image();
+                                                img.onload = () => {
+                                                    const { naturalWidth: w, naturalHeight: h } = img;
+                                                    // Kiểm tra tỉ lệ 2:1 (cho phép sai số nhỏ < 1%)
+                                                    const ratio = w / h;
+                                                    const expectedRatio = 2;
+                                                    const tolerance = 0.02; // 2%
+                                                    if (Math.abs(ratio - expectedRatio) > tolerance) {
+                                                        setBannerError(
+                                                            `Ảnh không đúng tỉ lệ 2:1. Kích thước ảnh của bạn: ${w}x${h}px (tỉ lệ ${ratio.toFixed(2)}:1). Vui lòng dùng ảnh 1200x600px hoặc tỉ lệ tương đương.`
+                                                        );
+                                                        setBannerFile(null);
+                                                        setBannerPreview(null);
+                                                        URL.revokeObjectURL(objectUrl);
+                                                        // Reset input để có thể chọn lại
+                                                        e.target.value = '';
+                                                    } else {
+                                                        setBannerError(null);
+                                                        setBannerFile(file);
+                                                        setBannerPreview(objectUrl);
+                                                    }
+                                                };
+                                                img.onerror = () => {
+                                                    setBannerError('Không thể đọc ảnh. Vui lòng chọn file ảnh hợp lệ.');
+                                                    setBannerFile(null);
+                                                    setBannerPreview(null);
+                                                    URL.revokeObjectURL(objectUrl);
+                                                    e.target.value = '';
+                                                };
+                                                img.src = objectUrl;
                                             }}
                                         />
                                     </label>
@@ -218,8 +283,14 @@ export const CreateEventPage: React.FC = () => {
                                         </div>
                                     )}
                                 </div>
+                                {bannerError && (
+                                    <div className="mt-3 flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
+                                        <span className="material-symbols-outlined text-red-400 text-lg flex-shrink-0 mt-0.5">error</span>
+                                        <p className="text-sm text-red-400">{bannerError}</p>
+                                    </div>
+                                )}
                                 <p className="mt-2 text-xs text-slate-500">
-                                    Recommended size: 1200x600px, max 5MB. Supported formats: JPG, PNG.
+                                    Bắt buộc tỉ lệ 2:1 (ví dụ: 1200x600px), tối đa 5MB. Định dạng: JPG, PNG.
                                 </p>
                             </div>
                         </div>
@@ -296,6 +367,109 @@ export const CreateEventPage: React.FC = () => {
                     )}
 
                     {step === 3 && (
+                        <div className="space-y-6">
+                            <h3 className="text-lg font-bold text-white mb-4">Payment & Invoice Information</h3>
+
+                            {/* Bank info */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-slate-400 mb-3">Bank Account for Payout</h4>
+                                <div className="bg-[#0f172a] rounded-xl p-4 border border-slate-700 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-300 mb-2">Account Holder Name</label>
+                                        <input
+                                            type="text"
+                                            value={formData.payoutAccountName}
+                                            onChange={(e) => setFormData({ ...formData, payoutAccountName: e.target.value })}
+                                            className="w-full bg-[#020617] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                            placeholder="Tên chủ tài khoản"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-300 mb-2">Account Number</label>
+                                            <input
+                                                type="text"
+                                                value={formData.payoutAccountNumber}
+                                                onChange={(e) => setFormData({ ...formData, payoutAccountNumber: e.target.value })}
+                                                className="w-full bg-[#020617] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                                placeholder="Số tài khoản"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-300 mb-2">Bank Name</label>
+                                            <input
+                                                type="text"
+                                                value={formData.payoutBankName}
+                                                onChange={(e) => setFormData({ ...formData, payoutBankName: e.target.value })}
+                                                className="w-full bg-[#020617] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                                placeholder="Tên ngân hàng"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-300 mb-2">Branch</label>
+                                        <input
+                                            type="text"
+                                            value={formData.payoutBranchName}
+                                            onChange={(e) => setFormData({ ...formData, payoutBranchName: e.target.value })}
+                                            className="w-full bg-[#020617] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                            placeholder="Chi nhánh"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Invoice info */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-slate-400 mb-3">Invoice Information</h4>
+                                <div className="bg-[#0f172a] rounded-xl p-4 border border-slate-700 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-300 mb-2">Business Type</label>
+                                        <select
+                                            value={formData.invoiceBusinessType}
+                                            onChange={(e) => setFormData({ ...formData, invoiceBusinessType: e.target.value })}
+                                            className="w-full bg-[#020617] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                        >
+                                            <option value="individual">Individual</option>
+                                            <option value="company">Company</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-300 mb-2">Full Name / Company Name</label>
+                                        <input
+                                            type="text"
+                                            value={formData.invoiceFullName}
+                                            onChange={(e) => setFormData({ ...formData, invoiceFullName: e.target.value })}
+                                            className="w-full bg-[#020617] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                            placeholder="Tên đầy đủ / Tên công ty"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-300 mb-2">Address</label>
+                                        <input
+                                            type="text"
+                                            value={formData.invoiceAddress}
+                                            onChange={(e) => setFormData({ ...formData, invoiceAddress: e.target.value })}
+                                            className="w-full bg-[#020617] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                            placeholder="Địa chỉ xuất hóa đơn"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-300 mb-2">Tax Code</label>
+                                        <input
+                                            type="text"
+                                            value={formData.invoiceTaxCode}
+                                            onChange={(e) => setFormData({ ...formData, invoiceTaxCode: e.target.value })}
+                                            className="w-full bg-[#020617] border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-[#8655f6]"
+                                            placeholder="Mã số thuế (nếu có)"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 4 && (
                         <div className="space-y-6">
                             <h3 className="text-lg font-bold text-white mb-4">Review Your Event</h3>
 
@@ -382,10 +556,10 @@ export const CreateEventPage: React.FC = () => {
                         </button>
                         <button
                             onClick={handleNext}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || (step === 1 && !!bannerError)}
                             className="px-8 py-3 bg-gradient-to-r from-[#8655f6] to-[#d946ef] rounded-xl font-bold text-white shadow-lg shadow-[#8655f6]/30 hover:shadow-[#8655f6]/50 transition-all flex items-center gap-2 disabled:opacity-50"
                         >
-                            {step === 3 ? (
+                            {step === 4 ? (
                                 <>
                                     {isSubmitting ? (
                                         <span className="material-symbols-outlined animate-spin">progress_activity</span>

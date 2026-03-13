@@ -170,6 +170,20 @@ const eventLayoutSchema = new mongoose.Schema({
     },
     approvedAt: {
         type: Date
+    },
+    // Payout / bank info for organizer
+    payoutInfo: {
+        accountName: { type: String, maxlength: 100 },
+        accountNumber: { type: String, maxlength: 50 },
+        bankName: { type: String, maxlength: 100 },
+        branchName: { type: String, maxlength: 100 }
+    },
+    // Invoice / billing info
+    invoiceInfo: {
+        businessType: { type: String, enum: ['individual', 'company'], default: 'individual' },
+        fullName: { type: String, maxlength: 100 },
+        address: { type: String, maxlength: 200 },
+        taxCode: { type: String, maxlength: 50 }
     }
 }, {
     timestamps: true  // Automatically adds createdAt and updatedAt

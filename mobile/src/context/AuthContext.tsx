@@ -39,6 +39,7 @@ type AuthContextValue = {
   verifyResetCode: (email: string, code: string) => Promise<boolean>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   clearError: () => void;
 };
 
@@ -56,25 +57,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
       const userDataStr = await AsyncStorage.getItem(USER_DATA_KEY);
 
-      if (token && userDataStr) {
+      if (token) {
         try {
-          const validation = await AuthAPI.validateToken(token);
-          const userData = JSON.parse(userDataStr);
-
-          const backendRole = (validation.role as UserRoleMobile) || 'customer';
+          // Luôn fetch profile mới nhất từ server khi khởi tạo
+          const userResponse = await AuthAPI.getMe(token);
+          
+          const backendRole = (userResponse.role as UserRoleMobile) || 'customer';
           const mappedRole: UserRoleMobile = backendRole === 'customer' ? 'user' : backendRole;
 
-          setUser({
-            id: validation.userId,
-            email: userData.email,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
+          const updatedUserData: User = {
+            id: userResponse._id || userResponse.id,
+            email: userResponse.email,
+            firstName: userResponse.firstName,
+            lastName: userResponse.lastName,
             role: mappedRole,
-            avatar: userData.avatar,
-          });
+            avatar: userResponse.avatar,
+          };
+
+          await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUserData));
+          setUser(updatedUserData);
         } catch {
-          await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, USER_DATA_KEY]);
-          setUser(null);
+          // Nếu token hết hạn hoặc lỗi, fall back về data local nếu có, hoặc logout
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr);
+            setUser(userData);
+          } else {
+            await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, USER_DATA_KEY]);
+            setUser(null);
+          }
         }
       }
     } catch (err) {
@@ -256,6 +266,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const refreshUser = useCallback(async (): Promise<void> => {
+    try {
+      const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      if (!token) return;
+
+      const userResponse = await AuthAPI.getMe(token);
+      
+      const backendRole = (userResponse.role as UserRoleMobile) || 'customer';
+      const mappedRole: UserRoleMobile = backendRole === 'customer' ? 'user' : backendRole;
+
+      const updatedUserData: User = {
+        id: userResponse._id || userResponse.id,
+        email: userResponse.email,
+        firstName: userResponse.firstName,
+        lastName: userResponse.lastName,
+        role: mappedRole,
+        avatar: userResponse.avatar,
+      };
+
+      await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUserData));
+      setUser(updatedUserData);
+    } catch (err) {
+      console.error('Error refreshing user:', err);
+    }
+  }, []);
+
   const authState: AuthState = useMemo(() => ({
     role: user?.role || 'guest',
     user,
@@ -278,9 +314,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       verifyResetCode,
       resetPassword,
       logout,
+      refreshUser,
       clearError,
     }),
-    [authState, user, isLoading, error, login, register, verifyEmail, resendVerification, forgotPassword, verifyResetCode, resetPassword, logout, clearError]
+    [authState, user, isLoading, error, login, register, verifyEmail, resendVerification, forgotPassword, verifyResetCode, resetPassword, logout, refreshUser, clearError]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

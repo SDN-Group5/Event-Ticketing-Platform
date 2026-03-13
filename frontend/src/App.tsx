@@ -29,6 +29,7 @@ import {
   TransactionHistoryPage,
   RefundRequestPage,
 } from './pages/client';
+import { MyVouchersPage } from './pages/client/MyVouchersPage';
 import Venue3DPage from './pages/client/Venue3DPage';
 import PublicTicketPage from './pages/public/PublicTicketPage';
 
@@ -121,6 +122,14 @@ const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute allowedRoles={['customer']}>
             <ClientLayout><MyTicketsPage /></ClientLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.MY_VOUCHERS}
+        element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <ClientLayout><MyVouchersPage /></ClientLayout>
           </ProtectedRoute>
         }
       />

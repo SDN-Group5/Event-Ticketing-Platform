@@ -68,6 +68,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                             Vé
                         </Link>
                         <Link
+                            to={ROUTES.MY_VOUCHERS}
+                            className="px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-[#2a2436] transition-colors flex items-center gap-1"
+                        >
+                            <span className="material-symbols-outlined text-base">redeem</span>
+                            Voucher
+                        </Link>
+                        <Link
                             to={ROUTES.SEARCH}
                             className="px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-[#2a2436] transition-colors"
                         >

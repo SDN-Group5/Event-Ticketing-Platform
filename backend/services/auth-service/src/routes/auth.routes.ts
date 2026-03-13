@@ -164,4 +164,22 @@ router.post(
   authController.googleLogin
 );
 
+// POST /api/auth/change-password
+router.post(
+  "/change-password",
+  verifyToken,
+  [
+    check("currentPassword", "Current password is required").notEmpty(),
+    check("newPassword", "New password must be at least 6 characters").isLength({ min: 6 }),
+  ],
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array() });
+    }
+    next();
+  },
+  authController.changePassword
+);
+
 export default router;

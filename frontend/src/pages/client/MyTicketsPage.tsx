@@ -63,6 +63,12 @@ function ordersToTickets(orders: any[]): Ticket[] {
         if (match) {
           row = match[1];
           seatNumber = match[2];
+          // If Row is 1, it's likely a standing zone or single-row zone
+          // For standing zones, we prefer to show just the seat number (Spot)
+          if (row === '1' && (item.zoneName || '').toLowerCase().includes('standing')) {
+            row = undefined;
+            seatNumber = `S${seatNumber}`;
+          }
         } else if (item.seatId.length > 10) {
           // Fallback: cắt bớt chuỗi cho gọn nếu không đúng pattern
           seatNumber = item.seatId.slice(-6);
@@ -102,6 +108,7 @@ export const MyTicketsPage: React.FC = () => {
   const [cancelTicketTarget, setCancelTicketTarget] = useState<Ticket | null>(null);
   const [agreeNoRefund, setAgreeNoRefund] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [showVoucherBanner, setShowVoucherBanner] = useState(false);
 
   useEffect(() => {
     if (!user?.id) {
@@ -185,9 +192,7 @@ export const MyTicketsPage: React.FC = () => {
       setCancelLoading(cancelTicketTarget.id);
       const res = await RefundAPI.cancelPaidOrderWithVoucher(orderCode);
       console.log('cancel-with-voucher result', res);
-      alert(
-        'Đã huỷ vé và cấp voucher 50% giá trị đơn. Vui lòng kiểm tra email hoặc mục voucher.',
-      );
+      setShowVoucherBanner(true);
       // Reload lịch sử vé để cập nhật trạng thái
       const data = await PaymentAPI.getUserOrders(user.id);
       const orders = Array.isArray(data) ? data : (data as any)?.data ?? [];
@@ -224,6 +229,29 @@ export const MyTicketsPage: React.FC = () => {
         <h1 className="text-3xl font-bold text-white mb-2">Lịch sử mua vé</h1>
         <p className="text-gray-400">Xem danh sách vé đã mua và trạng thái sử dụng.</p>
       </div>
+
+      {/* Voucher Banner */}
+      {showVoucherBanner && (
+        <div className="mb-6 bg-gradient-to-r from-[#8655f6]/20 to-[#d946ef]/20 border border-[#8655f6]/40 rounded-xl p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-[#8655f6]/30 flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-[#d946ef]">redeem</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-semibold text-sm">Huỷ vé thành công!</p>
+            <p className="text-gray-300 text-xs mt-0.5">Voucher giảm 50% giá trị đơn hàng đã được cấp cho tài khoản của bạn.</p>
+          </div>
+          <button
+            onClick={() => navigate(ROUTES.MY_VOUCHERS)}
+            className="px-4 py-2 bg-[#8655f6] hover:bg-[#7644e0] text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-base">redeem</span>
+            Xem Voucher
+          </button>
+          <button onClick={() => setShowVoucherBanner(false)} className="text-gray-400 hover:text-white">
+            <span className="material-symbols-outlined text-lg">close</span>
+          </button>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
@@ -314,9 +342,14 @@ export const MyTicketsPage: React.FC = () => {
                       <p className="text-gray-400 text-sm">Vé đã sử dụng</p>
                     )}
                     {ticket.status === 'refunded' && (
-                      <p className="text-gray-500 text-sm">
-                        Đã huỷ vé và cấp voucher 50% giá trị đơn
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => navigate(ROUTES.MY_VOUCHERS)}
+                        className="px-4 py-2.5 bg-[#8655f6]/20 hover:bg-[#8655f6]/30 text-[#a78bfa] rounded-lg text-sm transition-colors flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-lg">redeem</span>
+                        Xem Voucher
+                      </button>
                     )}
                   </div>
                 </div>

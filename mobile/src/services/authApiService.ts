@@ -110,7 +110,15 @@ async function apiRequest<T>(
       },
     });
 
-    const data = await response.json();
+    // Read response as text first to handle non-JSON errors
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error('[AuthAPI] JSON Parse Error. Response starts with:', text.slice(0, 100));
+      throw new Error(`Server returned non-JSON response (likely HTML error). Code: ${response.status}`);
+    }
 
     console.log('[AuthAPI] Response:', {
       url,
@@ -125,11 +133,8 @@ async function apiRequest<T>(
 
     return data as T;
   } catch (error: any) {
-    console.error('[AuthAPI] Error calling', endpoint, error);
-    if (error.message) {
-      throw error;
-    }
-    throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+    console.error('[AuthAPI] Error calling', endpoint, error.message);
+    throw error;
   }
 }
 
@@ -236,6 +241,35 @@ export const AuthAPI = {
   async logout(): Promise<{ message: string }> {
     return apiRequest<{ message: string }>('/api/auth/logout', {
       method: 'POST',
+    });
+  },
+
+  /**
+   * Get current user profile
+   */
+  async getMe(token: string): Promise<any> {
+    return authenticatedRequest<any>('/api/users/me', token, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Update current user profile
+   */
+  async updateProfile(token: string, data: any): Promise<any> {
+    return authenticatedRequest<any>('/api/users/me', token, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Change user password
+   */
+  async changePassword(token: string, passwordData: { currentPassword: string; newPassword: string }): Promise<any> {
+    return authenticatedRequest<any>('/api/auth/change-password', token, {
+      method: 'POST',
+      body: JSON.stringify(passwordData),
     });
   },
 };

@@ -39,9 +39,13 @@ const createProxy = (target: string, pathRewrite?: Record<string, string>, ws: b
     }
   },
   onProxyReq: (proxyReq, req) => {
-    // Forward cookies/headers nếu cần
+    // Forward cookies/headers if needed
     if (req.headers.cookie) {
       proxyReq.setHeader('Cookie', req.headers.cookie);
+    }
+    // Forward Authorization header so downstream services can verify JWT
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
     }
   },
 } as Options);
@@ -97,13 +101,10 @@ export const setupRoutes = (app: Express) => {
   // Auth Service: /api/auth/* -> auth-service:4001/login, /register, ...
   //  - Gateway prefix `/api/auth` được bỏ đi trước khi forward,
   //  - Auth-service expose các route `/login`, `/register`, ...
+  // Auth Service: Chuyển tiếp sạch sẽ tới auth-service:4001
   app.use(
     '/api/auth',
-    createProxyMiddleware(
-      createProxy(AUTH_SERVICE_URL, {
-        '^/api/auth': '',
-      }),
-    )
+    createProxyMiddleware(createProxy(AUTH_SERVICE_URL, { '^/api/auth': '/api/auth' }))
   );
 
   // User Service (Auth Service) - current user & admin user management

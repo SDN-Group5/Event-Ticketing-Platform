@@ -543,7 +543,9 @@ export const verifyPayment = async (req: Request, res: Response) => {
 export const cancelPaidOrderWithVoucher = async (req: Request, res: Response) => {
   try {
     const { orderCode } = req.params;
+    // extractUserId middleware sets req.userId; fallback to manual headers for compatibility
     const userId =
+      (req as any).userId ||
       (req.headers['x-user-id'] as string) ||
       (req.body && (req.body.userId as string));
 

@@ -215,23 +215,42 @@ export const AnalyticsPage: React.FC = () => {
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-white">Revenue Overview</h2>
                         </div>
-                        <div className="flex items-end gap-2 h-64">
-                            {revenueData.map((data) => {
-                                let label = data.month;
-                                if (label.length === 10 && label.includes('-')) {
-                                    label = label.substring(5); // MM-DD
-                                }
-                                return (
-                                <div key={data.month} className="flex-1 flex flex-col items-center justify-end gap-2 h-full">
-                                    <div
-                                        className="w-full bg-gradient-to-t from-[#8655f6] to-[#d946ef] rounded-t-lg transition-all hover:opacity-80 cursor-pointer"
-                                        style={{ height: `${(data.value / maxRevenue) * 100}%` }}
-                                        title={`${data.month}: $${data.value}`}
-                                    />
-                                    <span className="text-xs text-gray-400 max-w-full overflow-hidden text-ellipsis whitespace-nowrap" title={label}>{label}</span>
+                        <div className="flex h-64 gap-3">
+                            {/* Y-Axis */}
+                            <div className="flex flex-col justify-between items-end text-[10px] text-gray-400 pb-6 w-10 flex-shrink-0">
+                                <span>${maxRevenue >= 1000 ? (maxRevenue / 1000).toFixed(1) + 'k' : maxRevenue}</span>
+                                <span>${(maxRevenue * 0.75) >= 1000 ? ((maxRevenue * 0.75) / 1000).toFixed(1) + 'k' : (maxRevenue * 0.75).toFixed(0)}</span>
+                                <span>${(maxRevenue * 0.5) >= 1000 ? ((maxRevenue * 0.5) / 1000).toFixed(1) + 'k' : (maxRevenue * 0.5).toFixed(0)}</span>
+                                <span>${(maxRevenue * 0.25) >= 1000 ? ((maxRevenue * 0.25) / 1000).toFixed(1) + 'k' : (maxRevenue * 0.25).toFixed(0)}</span>
+                                <span>$0</span>
+                            </div>
+
+                            {/* Chart Data Area */}
+                            <div className="flex-1 relative flex items-end gap-2 h-full">
+                                {/* Horizontal Grid Lines */}
+                                <div className="absolute inset-x-0 top-1 bottom-6 flex flex-col justify-between pointer-events-none z-0">
+                                    {[0, 1, 2, 3, 4].map((i) => (
+                                        <div key={i} className={`border-t ${i === 4 ? 'border-[#3a3447]' : 'border-[#3a3447]/50 border-dashed'} w-full h-0`}></div>
+                                    ))}
                                 </div>
-                                );
-                            })}
+                                
+                                {revenueData.map((data) => {
+                                    let label = data.month;
+                                    if (label.length === 10 && label.includes('-')) {
+                                        label = label.substring(5); // MM-DD
+                                    }
+                                    return (
+                                    <div key={data.month} className="flex-1 flex flex-col items-center justify-end gap-2 h-full z-10 w-full min-w-0">
+                                        <div
+                                            className="w-full bg-gradient-to-t from-[#8655f6] to-[#d946ef] rounded-t-lg transition-all hover:opacity-80 cursor-pointer min-w-[4px]"
+                                            style={{ height: `calc(${(data.value / (maxRevenue || 1)) * 100}% - 24px)` }}
+                                            title={`${data.month}: $${data.value}`}
+                                        />
+                                        <span className="text-[10px] text-gray-400 max-w-full overflow-hidden text-ellipsis whitespace-nowrap h-4 leading-4" title={label}>{label}</span>
+                                    </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
 

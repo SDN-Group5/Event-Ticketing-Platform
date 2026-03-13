@@ -495,3 +495,40 @@ export const googleLogin = async (req: Request, res: Response) => {
         return res.status(500).json({ message: "Something went wrong" });
     }
 };
+
+// ============================================
+// POST /api/auth/change-password
+export const changePassword = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).userId;
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: "Vui lòng nhập mật khẩu hiện tại và mật khẩu mới" });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+        }
+
+        const user = await User.findById(userId).select("+password");
+        if (!user) {
+            return res.status(404).json({ message: "Không tìm thấy người dùng" });
+        }
+
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Mật khẩu hiện tại không chính xác" });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        console.log(`✅ [CHANGE-PASSWORD] Password changed successfully for ${user.email}`);
+
+        return res.status(200).json({ message: "Đổi mật khẩu thành công" });
+    } catch (error) {
+        console.error("❌ Lỗi changePassword:", error);
+        return res.status(500).json({ message: "Lỗi hệ thống khi đổi mật khẩu" });
+    }
+};

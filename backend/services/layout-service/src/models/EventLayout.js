@@ -178,6 +178,18 @@ const eventLayoutSchema = new mongoose.Schema({
         bankName: { type: String, maxlength: 100 },
         branchName: { type: String, maxlength: 100 }
     },
+    // Liquidity Payout Status
+    payoutStatus: {
+        type: String,
+        enum: ['unpaid', 'processing', 'paid'],
+        default: 'unpaid'
+    },
+    payoutReceiptUrl: {
+        type: String
+    },
+    payoutAt: {
+        type: Date
+    },
     // Invoice / billing info
     invoiceInfo: {
         businessType: { type: String, enum: ['individual', 'company'], default: 'individual' },

@@ -294,6 +294,18 @@ router.get("/", verifyToken, roleCheck(["admin"]), async (req, res) => {
 
 /**
  * @swagger
+ * /api/users/send-payout-email:
+ *   post:
+ *     summary: Send payout notification email
+ *     description: Send email to organizer when layout service records a payout
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ */
+router.post("/send-payout-email", verifyToken, roleCheck(["admin"]), userController.sendPayoutEmail);
+
+/**
+ * @swagger
  * /api/users/{userId}:
  *   get:
  *     summary: Get user by ID (Public endpoint for service communication)

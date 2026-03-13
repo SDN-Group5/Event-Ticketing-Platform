@@ -134,3 +134,62 @@ export const rejectEvent = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error rejecting event' });
     }
 };
+
+// [PATCH] /api/events/:eventId/payout
+export const processEventPayout = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { amount, sendEmail } = req.body;
+
+        let receiptUrl = null;
+        if (req.file) {
+            // Assuming layout service has static serving for uploads configured
+            receiptUrl = `${req.protocol}://${req.get('host')}/uploads/payouts/${req.file.filename}`;
+        }
+
+        const event = await EventLayout.findOneAndUpdate(
+            { $or: [{ eventId }, { _id: eventId }] },
+            {
+                payoutStatus: 'paid',
+                payoutReceiptUrl: receiptUrl,
+                payoutAt: new Date()
+            },
+            { new: true }
+        );
+
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        // Trigger email sending via auth-service if requested
+        if (sendEmail === 'true' || sendEmail === true) {
+            try {
+                // auth-service runs on localhost:4001, but the gateway routes /api/users to it.
+                // In microservices, we should use internal network URLs or direct calls if known.
+                const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:4001';
+                const axios = await import('axios');
+
+                await axios.default.post(`${authServiceUrl}/users/send-payout-email`, {
+                    organizerId: event.createdBy,
+                    eventName: event.eventName,
+                    amount: Number(amount),
+                    receiptUrl: receiptUrl
+                }, {
+                    headers: {
+                        // Pass auth token if needed, or configure internal auth
+                        Authorization: req.headers.authorization
+                    }
+                });
+                console.log('Successfully requested payout email for event:', event.eventName);
+            } catch (emailError) {
+                console.error('Failed to request payout email. Payout succeeded though.', emailError.message);
+                // We don't fail the whole request just because email failed
+            }
+        }
+
+        res.status(200).json({ success: true, data: event });
+    } catch (error) {
+        console.error('Error processing event payout:', error);
+        res.status(500).json({ success: false, message: 'Server error processing event payout' });
+    }
+};

@@ -47,6 +47,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+    volumes:
+      - layout_uploads:/app/uploads
     networks:
       - ticketing-network
     restart: unless-stopped
@@ -164,6 +166,7 @@ networks:
 # ============================================
 volumes:
   rabbitmq_data:
+  layout_uploads:
 # Bật lại khi cần MongoDB hoặc Redis local:
 #   mongodb_data:
 #   redis_data:

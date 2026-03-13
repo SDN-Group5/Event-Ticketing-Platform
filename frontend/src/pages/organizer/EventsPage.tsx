@@ -57,23 +57,18 @@ export const EventsPage: React.FC = () => {
     return { totalCapacity, ticketsSold, revenue };
   };
 
-  const mapLayoutToOrganizerEvent = (layout: EventLayout, eventStatus?: string, rejectionReason?: string): OrganizerEvent => {
+  const mapLayoutToOrganizerEvent = (layout: EventLayout): OrganizerEvent => {
     const { totalCapacity, ticketsSold, revenue } = sumSeatMetadata(layout.zones || []);
     
-    // Default to 'draft' for new events waiting admin approval
+    // Determine status from layout.status stored in backend
     let status: OrganizerEvent['status'] = 'draft';
-    
-    // Determine status from event data (from backend)
-    if (eventStatus === 'published') {
+    if (layout.status === 'published') {
       status = 'published';
-    } else if (eventStatus === 'rejected') {
+    } else if (layout.status === 'rejected' || layout.status === 'completed') {
       status = 'rejected';
-    } else if (eventStatus === 'cancelled') {
-      status = 'rejected'; // Treat cancelled as rejected for UI
-    } else if (eventStatus === 'draft') {
+    } else if (layout.status === 'draft') {
       status = 'draft';
     }
-    // If eventStatus is undefined, default to 'draft' (already set above)
 
     return {
       eventId: String(layout.eventId),
@@ -85,7 +80,7 @@ export const EventsPage: React.FC = () => {
       totalCapacity,
       revenue,
       status,
-      rejectionReason
+      rejectionReason: (layout as any).rejectionReason
     };
   };
 
@@ -97,21 +92,11 @@ export const EventsPage: React.FC = () => {
           return;
         }
 
-        // Get layouts
+        // Get layouts created by current organizer (includes status from backend)
         const layouts = await LayoutAPI.getMyLayouts();
-        
-        // Create a map of events for quick lookup
-        const eventMap = new Map();
 
         // Map layouts to organizer events
-        const mapped = (layouts || []).map(layout => {
-          const eventData = eventMap.get(String(layout.eventId));
-          return mapLayoutToOrganizerEvent(
-            layout,
-            eventData?.status,
-            eventData?.rejectionReason
-          );
-        });
+        const mapped = (layouts || []).map(layout => mapLayoutToOrganizerEvent(layout));
         
         setEvents(mapped);
       } catch (error) {

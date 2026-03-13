@@ -28,7 +28,9 @@ export const getPendingEvents = async (req, res) => {
             endTime: event.eventDate,
             createdAt: event.createdAt,
             status: event.status,
-            bannerUrl: event.eventImage
+            bannerUrl: event.eventImage,
+            payoutInfo: event.payoutInfo,
+            invoiceInfo: event.invoiceInfo
         }));
 
         const total = await EventLayout.countDocuments(query);

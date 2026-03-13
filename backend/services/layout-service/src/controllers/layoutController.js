@@ -100,7 +100,8 @@ export const createLayout = async (req, res) => {
     try {
         const {
             eventId, zones, canvasWidth, canvasHeight, canvasColor,
-            eventName, eventDate, eventImage, eventLocation, eventDescription, minPrice
+            eventName, eventDate, eventImage, eventLocation, eventDescription, minPrice,
+            payoutInfo, invoiceInfo
         } = req.body;
         const userId = req.user ? req.user.id : null; // Assuming auth middleware sets req.user
 
@@ -128,6 +129,8 @@ export const createLayout = async (req, res) => {
             canvasWidth,
             canvasHeight,
             canvasColor,
+            payoutInfo,
+            invoiceInfo,
             createdBy: userId,
             version: 1
         });

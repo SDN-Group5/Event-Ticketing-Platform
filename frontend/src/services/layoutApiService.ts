@@ -113,8 +113,11 @@ export const LayoutAPI = {
             formData,
             {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                    // Để axios tự set Content-Type kèm boundary chính xác
+                    // KHÔNG set 'Content-Type': 'multipart/form-data' thủ công
+                    'Content-Type': undefined,
                 },
+                timeout: 30000, // Tăng timeout cho upload file
             }
         );
 

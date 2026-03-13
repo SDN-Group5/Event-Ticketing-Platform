@@ -408,14 +408,25 @@ export const getOrganizerCustomers = async (req: Request, res: Response) => {
 // ==================== WEBHOOK ====================
 
 async function handlePaidOrder(order: any): Promise<void> {
-  if (order.status === 'paid') return;
+  if (order.status === 'paid') {
+    console.log(`[handlePaidOrder] Order ${order.orderCode} đã ở trạng thái paid, bỏ qua.`);
+    return;
+  }
+
+  console.log(`[handlePaidOrder] Bắt đầu xử lý orderCode=${order.orderCode}, currentStatus=${order.status}`);
 
   const saga = createPaymentCompleteSaga();
   const result = await saga.execute({ order });
   await saveSagaLog(order, 'PaymentCompleteSaga', result);
 
   if (!result.success) {
-    console.error(`[handlePaidOrder] Saga failed at step: ${result.failedStep} - ${result.error}`);
+    console.error(
+      `[handlePaidOrder] Saga failed for orderCode=${order.orderCode} at step: ${result.failedStep} - ${result.error}`
+    );
+  } else {
+    console.log(
+      `[handlePaidOrder] Hoàn tất PaymentCompleteSaga cho orderCode=${order.orderCode} | status=${order.status} | paidAt=${order.paidAt}`
+    );
   }
 }
 
@@ -508,9 +519,11 @@ export const cancelPayment = async (req: Request, res: Response) => {
 export const verifyPayment = async (req: Request, res: Response) => {
   try {
     const { orderCode } = req.params;
+    console.log(`[verifyPayment] Nhận request verify orderCode=${orderCode}`);
     const order = await Order.findOne({ orderCode: Number(orderCode) });
 
     if (!order) {
+      console.warn(`[verifyPayment] orderCode=${orderCode} không tìm thấy trong DB`);
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
     }
 
@@ -523,6 +536,9 @@ export const verifyPayment = async (req: Request, res: Response) => {
     }
 
     if (!order.payosPaymentLinkId) {
+      console.log(
+        `[verifyPayment] orderCode=${orderCode} không có payosPaymentLinkId, trả về status hiện tại=${order.status}`
+      );
       return res.json({
         success: true,
         data: {
@@ -540,7 +556,14 @@ export const verifyPayment = async (req: Request, res: Response) => {
     const paymentInfo = await payosClient.getPaymentLinkInformation(order.payosPaymentLinkId);
     const currentStatus = order.status as string;
 
+    console.log(
+      `[verifyPayment] orderCode=${orderCode} | currentStatus=${currentStatus} | payosStatus=${paymentInfo.status}`
+    );
+
     if (paymentInfo.status === 'PAID' && currentStatus !== 'paid') {
+      console.log(
+        `[verifyPayment] orderCode=${orderCode} PayOS=PAID nhưng currentStatus=${currentStatus} -> gọi handlePaidOrder`
+      );
       await handlePaidOrder(order);
 
       // Sau khi handlePaidOrder, vé có thể đã được tạo; thử lấy lại

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   Image,
   ActivityIndicator,
@@ -121,8 +120,8 @@ export default function TicketDetail({ navigation, route }: any) {
         <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Chi tiết vé</Text>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="pt-6">
+      <View className="flex-1">
+        <View className="pt-4 flex-1">
           <FlatList
             data={order.items || []}
             horizontal
@@ -239,7 +238,7 @@ export default function TicketDetail({ navigation, route }: any) {
 
           {/* Pagination Indicator */}
           {order.items && order.items.length > 1 && (
-            <View className="flex-row justify-center mb-8">
+            <View className="flex-row justify-center mb-4">
               {order.items.map((_: any, i: number) => (
                 <View
                   key={i}
@@ -250,7 +249,7 @@ export default function TicketDetail({ navigation, route }: any) {
           )}
         </View>
 
-        <View className="px-4 pb-12">
+        <View className="px-4 pb-6">
           <TouchableOpacity
             onPress={handleShareTicket}
             disabled={!activeTicket?.ticketId}
@@ -265,7 +264,7 @@ export default function TicketDetail({ navigation, route }: any) {
             <Text className="text-[#d500f9] font-bold text-lg ml-2">Tải PDF (Offline)</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }

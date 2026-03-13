@@ -136,7 +136,7 @@ export const SeatAPI = {
     });
   },
 
-  async reserveSeat(eventId: string, zoneId: string, row: number, seatNumber: number): Promise<SeatData> {
+  async reserveSeat(eventId: string, zoneId: string, row?: number, seatNumber?: number): Promise<SeatData> {
     return requestSeats<SeatData>(`/api/v1/events/${encodeURIComponent(eventId)}/seats/reserve`, undefined, {
       method: 'POST',
       body: JSON.stringify({ zoneId, row, seatNumber }),
@@ -147,6 +147,19 @@ export const SeatAPI = {
     return requestSeats<SeatData>(`/api/v1/events/${encodeURIComponent(eventId)}/seats/${seatId}/reservation`, undefined, {
       method: 'PATCH',
     });
+  },
+
+  async getAllSeatsForEvent(eventId: string, zoneIds: string[]): Promise<SeatData[]> {
+    try {
+      const promises = zoneIds.map((zoneId) =>
+        this.getSeatsByZone(eventId, zoneId, { limit: 1000 })
+      );
+      const results = await Promise.all(promises);
+      return results.flatMap((result) => result.seats);
+    } catch (error) {
+      console.error('Error fetching all seats for event:', error);
+      return [];
+    }
   },
 };
 

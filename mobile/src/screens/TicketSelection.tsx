@@ -4,6 +4,7 @@ import { State, GestureDetector, Gesture, GestureHandlerRootView } from 'react-n
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withDecay } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { EventLayout, LayoutAPI, LayoutZone } from '../services/layoutApiService';
+import { SeatAPI } from '../services/seatApiService';
 import { LinearGradient } from 'expo-linear-gradient';
 
 function getZoneCapacityText(z: LayoutZone): string | null {
@@ -34,6 +35,7 @@ export default function TicketSelection({ navigation, route }: any) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const [bookedCounts, setBookedCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     let isMounted = true;
@@ -49,6 +51,27 @@ export default function TicketSelection({ navigation, route }: any) {
         const data = await LayoutAPI.getLayoutByEvent(eventId);
         if (!isMounted) return;
         setLayout(data);
+
+        // Fetch booked counts for all zones
+        const zoneIds = (data.zones || [])
+          .filter(z => z.type === 'seats' || z.type === 'standing')
+          .map(z => z.id);
+        
+        if (zoneIds.length > 0) {
+          try {
+            const allSeats = await SeatAPI.getAllSeatsForEvent(eventId, zoneIds);
+            const counts: Record<string, number> = {};
+            allSeats.forEach(s => {
+              if (s.status === 'reserved' || s.status === 'sold') {
+                counts[s.zoneId] = (counts[s.zoneId] || 0) + 1;
+              }
+            });
+            if (isMounted) setBookedCounts(counts);
+          } catch (e) {
+            console.warn('Failed to fetch booked counts:', e);
+          }
+        }
+
       } catch (e: any) {
         if (!isMounted) return;
         setError(e?.message || 'Không tải được layout');
@@ -277,6 +300,18 @@ export default function TicketSelection({ navigation, route }: any) {
                         <Text className="text-[10px] text-white/50 mt-1">Stage</Text>
                       ) : null}
 
+                      {/* Hiển thị số lượng còn lại cho standing */}
+                      {isSelectable && zone.type === 'standing' && (
+                        <View className="mt-1 flex-row items-center">
+                          <Text className="text-[10px] font-bold text-[#00e5ff]">
+                            {Math.max(0, (zone.capacity || 0) - (bookedCounts[zone.id] || 0))}
+                          </Text>
+                          <Text className="text-[8px] text-white/40 ml-1">
+                            / {zone.capacity || 0}
+                          </Text>
+                        </View>
+                      )}
+
                       {/* Hiển thị giá và số lượng ghế chọn (nếu là ghế có select) */}
                       {zone.price > 0 && isSelectable && (
                         <View 
@@ -309,8 +344,34 @@ export default function TicketSelection({ navigation, route }: any) {
       </View>
 
       <View className="p-6 bg-[#1e1a29]/95 border-t border-white/10 rounded-t-3xl">
+        {selectedZone?.type === 'standing' && (
+          <View className="flex-row justify-between items-center mb-6 bg-white/5 p-4 rounded-2xl border border-white/10">
+            <View>
+              <Text className="text-white font-bold text-base">Quantity</Text>
+              <Text className="text-[#a59cba] text-xs">Maximum 10 tickets</Text>
+            </View>
+            <View className="flex-row items-center bg-[#151022] rounded-xl border border-white/10 p-1">
+              <TouchableOpacity 
+                onPress={() => setQuantity(Math.max(1, quantity - 1))}
+                className="w-10 h-10 items-center justify-center rounded-lg bg-white/5"
+              >
+                <MaterialIcons name="remove" size={20} color={quantity > 1 ? "#d500f9" : "#a59cba"} />
+              </TouchableOpacity>
+              <View className="w-12 items-center">
+                <Text className="text-white font-bold text-lg">{quantity}</Text>
+              </View>
+              <TouchableOpacity 
+                onPress={() => setQuantity(Math.min(10, quantity + 1))}
+                className="w-10 h-10 items-center justify-center rounded-lg bg-white/5"
+              >
+                <MaterialIcons name="add" size={20} color={quantity < 10 ? "#00e5ff" : "#a59cba"} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-[#a59cba] font-bold text-lg">Total ({quantity} tickets)</Text>
+          <Text className="text-[#a59cba] font-bold text-lg">Total ({selectedSeats.length > 0 ? selectedSeats.length : quantity} tickets)</Text>
           <Text className="text-3xl font-black text-[#00e5ff]">${total.toFixed(2)}</Text>
         </View>
         <TouchableOpacity 

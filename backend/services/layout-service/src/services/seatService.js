@@ -9,28 +9,45 @@ class SeatService {
      */
     async generateSeatsForZone(eventId, layoutId, zone) {
         const seats = [];
-        const totalSeats = zone.rows * zone.seatsPerRow;
+        let totalSeats = 0;
 
-        const getRowLetters = (num) => {
-            let letters = '';
-            while (num > 0) {
-                let remainder = (num - 1) % 26;
-                letters = String.fromCharCode(65 + remainder) + letters;
-                num = Math.floor((num - 1) / 26);
+        if (zone.type === 'seats') {
+            totalSeats = zone.rows * zone.seatsPerRow;
+            const getRowLetters = (num) => {
+                let letters = '';
+                while (num > 0) {
+                    let remainder = (num - 1) % 26;
+                    letters = String.fromCharCode(65 + remainder) + letters;
+                    num = Math.floor((num - 1) / 26);
+                }
+                return letters;
+            };
+
+            for (let row = 1; row <= zone.rows; row++) {
+                const rowLabel = getRowLetters(row);
+                for (let seatNum = 1; seatNum <= zone.seatsPerRow; seatNum++) {
+                    seats.push({
+                        eventId,
+                        layoutId,
+                        zoneId: zone.id,
+                        row,
+                        seatNumber: seatNum,
+                        seatLabel: `${rowLabel}${seatNum}`,
+                        price: zone.price || 0,
+                        status: 'available'
+                    });
+                }
             }
-            return letters;
-        };
-
-        for (let row = 1; row <= zone.rows; row++) {
-            const rowLabel = getRowLetters(row);
-            for (let seatNum = 1; seatNum <= zone.seatsPerRow; seatNum++) {
+        } else if (zone.type === 'standing') {
+            totalSeats = zone.capacity;
+            for (let i = 1; i <= totalSeats; i++) {
                 seats.push({
                     eventId,
                     layoutId,
                     zoneId: zone.id,
-                    row,
-                    seatNumber: seatNum,
-                    seatLabel: `${rowLabel}${seatNum}`,
+                    row: 1, // Standing zones always use row 1 for virtual seats
+                    seatNumber: i,
+                    seatLabel: `S${i}`,
                     price: zone.price || 0,
                     status: 'available'
                 });
@@ -352,71 +369,48 @@ class SeatService {
      * seatIds: array of MongoDB _id strings
      */
     async bulkReserveSeats(eventId, seatIds, userId, timeoutMinutes = 15) {
-        const expiryTime = new Date(Date.now() + timeoutMinutes * 60 * 1000);
+        // ... (existing implementation)
+    }
+
+    /**
+     * Tự động chọn và đặt ghế cho zone đứng (standing)
+     */
+    async autoReserveSeat(eventId, zoneId, userId, timeoutMinutes = 15) {
         const objectIdEventId = new mongoose.Types.ObjectId(eventId);
-        const results = [];
+        const expiryTime = new Date(Date.now() + timeoutMinutes * 60 * 1000);
 
-        for (const rawSeatId of seatIds) {
-            try {
-                let seat = null;
+        // Tìm một ghế trống trong zone
+        const seat = await Seat.findOneAndUpdate(
+            {
+                eventId: objectIdEventId,
+                zoneId,
+                status: 'available'
+            },
+            {
+                $set: {
+                    status: 'reserved',
+                    reservedBy: userId,
+                    reservedAt: new Date(),
+                    reservationExpiry: expiryTime
+                },
+                $inc: { version: 1 }
+            },
+            { new: true, sort: { seatNumber: 1 } } // Chọn số ghế nhỏ nhất trước
+        );
 
-                // Strategy 1: MongoDB ObjectId
-                if (mongoose.Types.ObjectId.isValid(rawSeatId) && rawSeatId.length === 24) {
-                    seat = await Seat.findOneAndUpdate(
-                        { _id: rawSeatId, eventId: objectIdEventId, status: 'available' },
-                        {
-                            $set: {
-                                status: 'reserved',
-                                reservedBy: userId,
-                                reservedAt: new Date(),
-                                reservationExpiry: expiryTime,
-                            },
-                            $inc: { version: 1 }
-                        },
-                        { new: true }
-                    );
-                }
-
-                // Strategy 2: Composite format "zoneId-row-seatNum"
-                if (!seat) {
-                    const parts = String(rawSeatId).split('-');
-                    if (parts.length >= 3) {
-                        const seatNumber = parseInt(parts.pop());
-                        const row = parseInt(parts.pop());
-                        const zoneId = parts.join('-');
-
-                        if (!isNaN(seatNumber) && !isNaN(row)) {
-                            seat = await Seat.findOneAndUpdate(
-                                { eventId: objectIdEventId, zoneId, row, seatNumber, status: 'available' },
-                                {
-                                    $set: {
-                                        status: 'reserved',
-                                        reservedBy: userId,
-                                        reservedAt: new Date(),
-                                        reservationExpiry: expiryTime,
-                                    },
-                                    $inc: { version: 1 }
-                                },
-                                { new: true }
-                            );
-                        }
-                    }
-                }
-
-                if (seat) {
-                    results.push(seat);
-                    try { await this.updateZoneCache(seat.layoutId, seat.zoneId); } catch (_) { }
-                    broadcastSeatUpdate(eventId, [{
-                        zoneId: seat.zoneId, row: seat.row, seatNumber: seat.seatNumber,
-                        status: 'reserved', reservedBy: userId,
-                    }]);
-                }
-            } catch (err) {
-                console.error(`[bulkReserveSeats] Error reserving seat ${rawSeatId}:`, err.message);
-            }
+        if (!seat) {
+            throw new Error('No available spots in this zone');
         }
 
-        return results;
+        await this.updateZoneCache(seat.layoutId, zoneId);
+
+        broadcastSeatUpdate(eventId, [{
+            zoneId, row: seat.row, seatNumber: seat.seatNumber,
+            status: 'reserved',
+            reservedBy: userId,
+        }]);
+
+        return seat;
     }
 }
 

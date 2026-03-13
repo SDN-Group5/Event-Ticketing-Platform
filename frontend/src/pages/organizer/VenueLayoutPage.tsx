@@ -123,26 +123,57 @@ export const VenueLayoutPage: React.FC = () => {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3 text-sm">
-                                        <div>
-                                            <label className="text-[#a59cba] text-xs">Rows</label>
-                                            <input
-                                                type="number"
-                                                value={zone.rows}
-                                                onChange={(e) => handleUpdateZone(zone.id, { rows: parseInt(e.target.value) || 0 })}
-                                                className="w-full bg-[#1e1a29] rounded px-2 py-1 mt-1 border border-white/10"
+                                        <div className="col-span-2">
+                                            <label className="text-[#a59cba] text-xs">Zone Type</label>
+                                            <select
+                                                value={zone.type}
+                                                onChange={(e) => handleUpdateZone(zone.id, { type: e.target.value })}
+                                                className="w-full bg-[#1e1a29] rounded px-2 py-1.5 mt-1 border border-white/10 text-white"
                                                 onClick={(e) => e.stopPropagation()}
-                                            />
+                                            >
+                                                <option value="regular">Regular Seating</option>
+                                                <option value="vip">VIP Seating</option>
+                                                <option value="economy">Economy Seating</option>
+                                                <option value="standing">Standing Zone</option>
+                                                <option value="stage">Stage</option>
+                                            </select>
                                         </div>
-                                        <div>
-                                            <label className="text-[#a59cba] text-xs">Seats/Row</label>
-                                            <input
-                                                type="number"
-                                                value={zone.seatsPerRow}
-                                                onChange={(e) => handleUpdateZone(zone.id, { seatsPerRow: parseInt(e.target.value) || 0 })}
-                                                className="w-full bg-[#1e1a29] rounded px-2 py-1 mt-1 border border-white/10"
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        </div>
+
+                                        {zone.type === 'standing' ? (
+                                            <div className="col-span-2">
+                                                <label className="text-[#a59cba] text-xs">Capacity</label>
+                                                <input
+                                                    type="number"
+                                                    value={zone.capacity || 0}
+                                                    onChange={(e) => handleUpdateZone(zone.id, { capacity: parseInt(e.target.value) || 0 })}
+                                                    className="w-full bg-[#1e1a29] rounded px-2 py-1 mt-1 border border-white/10"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    <label className="text-[#a59cba] text-xs">Rows</label>
+                                                    <input
+                                                        type="number"
+                                                        value={zone.rows}
+                                                        onChange={(e) => handleUpdateZone(zone.id, { rows: parseInt(e.target.value) || 0 })}
+                                                        className="w-full bg-[#1e1a29] rounded px-2 py-1 mt-1 border border-white/10"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[#a59cba] text-xs">Seats/Row</label>
+                                                    <input
+                                                        type="number"
+                                                        value={zone.seatsPerRow}
+                                                        onChange={(e) => handleUpdateZone(zone.id, { seatsPerRow: parseInt(e.target.value) || 0 })}
+                                                        className="w-full bg-[#1e1a29] rounded px-2 py-1 mt-1 border border-white/10"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
                                         <div>
                                             <label className="text-[#a59cba] text-xs">Price ($)</label>
                                             <input

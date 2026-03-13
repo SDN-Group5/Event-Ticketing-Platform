@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Venue3DViewer } from '../../components/venue3d';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { SeatAPI } from '../../services/seatApiService';
@@ -78,8 +78,8 @@ function convertLayoutZoneTo3D(zone: LayoutZone) {
         type: zone.type,
         price: zone.price || 100,
         color: zone.color,
-        rows: zone.rows || 5,
-        seatsPerRow: zone.seatsPerRow || 10,
+        rows: zone.type === 'standing' ? 1 : (zone.rows || 5),
+        seatsPerRow: zone.type === 'standing' ? (zone.capacity || 100) : (zone.seatsPerRow || 10),
         position: zone.position,
         size: zone.size,
         elevation: zone.elevation || 0,
@@ -106,6 +106,7 @@ function convertStageZoneTo3D(zone: LayoutZone) {
 
 export default function Venue3DPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { id } = useParams();
     const [isAdmin, setIsAdmin] = useState(false);
     const [selectedSeatInfo, setSelectedSeatInfo] = useState<SeatInfo | null>(null);
@@ -196,7 +197,7 @@ export default function Venue3DPage() {
         if (layout) {
             // Filter seat and standing zones and convert to 3D format
             const zones = layout.zones
-                .filter(z => z.type === 'seats' || z.type === 'standing')
+                .filter(z => z.type === 'seats' || z.type === 'standing' || z.type === 'vip' || z.type === 'regular' || z.type === 'economy')
                 .map(convertLayoutZoneTo3D);
 
             // Filter stage zones
@@ -259,7 +260,15 @@ export default function Venue3DPage() {
             {/* Back Button - Top Left */}
             <div className="absolute top-6 left-6 z-30">
                 <button
-                    onClick={() => id ? navigate(`/event/${id}/zones`) : navigate('/')}
+                    onClick={() => {
+                        if (location.state?.returnTo) {
+                            navigate(location.state.returnTo);
+                        } else if (id) {
+                            navigate(`/event/${id}/zones`);
+                        } else {
+                            navigate('/');
+                        }
+                    }}
                     className="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur hover:bg-black/60 transition-colors border border-white/10 shrink-0 p-0 aspect-square"
                 >
                     <span className="material-symbols-outlined">arrow_back</span>
@@ -452,7 +461,7 @@ export default function Venue3DPage() {
                                     </div>
                                     <div>
                                         <p className="text-xs text-white/60 font-bold">
-                                            {selectedSeat.zoneName} • R{selectedSeat.row} • S{selectedSeat.seatNumber}
+                                            {selectedSeat.zoneName} • {selectedSeat.row === 1 && currentZones.find(z => z.name === selectedSeat.zoneName)?.type === 'standing' ? `Spot ${selectedSeat.seatNumber}` : `R${selectedSeat.row} • S${selectedSeat.seatNumber}`}
                                         </p>
                                     </div>
                                 </div>
@@ -470,7 +479,13 @@ export default function Venue3DPage() {
                         <div className="flex items-center gap-2">
                             {/* 2D View Button */}
                             <button
-                                onClick={() => id && navigate(`/event/${id}/zones`)}
+                                onClick={() => {
+                                    if (location.state?.returnTo) {
+                                        navigate(location.state.returnTo);
+                                    } else if (id) {
+                                        navigate(`/event/${id}/zones`);
+                                    }
+                                }}
                                 className="bg-white/10 hover:bg-white/20 text-white font-bold py-1.5 px-3 rounded-lg transition-all flex items-center gap-1.5 border border-white/10 text-sm"
                             >
                                 <span className="material-symbols-outlined text-base">view_in_ar</span>
@@ -509,7 +524,7 @@ export default function Venue3DPage() {
                                                             ticketCount: 1,
                                                             zone: {
                                                                 name: selectedSeat.zoneName,
-                                                                type: 'seats', // Default type
+                                                                type: currentZones.find(z => z.name === selectedSeat.zoneName)?.type || 'seats',
                                                                 price: totalPrice
                                                             }
                                                         }

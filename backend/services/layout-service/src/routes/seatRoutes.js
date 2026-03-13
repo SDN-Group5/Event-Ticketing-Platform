@@ -59,19 +59,28 @@ router.post('/events/:eventId/seats/reserve', requireAuth, async (req, res) => {
         const { zoneId, row, seatNumber } = req.body;
         const userId = req.user.id;
 
-        if (!zoneId || !row || !seatNumber) {
-            return res.status(400).json({
-                error: 'zoneId, row, and seatNumber are required'
-            });
+        if (!zoneId) {
+            return res.status(400).json({ error: 'zoneId is required' });
         }
 
-        const seat = await seatService.reserveSeat(
-            eventId,
-            zoneId,
-            row,
-            seatNumber,
-            userId
-        );
+        let seat;
+        if (row && seatNumber) {
+            // Đặt ghế cụ thể (Seat zone)
+            seat = await seatService.reserveSeat(
+                eventId,
+                zoneId,
+                row,
+                seatNumber,
+                userId
+            );
+        } else {
+            // Tự động đặt (Standing zone)
+            seat = await seatService.autoReserveSeat(
+                eventId,
+                zoneId,
+                userId
+            );
+        }
 
         res.json(seat);
     } catch (error) {

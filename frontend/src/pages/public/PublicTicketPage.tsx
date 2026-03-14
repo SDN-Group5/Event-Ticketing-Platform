@@ -32,7 +32,9 @@ export default function PublicTicketPage() {
       try {
         setLoading(true);
         setError(null);
-        const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+        const API_BASE =
+          (import.meta as any).env.VITE_API_URL ||
+          'https://ticket-platform.up.railway.app';
         const res = await axios.get(`${API_BASE}/api/payments/tickets/public/${encodeURIComponent(ticketId)}`);
         if (!alive) return;
         setTicket(res.data?.data || null);

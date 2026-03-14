@@ -19,6 +19,9 @@ export default function Login({ navigation }: any) {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Animation values
   const fadeAnim = useSharedValue(0);
@@ -83,6 +86,36 @@ export default function Login({ navigation }: any) {
   const animatedFloat2 = useAnimatedStyle(() => ({ transform: [{ translateY: float2.value }, { translateX: float2.value }] }));
   const animatedFloat3 = useAnimatedStyle(() => ({ transform: [{ translateY: float3.value }, { translateX: -float3.value }] }));
 
+  const handleLogin = () => {
+    let isValid = true;
+    const trimmedEmail = email.trim();
+
+    setEmailError('');
+    setPasswordError('');
+
+    if (!trimmedEmail) {
+      setEmailError('Email is required');
+      isValid = false;
+    } else if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      setEmailError('Please enter a valid email');
+      isValid = false;
+    }
+
+    if (!password) {
+      setPasswordError('Password is required');
+      isValid = false;
+    } else if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      isValid = false;
+    }
+
+    if (!isValid) {
+      return;
+    }
+
+    login(trimmedEmail, password);
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -144,6 +177,11 @@ export default function Login({ navigation }: any) {
                 onChangeText={setEmail}
               />
             </View>
+            {!!emailError && (
+              <Text className="text-xs text-red-400 mt-1 ml-1">
+                {emailError}
+              </Text>
+            )}
           </View>
 
           <View className="mb-2">
@@ -153,14 +191,23 @@ export default function Login({ navigation }: any) {
                 className="flex-1 ml-3 text-base text-white"
                 placeholder="Password"
                 placeholderTextColor="#6a1b9a"
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
               />
-              <TouchableOpacity>
-                <MaterialIcons name="visibility-off" size={22} color="#6a1b9a" />
+              <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
+                <MaterialIcons
+                  name={showPassword ? 'visibility' : 'visibility-off'}
+                  size={22}
+                  color="#6a1b9a"
+                />
               </TouchableOpacity>
             </View>
+            {!!passwordError && (
+              <Text className="text-xs text-red-400 mt-1 ml-1">
+                {passwordError}
+              </Text>
+            )}
           </View>
 
           <TouchableOpacity className="items-end mb-6">
@@ -168,7 +215,7 @@ export default function Login({ navigation }: any) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => login(email, password)}
+            onPress={handleLogin}
             className="w-full bg-[#d500f9] h-14 rounded-2xl items-center justify-center mb-4 shadow-[0_0_20px_rgba(213,0,249,0.4)]"
           >
             <Text className="text-white font-bold text-lg tracking-wide">Sign In as User</Text>

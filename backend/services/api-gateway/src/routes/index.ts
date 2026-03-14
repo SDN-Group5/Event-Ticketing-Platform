@@ -9,6 +9,7 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4001'
 const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL || 'http://localhost:4002';
 const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost:4003';
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:4004';
+const CHECKIN_SERVICE_URL = process.env.CHECKIN_SERVICE_URL || 'http://localhost:4005';
 
 // ============================================
 // PROXY OPTIONS
@@ -69,6 +70,7 @@ export const setupRoutes = (app: Express) => {
         layout: LAYOUT_SERVICE_URL,
         booking: BOOKING_SERVICE_URL,
         payment: PAYMENT_SERVICE_URL,
+        checkin: CHECKIN_SERVICE_URL,
       },
     });
   });
@@ -188,6 +190,15 @@ export const setupRoutes = (app: Express) => {
   app.use(
     '/api/staff',
     createProxyMiddleware(createProxy(BOOKING_SERVICE_URL))
+  );
+
+  // Checkin Service - QR ticket scanning for staff
+  //  - FE:        /api/checkin/scan
+  //  - Gateway:   mount /api/checkin -> forward `/scan` tới
+  //  - Upstream:  checkin-service expose `/api/checkin/scan`
+  app.use(
+    '/api/checkin',
+    createProxyMiddleware(createProxy(`${CHECKIN_SERVICE_URL}/api/checkin`))
   );
 
   // 404 handler

@@ -8,6 +8,9 @@ import {
   handleWebhook,
   cancelPayment,
   verifyPayment,
+} from '../controllers/payment.controller';
+import { getPublicTicketByTicketId } from '../controllers/ticket.controller';
+import {
   cancelPaidOrderWithVoucher,
 } from '../controllers/payment.controller';
 import {
@@ -40,6 +43,9 @@ router.get('/user/vouchers', getUserVouchers);
 
 // Lấy danh sách đơn hàng của user
 router.get('/user/:userId', getUserOrders);
+
+// Public: lấy 1 vé theo ticketId (để share link render trên web)
+router.get('/tickets/public/:ticketId', getPublicTicketByTicketId);
 
 // Huỷ đơn hàng
 router.post('/cancel/:orderCode', cancelPayment);

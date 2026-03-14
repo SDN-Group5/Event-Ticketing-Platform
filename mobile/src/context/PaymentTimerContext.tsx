@@ -92,6 +92,35 @@ export const PaymentTimerProvider: React.FC<{ children: ReactNode }> = ({ childr
         return () => clearInterval(id);
     }, [state.isTimerActive, state.endTime]);
 
+    // Auto-sync với backend khi đang có đơn chờ thanh toán.
+    // Nếu verify thấy đơn không còn ở trạng thái pending/processing => tắt timer.
+    useEffect(() => {
+        if (!state.isTimerActive || !state.orderCode) return;
+
+        let cancelled = false;
+
+        const syncPaymentStatus = async () => {
+            try {
+                const result = await PaymentAPI.verifyPayment(Number(state.orderCode));
+                const status = result?.status;
+
+                if (cancelled) return;
+
+                if (status && status !== 'pending' && status !== 'processing') {
+                    setState(prev => ({ ...prev, isTimerActive: false }));
+                }
+            } catch (error) {
+                console.warn('[PaymentTimer] Failed to sync payment status:', (error as any)?.message || error);
+            }
+        };
+
+        syncPaymentStatus();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [state.isTimerActive, state.orderCode]);
+
     const startTimer = (
         durationSeconds: number,
         paymentUrl: string,

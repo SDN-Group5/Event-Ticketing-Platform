@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   Image,
   ActivityIndicator,
   FlatList,
-  Dimensions
+  Dimensions,
+  Share,
 } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { PaymentAPI } from '../services/paymentApiService';
+import QRCode from 'react-native-qrcode-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -37,11 +39,14 @@ export default function TicketDetail({ navigation, route }: any) {
           setOrder(fallbackData);
         }
       } catch (error) {
-        console.error('Error fetching/verifying order detail:', error);
         try {
+          // Verify có thể fail (PayOS không có mã), nhưng DB vẫn có order → fallback nhẹ nhàng
+          console.warn('Verify payment failed, fallback to getOrder:', (error as any)?.message || error);
           const fallbackData = await PaymentAPI.getOrder(Number(orderCode));
           setOrder(fallbackData);
-        } catch (e) { }
+        } catch (e) {
+          console.error('Error fetching order detail:', e);
+        }
       } finally {
         setLoading(false);
       }
@@ -87,6 +92,39 @@ export default function TicketDetail({ navigation, route }: any) {
 
   const statusInfo = getStatusInfo(order.status);
 
+  // Map tickets (có QR payload) theo thứ tự để hiển thị
+  const tickets = (order as any).tickets || [];
+
+  const webBaseUrl = process.env.EXPO_PUBLIC_WEB_URL || 'https://event-ticketing-platform-six.vercel.app';
+  const activeTicket = tickets[activeIndex];
+
+  const handleShareTicket = async () => {
+    const hasRealTickets = tickets.length > 0;
+
+    // Ưu tiên ticketId thật nếu backend đã tạo vé
+    let ticketId: string | null =
+      hasRealTickets && activeTicket?.ticketId
+        ? String(activeTicket.ticketId)
+        : null;
+
+    // Nếu chưa có ticket trong DB, tự sinh ticketId theo pattern backend: TV-{orderCode}-{index}
+    if (!ticketId) {
+      const index = Number.isFinite(activeIndex) ? activeIndex : 0;
+      ticketId = `TV-${order.orderCode}-${index + 1}`;
+    }
+
+    const url = `${webBaseUrl}/t/${encodeURIComponent(ticketId)}`;
+
+    try {
+      await Share.share({
+        message: `Vé điện tử của bạn: ${url}`,
+        url,
+      });
+    } catch (e) {
+      // ignore share cancel/errors
+    }
+  };
+
   return (
     <View className="flex-1 bg-[#0a0014]">
       {/* Header */}
@@ -97,8 +135,8 @@ export default function TicketDetail({ navigation, route }: any) {
         <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Chi tiết vé</Text>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="pt-6">
+      <View className="flex-1">
+        <View className="pt-4 flex-1">
           <FlatList
             data={order.items || []}
             horizontal
@@ -110,7 +148,20 @@ export default function TicketDetail({ navigation, route }: any) {
               setActiveIndex(index);
             }}
             keyExtractor={(_, index) => index.toString()}
-            renderItem={({ item, index }) => (
+            renderItem={({ item, index }) => {
+              // Tìm vé tương ứng (ưu tiên cùng seatId, nếu không có thì dùng index)
+              const matchingTicket =
+                tickets.find(
+                  (t: any) =>
+                    (t.seatId && item.seatId && t.seatId === item.seatId) ||
+                    (t.zoneName && item.zoneName && t.zoneName === item.zoneName)
+                ) || tickets[index];
+              const qrValue =
+                matchingTicket?.qrCodePayload ||
+                (matchingTicket?.ticketId ? `ticket:${matchingTicket.ticketId}` : '') ||
+                '';
+
+              return (
               <View style={{ width: SCREEN_WIDTH }} className="px-4">
                 <View className="bg-[#1a0033] rounded-3xl overflow-hidden border border-[#d500f9] shadow-[0_0_20px_rgba(213,0,249,0.3)] mb-4">
                   <Image
@@ -181,12 +232,10 @@ export default function TicketDetail({ navigation, route }: any) {
 
                     <View className="items-center bg-white p-6 rounded-2xl mb-2">
                       <Text className="text-[#0a0014]/40 text-[9px] font-black uppercase mb-4 tracking-[3px]">Official Digital Ticket</Text>
-                      {order.qrCode ? (
-                        <Image
-                          source={{ uri: order.qrCode }}
-                          className="w-44 h-44"
-                          resizeMode="contain"
-                        />
+                      {qrValue ? (
+                        <View className="w-44 h-44 items-center justify-center">
+                          <QRCode value={qrValue} size={176} />
+                        </View>
                       ) : (
                         <FontAwesome5 name="qrcode" size={120} color="black" />
                       )}
@@ -199,13 +248,13 @@ export default function TicketDetail({ navigation, route }: any) {
                   </View>
                 </View>
               </View>
-            )}
+            )}}
           />
 
           {/* Pagination Indicator */}
           {order.items && order.items.length > 1 && (
-            <View className="flex-row justify-center mb-8">
-              {order.items.map((_, i) => (
+            <View className="flex-row justify-center mb-4">
+              {order.items.map((_: any, i: number) => (
                 <View
                   key={i}
                   className={`w-1.5 h-1.5 rounded-full mx-1 ${i === activeIndex ? 'bg-[#00e5ff] w-4' : 'bg-[#4d0099]'}`}
@@ -215,18 +264,43 @@ export default function TicketDetail({ navigation, route }: any) {
           )}
         </View>
 
-        <View className="px-4 pb-12">
-          <TouchableOpacity className="bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 mb-4 flex-row items-center justify-center">
-            <MaterialIcons name="share" size={20} color="#00e5ff" />
-            <Text className="text-[#00e5ff] font-bold text-lg ml-2">Chia sẻ vé</Text>
+        <View className="px-4 pb-6 space-y-2">
+          <TouchableOpacity
+            onPress={handleShareTicket}
+            activeOpacity={0.9}
+            className=""
+          >
+            <LinearGradient
+              colors={['#00e5ff', '#d500f9']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="rounded-2xl px-5 py-4 flex-row items-center justify-center border border-[#4d0099] shadow-[0_0_20px_rgba(0,229,255,0.5)]"
+            >
+              <MaterialIcons name="share" size={22} color="#0a0014" />
+              <Text className="text-[#0a0014] font-black text-lg ml-2 tracking-wide">
+                Chia sẻ vé
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity className="bg-[#2a004d] border border-[#d500f9]/30 rounded-2xl p-4 flex-row items-center justify-center">
-            <MaterialIcons name="file-download" size={20} color="#d500f9" />
-            <Text className="text-[#d500f9] font-bold text-lg ml-2">Tải PDF (Offline)</Text>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            className="rounded-2xl border border-[#d500f9]/40 overflow-hidden"
+          >
+            <LinearGradient
+              colors={['#2a004d', '#4d007a']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="px-5 py-4 flex-row items-center justify-center"
+            >
+              <MaterialIcons name="file-download" size={20} color="#ff80ff" />
+              <Text className="text-[#ff80ff] font-bold text-lg ml-2">
+                Tải PDF (Offline)
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }

@@ -31,6 +31,7 @@ import {
 } from './pages/client';
 import { MyVouchersPage } from './pages/client/MyVouchersPage';
 import Venue3DPage from './pages/client/Venue3DPage';
+import PublicTicketPage from './pages/public/PublicTicketPage';
 
 // Auth Pages
 import { LoginPage, RegisterPage, OTPPage, ResetPasswordPage } from './pages/auth';
@@ -87,7 +88,7 @@ const ProtectedRoute: React.FC<{
 const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
-  return (
+  return (``
     <Routes>
       {/* Public Client Routes */}
       <Route path={ROUTES.HOME} element={<ClientLayout><HomePage /></ClientLayout>} />
@@ -95,6 +96,7 @@ const AppRoutes: React.FC = () => {
       <Route path={ROUTES.EVENT_DETAILS} element={<ClientLayout><EventDetailsPage /></ClientLayout>} />
       <Route path={ROUTES.ZONE_SELECTION} element={<ZoneSelectionPage />} />
       <Route path="/event/:id/venue-3d" element={<Venue3DPage />} />
+      <Route path="/t/:ticketId" element={<PublicTicketPage />} />
 
       {/* Protected Client Routes */}
       <Route path={ROUTES.PAYMENT_SUCCESS} element={<PaymentSuccessPage />} />

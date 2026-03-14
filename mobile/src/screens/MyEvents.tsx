@@ -39,8 +39,20 @@ export default function MyEvents({ navigation }: any) {
     <View className="flex-1 bg-[#0a0014]">
       <View className="px-4 pt-12 pb-4 bg-[#1a0033] border-b border-[#4d0099]">
         <View className="flex-row items-center justify-between">
-          <TouchableOpacity onPress={() => navigation.goBack()} className="mr-3">
-              <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099] mr-3"
+            >
+              <MaterialIcons name="arrow-back" size={22} color="#d500f9" />
+            </TouchableOpacity>
+            <Text className="text-2xl font-bold text-white">Manage Events</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('CreateEvent')}
+            className="w-10 h-10 bg-[#d500f9] rounded-full items-center justify-center shadow-[0_0_10px_#d500f9]"
+          >
+            <MaterialIcons name="add" size={24} color="white" />
           </TouchableOpacity>
           <Text className="flex-1 text-2xl font-bold text-white">Manage Events</Text>
           {user?.role === 'organizer' || user?.role === 'admin' ? (

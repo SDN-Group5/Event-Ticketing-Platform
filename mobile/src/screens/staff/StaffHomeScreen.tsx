@@ -148,7 +148,7 @@ export default function StaffScreen({ navigation, route }: StaffHomeProps) {
               </Text>
             </View>
           </View>
-        )}
+        </View>
 
         <Text className="text-lg font-bold text-white mb-4">Recent Scans</Text>
         {loadingRecent && (

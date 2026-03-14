@@ -32,7 +32,7 @@ export default function Checkout({ navigation, route }: any) {
   const [promoCode, setPromoCode] = useState('');
   const [isPaying, setIsPaying] = useState(false);
   const [agreed, setAgreed] = useState(false);
-  const { isTimerActive, startTimer } = usePaymentTimer();
+  const { isTimerActive, startTimer, stopTimer } = usePaymentTimer();
 
   const totalAmount = useMemo(() => {
     if (!orderDraft) return 0;
@@ -147,6 +147,7 @@ export default function Checkout({ navigation, route }: any) {
       // 2) Tạo payment (sử dụng MongoDB _id chính xác)
       let result;
       try {
+        console.log('[Checkout] Creating payment for event', orderDraft.eventId, 'seats', finalItems.length);
         result = await PaymentAPI.createPayment({
           userId: user.id,
           eventId: orderDraft.eventId,
@@ -176,9 +177,29 @@ export default function Checkout({ navigation, route }: any) {
 
       // Open PayOS checkout URL
       if (result.checkoutUrl) {
-        await WebBrowser.openBrowserAsync(result.checkoutUrl);
+        console.log('[Checkout] Opening PayOS checkoutUrl for orderCode', result.orderCode);
+        const browserResult = await WebBrowser.openBrowserAsync(result.checkoutUrl);
+        console.log('[Checkout] PayOS browser closed with result', browserResult.type);
+
+        // Khi người dùng đóng PayOS (dù thành công hay không),
+        // thử đồng bộ trạng thái thanh toán với backend.
+        try {
+          console.log('[Checkout] Calling verifyPayment for orderCode', result.orderCode);
+          const verifyResult = await PaymentAPI.verifyPayment(result.orderCode);
+          console.log('[Checkout] verifyPayment completed for orderCode', result.orderCode, 'status=', verifyResult?.status);
+
+          // Nếu backend báo đơn KHÔNG còn pending/processing nữa
+          // (đã thanh toán, đã huỷ hoặc đã xoá) thì tắt thanh "Chờ thanh toán".
+          if (verifyResult?.status && verifyResult.status !== 'pending' && verifyResult.status !== 'processing') {
+            stopTimer();
+          }
+        } catch (e) {
+          console.warn('[Checkout] verifyPayment after PayOS failed:', (e as any)?.message || e);
+        }
+      } else {
+        console.warn('[Checkout] checkoutUrl trống cho orderCode', result.orderCode);
       }
-      
+
       navigation.popToTop();
 
     } catch (e: any) {

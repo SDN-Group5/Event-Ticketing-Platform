@@ -25,6 +25,9 @@ import UserScreen from '../screens/user/UserHomeScreen';
 import StaffScreen from '../screens/staff/StaffHomeScreen';
 import ScanTicket from '../screens/ScanTicket';
 import MyEvents from '../screens/MyEvents';
+import AboutEventix from '../screens/AboutEventix';
+import HelpSupport from '../screens/HelpSupport';
+import AIAssistant from '../screens/AIAssistant';
 
 const Stack = createNativeStackNavigator();
 
@@ -58,6 +61,9 @@ export default function AppNavigator() {
           <Stack.Screen name="EditProfile" component={EditProfile} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettings} />
           <Stack.Screen name="Notifications" component={Notifications} />
+          <Stack.Screen name="AboutEventix" component={AboutEventix} />
+          <Stack.Screen name="HelpSupport" component={HelpSupport} />
+          <Stack.Screen name="AIAssistant" component={AIAssistant} />
         </Stack.Group>
       ) : (
         // User is NOT signed in

@@ -442,3 +442,26 @@ export const deleteVoucher = async (req: Request, res: Response) => {
   }
 };
 
+
+/**
+ * GET /api/payments/user/vouchers?userId=xxx
+ * Lay danh sach voucher duoc cap cho user (refund vouchers, etc.)
+ */
+export const getUserVouchers = async (req: Request, res: Response) => {
+  try {
+    // Support both JWT-extracted userId and query param (same pattern as getUserOrders)
+    const userId =
+      (req as any).userId ||
+      (req.query.userId as string) ||
+      (req.headers['x-user-id'] as string);
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'Thieu userId' });
+    }
+    const vouchers = await Voucher.find({ userId }).sort({ createdAt: -1 });
+    return res.json({ success: true, data: vouchers });
+  } catch (err: any) {
+    console.error('[getUserVouchers] Error:', err);
+    return res.status(500).json({ success: false, message: err?.message || 'Loi lay voucher' });
+  }
+};

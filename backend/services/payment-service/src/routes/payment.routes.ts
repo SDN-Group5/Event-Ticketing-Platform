@@ -10,11 +10,13 @@ import {
   verifyPayment,
   markEventPayoutSuccess,
 } from '../controllers/payment.controller';
+import { getPublicTicketByTicketId } from '../controllers/ticket.controller';
 import {
   cancelPaidOrderWithVoucher,
 } from '../controllers/payment.controller';
 import {
   getOrganizerVouchers,
+  getUserVouchers,
   createVoucher,
   updateVoucher,
   deleteVoucher,
@@ -27,45 +29,42 @@ const router = Router();
 // Tạo đơn hàng + payment link PayOS
 router.post('/create', createPayment);
 
-// PayOS webhook (PayOS gọi về khi thanh toán xong)
+// PayOS webhook
 router.post('/webhook', handleWebhook);
 
-// Kiểm tra trạng thái thanh toán (FE gọi sau khi return từ PayOS)
+// Kiểm tra trạng thái thanh toán
 router.get('/verify/:orderCode', verifyPayment);
 
 // Lấy thông tin đơn hàng
 router.get('/order/:orderCode', getOrder);
 
+// ⚠️ PHẢI đặt trước /user/:userId để Express không bắt nhầm
+// Lấy danh sách voucher của user hiện tại (refund vouchers)
+router.get('/user/vouchers', getUserVouchers);
+
 // Lấy danh sách đơn hàng của user
 router.get('/user/:userId', getUserOrders);
+
+// Public: lấy 1 vé theo ticketId (để share link render trên web)
+router.get('/tickets/public/:ticketId', getPublicTicketByTicketId);
 
 // Huỷ đơn hàng
 router.post('/cancel/:orderCode', cancelPayment);
 
 // Huỷ đơn đã thanh toán nhưng cấp voucher 50% thay vì hoàn tiền
-router.post('/cancel-with-voucher/:orderCode', cancelPaidOrderWithVoucher);
+router.post('/cancel-with-voucher/:orderCode', extractUserId, cancelPaidOrderWithVoucher);
 
 // ================== ORGANIZER - ORDERS & CUSTOMERS ==================
-// Lấy danh sách đơn hàng của organizer (tất cả sự kiện)
 router.get('/organizer/orders', extractUserId, verifyOrganizer, getOrganizerOrders);
-
-// Lấy danh sách khách hàng của organizer
 router.get('/organizer/customers', extractUserId, verifyOrganizer, getOrganizerCustomers);
 
 // Preview voucher cho khách trước khi tạo đơn
 router.post('/vouchers/preview', previewVoucher);
 
 // ================== VOUCHERS (ORGANIZER) ==================
-// Lấy danh sách voucher của organizer hiện tại
 router.get('/organizer/vouchers', extractUserId, verifyOrganizer, getOrganizerVouchers);
-
-// Tạo voucher mới
 router.post('/organizer/vouchers', extractUserId, verifyOrganizer, createVoucher);
-
-// Cập nhật voucher
 router.put('/organizer/vouchers/:id', extractUserId, verifyOrganizer, updateVoucher);
-
-// Xoá voucher
 router.delete('/organizer/vouchers/:id', extractUserId, verifyOrganizer, deleteVoucher);
 
 // ================== ADMIN ==================

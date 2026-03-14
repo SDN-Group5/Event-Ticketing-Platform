@@ -9,6 +9,7 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4001'
 const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL || 'http://localhost:4002';
 const BOOKING_SERVICE_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost:4003';
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:4004';
+const CHECKIN_SERVICE_URL = process.env.CHECKIN_SERVICE_URL || 'http://localhost:4005';
 
 // ============================================
 // PROXY OPTIONS
@@ -39,9 +40,13 @@ const createProxy = (target: string, pathRewrite?: Record<string, string>, ws: b
     }
   },
   onProxyReq: (proxyReq, req) => {
-    // Forward cookies/headers nếu cần
+    // Forward cookies/headers if needed
     if (req.headers.cookie) {
       proxyReq.setHeader('Cookie', req.headers.cookie);
+    }
+    // Forward Authorization header so downstream services can verify JWT
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
     }
   },
 } as Options);
@@ -65,6 +70,7 @@ export const setupRoutes = (app: Express) => {
         layout: LAYOUT_SERVICE_URL,
         booking: BOOKING_SERVICE_URL,
         payment: PAYMENT_SERVICE_URL,
+        checkin: CHECKIN_SERVICE_URL,
       },
     });
   });
@@ -97,13 +103,10 @@ export const setupRoutes = (app: Express) => {
   // Auth Service: /api/auth/* -> auth-service:4001/login, /register, ...
   //  - Gateway prefix `/api/auth` được bỏ đi trước khi forward,
   //  - Auth-service expose các route `/login`, `/register`, ...
+  // Auth Service: Chuyển tiếp sạch sẽ tới auth-service:4001
   app.use(
     '/api/auth',
-    createProxyMiddleware(
-      createProxy(AUTH_SERVICE_URL, {
-        '^/api/auth': '',
-      }),
-    )
+    createProxyMiddleware(createProxy(AUTH_SERVICE_URL, { '^/api/auth': '/api/auth' }))
   );
 
   // User Service (Auth Service) - current user & admin user management
@@ -187,6 +190,15 @@ export const setupRoutes = (app: Express) => {
   app.use(
     '/api/staff',
     createProxyMiddleware(createProxy(BOOKING_SERVICE_URL))
+  );
+
+  // Checkin Service - QR ticket scanning for staff
+  //  - FE:        /api/checkin/scan
+  //  - Gateway:   mount /api/checkin -> forward `/scan` tới
+  //  - Upstream:  checkin-service expose `/api/checkin/scan`
+  app.use(
+    '/api/checkin',
+    createProxyMiddleware(createProxy(`${CHECKIN_SERVICE_URL}/api/checkin`))
   );
 
   // 404 handler

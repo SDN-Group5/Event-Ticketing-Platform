@@ -88,7 +88,7 @@ const ProtectedRoute: React.FC<{
 const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
-  return (``
+  return (
     <Routes>
       {/* Public Client Routes */}
       <Route path={ROUTES.HOME} element={<ClientLayout><HomePage /></ClientLayout>} />

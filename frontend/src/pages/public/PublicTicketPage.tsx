@@ -1,19 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
-import axios from 'axios';
-
-type PublicTicket = {
-  ticketId: string;
-  orderCode: number;
-  eventId: string;
-  eventName: string;
-  zoneName: string;
-  seatLabel?: string;
-  price: number;
-  status: string;
-  qrCodePayload: string;
-};
+import { publicTicketApiService, type PublicTicket } from '../../services/publicTicketApiService';
 
 export default function PublicTicketPage() {
   const { ticketId } = useParams();
@@ -32,12 +20,9 @@ export default function PublicTicketPage() {
       try {
         setLoading(true);
         setError(null);
-        const API_BASE =
-          (import.meta as any).env.VITE_API_URL ||
-          'https://ticket-platform.up.railway.app';
-        const res = await axios.get(`${API_BASE}/api/payments/tickets/public/${encodeURIComponent(ticketId)}`);
+        const data = await publicTicketApiService.getTicketById(ticketId);
         if (!alive) return;
-        setTicket(res.data?.data || null);
+        setTicket(data);
       } catch (e: any) {
         if (!alive) return;
         setError(e?.response?.data?.message || e?.message || 'Không tải được vé');
@@ -140,4 +125,3 @@ export default function PublicTicketPage() {
     </div>
   );
 }
-

@@ -8,6 +8,7 @@ import {
   handleWebhook,
   cancelPayment,
   verifyPayment,
+  markEventPayoutSuccess,
 } from '../controllers/payment.controller';
 import {
   cancelPaidOrderWithVoucher,
@@ -66,5 +67,9 @@ router.put('/organizer/vouchers/:id', extractUserId, verifyOrganizer, updateVouc
 
 // Xoá voucher
 router.delete('/organizer/vouchers/:id', extractUserId, verifyOrganizer, deleteVoucher);
+
+// ================== ADMIN ==================
+// Đánh dấu orders của sự kiện là đã payout thành công
+router.patch('/admin/payout-event/:eventId', markEventPayoutSuccess);
 
 export default router;

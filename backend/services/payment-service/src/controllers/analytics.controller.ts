@@ -145,7 +145,7 @@ export const getAdminEventRevenues = async (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
 
     // Search by event name or organizer ID if provided
-    const matchStage: any = { status: 'paid' };
+    const matchStage: any = { status: 'paid', payoutStatus: 'pending' };
     if (req.query.search) {
       matchStage.$or = [
         { eventName: { $regex: req.query.search, $options: 'i' } },

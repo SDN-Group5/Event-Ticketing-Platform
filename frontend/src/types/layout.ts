@@ -56,6 +56,19 @@ export interface EventLayout {
   canvasHeight?: number;
   canvasColor?: string;
 
+  payoutInfo?: {
+    accountName?: string;
+    accountNumber?: string;
+    bankName?: string;
+    branchName?: string;
+  };
+  invoiceInfo?: {
+    businessType?: string;
+    fullName?: string;
+    address?: string;
+    taxCode?: string;
+  };
+
   createdAt?: string;
   updatedAt?: string;
 }

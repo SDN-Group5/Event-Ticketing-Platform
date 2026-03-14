@@ -1,4 +1,5 @@
 import EventLayout from '../models/EventLayout.js';
+import BankAccount from '../models/BankAccount.js';
 import seatService from '../services/seatService.js';
 
 
@@ -73,7 +74,31 @@ export const getMyLayouts = async (req, res) => {
 
         const layouts = await EventLayout
             .find({ createdBy: userId })
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean(); // Use lean to get plain JS objects
+
+        // Attach BankAccount info to layouts if requested
+        try {
+            const layoutEventIds = layouts.map(l => l.eventId);
+            const bankAccounts = await BankAccount.find({ eventId: { $in: layoutEventIds } });
+            const bankAccountMap = {};
+            bankAccounts.forEach(ba => {
+                bankAccountMap[ba.eventId] = {
+                    accountName: ba.accountName,
+                    accountNumber: ba.accountNumber,
+                    bankName: ba.bankName,
+                    branchName: ba.branchName
+                };
+            });
+
+            layouts.forEach(l => {
+                if (bankAccountMap[l.eventId]) {
+                    l.payoutInfo = bankAccountMap[l.eventId];
+                }
+            });
+        } catch (err) {
+            console.error('Error attaching bank accounts to my layouts:', err);
+        }
 
         res.status(200).json({
             success: true,
@@ -136,6 +161,22 @@ export const createLayout = async (req, res) => {
         });
 
         await newLayout.save();
+
+        // ✨ SEPARATE BANK ACCOUNT
+        if (payoutInfo && Object.keys(payoutInfo).length > 0) {
+            try {
+                const newBankAccount = new BankAccount({
+                    eventId: newLayout.eventId,
+                    layoutId: newLayout._id,
+                    organizerId: userId,
+                    ...payoutInfo
+                });
+                await newBankAccount.save();
+                console.log(`[Layout] Saved bank account for event: ${eventId}`);
+            } catch (bankErr) {
+                console.error(`[Layout] Error saving bank account for event ${eventId}:`, bankErr);
+            }
+        }
 
         // ✨ AUTO-GENERATE SEATS: Generate seats for all seat-based zones (seats and standing)
         const seatZones = newLayout.zones.filter(zone => zone.type === 'seats' || zone.type === 'standing');
@@ -237,6 +278,26 @@ export const updateLayout = async (req, res) => {
 
         await layout.save();
 
+        // ✨ UPDATE BANK ACCOUNT
+        const payoutInfo = req.body.payoutInfo;
+        if (payoutInfo && Object.keys(payoutInfo).length > 0) {
+            try {
+                const userId = req.user ? req.user.id : layout.createdBy;
+                await BankAccount.findOneAndUpdate(
+                    { eventId },
+                    {
+                        layoutId: layout._id,
+                        organizerId: userId,
+                        ...payoutInfo
+                    },
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+                console.log(`[Layout] Updated bank account for event: ${eventId}`);
+            } catch (bankErr) {
+                console.error(`[Layout] Error updating bank account for event ${eventId}:`, bankErr);
+            }
+        }
+
         // ✨ AUTO-GENERATE SEATS: Handle seat-based zones for updates
         const newSeatZones = zones.filter(z => z.type === 'seats' || z.type === 'standing');
         console.log(`[Layout] Processing ${newSeatZones.length} seat zones. Old zone map has ${oldSeatZoneMap.size} entries.`);
@@ -244,7 +305,7 @@ export const updateLayout = async (req, res) => {
         // Find and delete seats for zones that were removed
         const newSeatZoneIds = new Set(newSeatZones.map(z => z.id));
         const deletedZoneIds = [...oldSeatZoneIds].filter(id => !newSeatZoneIds.has(id));
-        
+
         if (deletedZoneIds.length > 0) {
             try {
                 const Seat = (await import('../models/Seat.js')).default;
@@ -331,7 +392,7 @@ export const updateLayout = async (req, res) => {
 export const deleteLayout = async (req, res) => {
     try {
         const { eventId } = req.params;
-        
+
         // Find layout first
         const layout = await EventLayout.findOne({ eventId });
 

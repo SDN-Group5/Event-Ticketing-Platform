@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AnalyticsAPI } from '../../services/analyticsApiService';
 import { EventApprovalAPI } from '../../services/eventApprovalApiService';
+import { useToast } from '../../components/common/ToastProvider';
 
 interface EventRevenue {
     _id: string; // eventId
@@ -25,6 +26,8 @@ export const PayoutsPage: React.FC = () => {
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const [sendEmail, setSendEmail] = useState(true);
     const [processingPayout, setProcessingPayout] = useState(false);
+
+    const { showToast } = useToast();
 
     useEffect(() => {
         fetchRevenues();
@@ -71,14 +74,14 @@ export const PayoutsPage: React.FC = () => {
             });
 
             if (res.success) {
-                alert('Payout processed successfully!');
+                showToast('Payout processed successfully!', 'success');
                 handleCloseModal();
-                fetchRevenues(); // Refresh list to reflect changes (ideally backend would update a status we can filter out or show as paid)
+                setRevenues(revenues.filter(r => r._id !== selectedEvent._id));
             } else {
-                alert(res.message || 'Failed to process payout');
+                showToast(res.message || 'Failed to process payout', 'error');
             }
         } catch (err: any) {
-            alert(err.message || 'Error processing payout');
+            showToast(err.message || 'Error processing payout', 'error');
         } finally {
             setProcessingPayout(false);
         }

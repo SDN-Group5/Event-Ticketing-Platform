@@ -71,10 +71,10 @@ function verifyWebhookWithMultipleKeys(body: any): { data: any; channel: PayOSCh
 const getCustomerInfo = async (userId: string) => {
   try {
     // Lưu ý: Thay đổi port 4000 thành cổng chạy API Gateway hoặc Auth Service của bạn
-    const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4001'; 
+    const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4001';
     const res = await axios.get(`${AUTH_URL}/api/users/${userId}`);
     const user = res.data?.data;
-    
+
     if (user) {
       return {
         name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
@@ -85,10 +85,10 @@ const getCustomerInfo = async (userId: string) => {
   } catch (error) {
     // Im lặng bỏ qua nếu lỗi mạng hoặc không tìm thấy user
   }
-  return { 
-    name: `Khách hàng (ID: ${userId.substring(0, 5)}...)`, 
-    email: 'N/A', 
-    phone: 'N/A' 
+  return {
+    name: `Khách hàng (ID: ${userId.substring(0, 5)}...)`,
+    email: 'N/A',
+    phone: 'N/A'
   };
 };
 
@@ -253,7 +253,7 @@ export const getOrganizerOrders = async (req: Request, res: Response) => {
     const skip = (pageNum - 1) * limitNum;
 
     const filter: any = { organizerId };
-    
+
     if (eventId) filter.eventId = eventId;
     if (status) filter.status = status;
     else filter.status = { $in: ['paid', 'refunded', 'pending', 'processing', 'cancelled', 'expired'] };
@@ -347,7 +347,7 @@ export const getOrganizerCustomers = async (req: Request, res: Response) => {
 
     // Convert Map to array, map events Set to array
     let customersData = Array.from(customerMap.values());
-    
+
     // Fetch customer names concurrently
     let customers = await Promise.all(
       customersData.map(async (c) => {
@@ -609,5 +609,30 @@ export const cancelPaidOrderWithVoucher = async (req: Request, res: Response) =>
       success: false,
       message: err?.message || 'Lỗi huỷ đơn + cấp voucher',
     });
+  }
+};
+
+// ==================== ADMIN PAYOUT COMPLETE ====================
+
+export const markEventPayoutSuccess = async (req: Request, res: Response) => {
+  try {
+    const { eventId } = req.params;
+    if (!eventId) {
+      return res.status(400).json({ success: false, message: 'Thiếu eventId' });
+    }
+
+    const result = await Order.updateMany(
+      { eventId, status: 'paid', payoutStatus: 'pending' },
+      { $set: { payoutStatus: 'success', payoutAt: new Date() } }
+    );
+
+    return res.json({
+      success: true,
+      message: `Đã cập nhật ${result.modifiedCount} đơn hàng thành payout success`,
+      data: result
+    });
+  } catch (error: any) {
+    console.error('[markEventPayoutSuccess] Error:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

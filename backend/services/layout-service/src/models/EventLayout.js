@@ -177,7 +177,8 @@ const eventLayoutSchema = new mongoose.Schema({
     approvedAt: {
         type: Date
     },
-    // Payout / bank info for organizer
+    // Note: payoutInfo is DEPRECATED. Bank details are now stored in the separate BankAccount model.
+    // Kept here for backward compatibility with old data.
     payoutInfo: {
         accountName: { type: String, maxlength: 100 },
         accountNumber: { type: String, maxlength: 50 },

@@ -62,14 +62,19 @@ export default function StaffScreen({ navigation, route }: StaffHomeProps) {
       <View className="flex-row items-center justify-between p-4 pt-12 bg-[#1a0033] border-b border-[#4d0099]">
         <View>
           <Text className="text-sm text-[#b388ff]">Welcome back,</Text>
-          <Text className="text-xl font-bold text-white">Staff Member</Text>
+          <Text className="text-xl font-bold text-white">{user ? `${user.firstName} ${user.lastName}` : 'Staff Member'}</Text>
         </View>
         <TouchableOpacity onPress={() => void logout()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
           <MaterialIcons name="logout" size={20} color="#ff1744" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-6">
+      <ScrollView 
+        className="flex-1 px-4 pt-6"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#d500f9" />
+        }
+      >
         <View className="bg-[#1a0033] rounded-3xl p-6 border border-[#4d0099] mb-6 shadow-[0_0_15px_rgba(213,0,249,0.2)]">
           <Text className="text-lg font-bold text-white mb-4">Quick Actions</Text>
           <View className="flex-row justify-between">
@@ -102,8 +107,20 @@ export default function StaffScreen({ navigation, route }: StaffHomeProps) {
                 {venueNameParam || 'Venue'}
               </Text>
             </View>
-            <View className="bg-[#00e5ff]/20 px-2 py-1 rounded-md border border-[#00e5ff]/50">
-              <Text className="text-[#00e5ff] text-xs font-bold">LIVE</Text>
+            
+            <View className="flex-row justify-between border-t border-[#4d0099] pt-4">
+              <View className="items-center">
+                <Text className="text-[#b388ff] text-xs mb-1">Status</Text>
+                <Text className="text-white font-bold text-base">Active</Text>
+              </View>
+              <View className="items-center">
+                <Text className="text-[#b388ff] text-xs mb-1">Zones</Text>
+                <Text className="text-white font-bold text-base">{todayEvent.zones?.length || 0}</Text>
+              </View>
+              <View className="items-center">
+                <Text className="text-[#b388ff] text-xs mb-1">Price</Text>
+                <Text className="text-[#d500f9] font-bold text-base">${todayEvent.minPrice}</Text>
+              </View>
             </View>
           </View>
           
@@ -131,7 +148,7 @@ export default function StaffScreen({ navigation, route }: StaffHomeProps) {
               </Text>
             </View>
           </View>
-        </View>
+        )}
 
         <Text className="text-lg font-bold text-white mb-4">Recent Scans</Text>
         {loadingRecent && (

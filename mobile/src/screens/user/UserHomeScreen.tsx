@@ -89,6 +89,14 @@ export default function UserScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
+      <TouchableOpacity 
+        onPress={() => navigation.navigate('AIAssistant')}
+        style={styles.floatingAIButton}
+        activeOpacity={0.8}
+      >
+        <MaterialIcons name="smart-toy" size={28} color="white" />
+      </TouchableOpacity>
+
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {/* Quick Actions */}
         <View style={styles.quickActionsRow}>
@@ -444,5 +452,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ff6b6b',
     textAlign: 'center',
+  },
+  floatingAIButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#d500f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+    shadowColor: '#d500f9',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 15,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
 });

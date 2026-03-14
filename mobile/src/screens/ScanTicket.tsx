@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, { 
   useSharedValue, 
@@ -8,6 +8,7 @@ import Animated, {
   withTiming, 
   Easing 
 } from 'react-native-reanimated';
+import Toast from 'react-native-toast-message';
 
 export default function ScanTicket({ navigation }: any) {
   const scanLineY = useSharedValue(0);
@@ -36,18 +37,14 @@ export default function ScanTicket({ navigation }: any) {
       </View>
 
       <View className="flex-1 items-center justify-center relative">
-        {/* Mock Camera View */}
         <View className="absolute inset-0 bg-black/80" />
         
-        {/* Scanner Frame */}
         <View className="w-64 h-64 border-2 border-[#d500f9] rounded-3xl overflow-hidden relative shadow-[0_0_30px_rgba(213,0,249,0.3)] bg-black/50">
-          {/* Corner Markers */}
           <View className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[#00e5ff] rounded-tl-3xl" />
           <View className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-[#00e5ff] rounded-tr-3xl" />
           <View className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-[#00e5ff] rounded-bl-3xl" />
           <View className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#00e5ff] rounded-br-3xl" />
           
-          {/* Animated Scan Line */}
           <Animated.View 
             style={[
               animatedLineStyle, 
@@ -60,12 +57,14 @@ export default function ScanTicket({ navigation }: any) {
           Align the QR code within the frame to scan
         </Text>
 
-        {/* Mock Scan Button (for testing) */}
         <TouchableOpacity 
           className="mt-12 bg-[#1a0033] border border-[#00e5ff] px-6 py-3 rounded-full flex-row items-center shadow-[0_0_15px_rgba(0,229,255,0.3)]"
           onPress={() => {
-            // Simulate successful scan
-            alert("Ticket Validated Successfully!");
+            Toast.show({
+              type: 'success',
+              text1: 'Thành công',
+              text2: 'Vé đã được xác thực!',
+            });
             navigation.goBack();
           }}
         >

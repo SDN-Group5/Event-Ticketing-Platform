@@ -9,6 +9,7 @@ import MyTickets from '../screens/MyTickets';
 import MyEvents from '../screens/MyEvents';
 import Profile from '../screens/Profile';
 import UserScreen from '../screens/user/UserHomeScreen';
+import AIAssistant from '../screens/AIAssistant';
 
 const Tab = createBottomTabNavigator();
 
@@ -24,6 +25,7 @@ export default function TabNavigator() {
 
           if (route.name === 'Home') iconName = 'home';
           else if (route.name === 'Explore') iconName = 'explore';
+          else if (route.name === 'AI Assistant') iconName = 'smart-toy';
           else if (route.name === 'Tickets') iconName = 'local-activity';
           else if (route.name === 'Manage') iconName = 'event';
           else if (route.name === 'Profile') iconName = 'person';
@@ -43,6 +45,7 @@ export default function TabNavigator() {
     >
       <Tab.Screen name="Home" component={UserScreen} />
       <Tab.Screen name="Explore" component={Explore} />
+      <Tab.Screen name="AI Assistant" component={AIAssistant} />
       <Tab.Screen name="Tickets" component={MyTickets} />
       <Tab.Screen name="Profile" component={Profile} />
     </Tab.Navigator>

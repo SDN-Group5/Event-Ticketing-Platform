@@ -7,11 +7,12 @@ import {
   ActivityIndicator,
   FlatList,
   Dimensions,
-  Share
+  Share,
 } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { PaymentAPI } from '../services/paymentApiService';
 import QRCode from 'react-native-qrcode-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -98,8 +99,22 @@ export default function TicketDetail({ navigation, route }: any) {
   const activeTicket = tickets[activeIndex];
 
   const handleShareTicket = async () => {
-    if (!activeTicket?.ticketId) return;
-    const url = `${webBaseUrl}/t/${encodeURIComponent(String(activeTicket.ticketId))}`;
+    const hasRealTickets = tickets.length > 0;
+
+    // Ưu tiên ticketId thật nếu backend đã tạo vé
+    let ticketId: string | null =
+      hasRealTickets && activeTicket?.ticketId
+        ? String(activeTicket.ticketId)
+        : null;
+
+    // Nếu chưa có ticket trong DB, tự sinh ticketId theo pattern backend: TV-{orderCode}-{index}
+    if (!ticketId) {
+      const index = Number.isFinite(activeIndex) ? activeIndex : 0;
+      ticketId = `TV-${order.orderCode}-${index + 1}`;
+    }
+
+    const url = `${webBaseUrl}/t/${encodeURIComponent(ticketId)}`;
+
     try {
       await Share.share({
         message: `Vé điện tử của bạn: ${url}`,
@@ -249,19 +264,40 @@ export default function TicketDetail({ navigation, route }: any) {
           )}
         </View>
 
-        <View className="px-4 pb-6">
+        <View className="px-4 pb-6 space-y-2">
           <TouchableOpacity
             onPress={handleShareTicket}
-            disabled={!activeTicket?.ticketId}
-            className={`bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 mb-4 flex-row items-center justify-center ${!activeTicket?.ticketId ? 'opacity-50' : ''}`}
+            activeOpacity={0.9}
+            className=""
           >
-            <MaterialIcons name="share" size={20} color="#00e5ff" />
-            <Text className="text-[#00e5ff] font-bold text-lg ml-2">Chia sẻ vé</Text>
+            <LinearGradient
+              colors={['#00e5ff', '#d500f9']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="rounded-2xl px-5 py-4 flex-row items-center justify-center border border-[#4d0099] shadow-[0_0_20px_rgba(0,229,255,0.5)]"
+            >
+              <MaterialIcons name="share" size={22} color="#0a0014" />
+              <Text className="text-[#0a0014] font-black text-lg ml-2 tracking-wide">
+                Chia sẻ vé
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity className="bg-[#2a004d] border border-[#d500f9]/30 rounded-2xl p-4 flex-row items-center justify-center">
-            <MaterialIcons name="file-download" size={20} color="#d500f9" />
-            <Text className="text-[#d500f9] font-bold text-lg ml-2">Tải PDF (Offline)</Text>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            className="rounded-2xl border border-[#d500f9]/40 overflow-hidden"
+          >
+            <LinearGradient
+              colors={['#2a004d', '#4d007a']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="px-5 py-4 flex-row items-center justify-center"
+            >
+              <MaterialIcons name="file-download" size={20} color="#ff80ff" />
+              <Text className="text-[#ff80ff] font-bold text-lg ml-2">
+                Tải PDF (Offline)
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </View>

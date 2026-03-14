@@ -1,61 +1,29 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { CheckinAPI, RecentScanLog } from '../../services/checkinApiService';
-import Toast from 'react-native-toast-message';
+import { useStaffHome } from './useStaffHome';
 
 interface StaffHomeProps {
   navigation: any;
   route: { params?: { eventId?: string; eventName?: string; venueName?: string } };
 }
 
-export default function StaffScreen({ navigation, route }: StaffHomeProps) {
-  const { logout } = useAuth();
+export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
+  const { logout, user } = useAuth();
   const eventId = route?.params?.eventId;
   const eventNameParam = route?.params?.eventName;
   const venueNameParam = route?.params?.venueName;
 
-  const [summary, setSummary] = useState<{ total: number; checkedIn: number; remaining: number } | null>(null);
-  const [recentScans, setRecentScans] = useState<RecentScanLog[]>([]);
-  const [loadingSummary, setLoadingSummary] = useState<boolean>(!!eventId);
-  const [loadingRecent, setLoadingRecent] = useState<boolean>(!!eventId);
-
-  useEffect(() => {
-    if (!eventId) return;
-
-    const loadSummary = async () => {
-      try {
-        setLoadingSummary(true);
-        const res = await CheckinAPI.getEventSummary(eventId);
-        setSummary(res.data);
-      } catch (err: any) {
-        Toast.show({
-          type: 'error',
-          text1: 'Không tải được thống kê check-in',
-          text2: err?.message || 'Thử lại sau',
-        });
-      } finally {
-        setLoadingSummary(false);
-      }
-    };
-
-    const loadRecent = async () => {
-      try {
-        setLoadingRecent(true);
-        const res = await CheckinAPI.getRecentScans(eventId, 10);
-        setRecentScans(res.data);
-      } catch (err: any) {
-        // chỉ log, không cần toast
-        console.warn('[StaffHome] loadRecent error', err?.message);
-      } finally {
-        setLoadingRecent(false);
-      }
-    };
-
-    void loadSummary();
-    void loadRecent();
-  }, [eventId]);
+  const {
+    summary,
+    recentScans,
+    loadingSummary,
+    loadingRecent,
+    refreshing,
+    todayEvent,
+    onRefresh,
+  } = useStaffHome(eventId);
 
   return (
     <View className="flex-1 bg-[#0a0014]">
@@ -69,7 +37,7 @@ export default function StaffScreen({ navigation, route }: StaffHomeProps) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
+      <ScrollView
         className="flex-1 px-4 pt-6"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#d500f9" />
@@ -78,15 +46,15 @@ export default function StaffScreen({ navigation, route }: StaffHomeProps) {
         <View className="bg-[#1a0033] rounded-3xl p-6 border border-[#4d0099] mb-6 shadow-[0_0_15px_rgba(213,0,249,0.2)]">
           <Text className="text-lg font-bold text-white mb-4">Quick Actions</Text>
           <View className="flex-row justify-between">
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => navigation.navigate('ScanTicket')}
               className="flex-1 bg-[#d500f9] rounded-2xl p-4 items-center justify-center mr-2 shadow-[0_0_15px_rgba(213,0,249,0.4)]"
             >
               <MaterialIcons name="qr-code-scanner" size={32} color="white" />
               <Text className="text-white font-bold mt-2 text-center">Scan Ticket</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               onPress={() => navigation.navigate('MyEvents')}
               className="flex-1 bg-[#2a004d] border border-[#d500f9] rounded-2xl p-4 items-center justify-center ml-2"
             >
@@ -107,7 +75,7 @@ export default function StaffScreen({ navigation, route }: StaffHomeProps) {
                 {venueNameParam || 'Venue'}
               </Text>
             </View>
-            
+
             <View className="flex-row justify-between border-t border-[#4d0099] pt-4">
               <View className="items-center">
                 <Text className="text-[#b388ff] text-xs mb-1">Status</Text>
@@ -123,7 +91,7 @@ export default function StaffScreen({ navigation, route }: StaffHomeProps) {
               </View>
             </View>
           </View>
-          
+
           <View className="flex-row justify-between border-t border-[#4d0099] pt-4">
             <View className="items-center">
               <Text className="text-[#b388ff] text-xs mb-1">Checked In</Text>

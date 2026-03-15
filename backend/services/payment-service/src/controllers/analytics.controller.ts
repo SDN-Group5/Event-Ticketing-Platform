@@ -146,6 +146,15 @@ export const getAdminEventRevenues = async (req: Request, res: Response) => {
 
     // Search by event name or organizer ID if provided
     const matchStage: any = { status: 'paid', payoutStatus: 'pending' };
+
+    // Add eventIds filter if provided (for filtering only completed events)
+    if (req.query.eventIds) {
+      const ids = (req.query.eventIds as string).split(',');
+      if (ids.length > 0) {
+        matchStage.eventId = { $in: ids };
+      }
+    }
+
     if (req.query.search) {
       matchStage.$or = [
         { eventName: { $regex: req.query.search, $options: 'i' } },

@@ -114,6 +114,9 @@ const eventLayoutSchema = new mongoose.Schema({
         required: true,
         default: Date.now
     },
+    eventEndDate: {
+        type: Date
+    },
     eventImage: {
         type: String,
         default: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30' // Default placeholder image

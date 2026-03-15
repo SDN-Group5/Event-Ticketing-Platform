@@ -57,9 +57,17 @@ export const CreateEventPage: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
-            // Xac thực ngày kết thúc phải sau ngày bắt đầu
+            // Xac thực ngày kết thúc phải sau ngày bắt đầu và không ở trong quá khứ
             const startD = new Date(`${formData.dateStart}T${formData.time}`);
             const endD = new Date(`${formData.dateEnd}T${formData.timeEnd}`);
+            const now = new Date();
+
+            if (startD < now) {
+                setError('Thời gian bắt đầu sự kiện không được ở trong quá khứ');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
             if (endD <= startD) {
                 setError('Thời gian kết thúc phải diễn ra sau thời gian bắt đầu');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -68,6 +76,16 @@ export const CreateEventPage: React.FC = () => {
         } else if (step === 3) {
             if (!formData.payoutAccountName.trim() || !formData.payoutAccountNumber.trim() || !formData.payoutBankName.trim() || !formData.payoutBranchName.trim()) {
                 setError('Vui lòng điền đầy đủ thông tin tài khoản ngân hàng nhận tiền (*)');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            if (!/^\d+$/.test(formData.payoutAccountNumber.trim())) {
+                setError('Số tài khoản của bạn chỉ được chứa các chữ số hợp lệ.');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            if (formData.invoiceTaxCode && !/^\d{10,13}$/.test(formData.invoiceTaxCode.trim())) {
+                setError('Mã số thuế của doanh nghiệp phải có từ 10 đến 13 chữ số.');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
@@ -140,6 +158,7 @@ export const CreateEventPage: React.FC = () => {
                     eventId: realEventId,
                     eventName: formData.name,
                     eventDate: startTimeString,
+                    eventEndDate: endTimeString,
                     eventImage: bannerUrl,
                     eventLocation: formData.venue,
                     eventDescription: formData.description,

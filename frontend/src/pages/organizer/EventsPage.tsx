@@ -59,7 +59,7 @@ export const EventsPage: React.FC = () => {
 
   const mapLayoutToOrganizerEvent = (layout: EventLayout): OrganizerEvent => {
     const { totalCapacity, ticketsSold, revenue } = sumSeatMetadata(layout.zones || []);
-    
+
     // Determine status from layout.status stored in backend
     let status: OrganizerEvent['status'] = 'draft';
     if (layout.status === 'published') {
@@ -97,7 +97,7 @@ export const EventsPage: React.FC = () => {
 
         // Map layouts to organizer events
         const mapped = (layouts || []).map(layout => mapLayoutToOrganizerEvent(layout));
-        
+
         setEvents(mapped);
       } catch (error) {
         console.error('Error fetching organizer events:', error);
@@ -120,11 +120,11 @@ export const EventsPage: React.FC = () => {
     try {
       // Delete layout
       await LayoutAPI.deleteLayout(eventId);
-      
+
       // Remove from local state
       setEvents(events.filter(e => e.eventId !== eventId));
       setDeleteConfirm(null);
-      
+
       showToast('Event deleted successfully', 'success');
     } catch (error: any) {
       console.error('Error deleting event:', error);
@@ -193,8 +193,8 @@ export const EventsPage: React.FC = () => {
             key={status}
             onClick={() => setFilter(status)}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${filter === status
-                ? 'bg-[#8655f6] text-white'
-                : 'bg-[#2a2436] text-gray-400 hover:bg-[#342640]'
+              ? 'bg-[#8655f6] text-white'
+              : 'bg-[#2a2436] text-gray-400 hover:bg-[#342640]'
               }`}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -223,9 +223,9 @@ export const EventsPage: React.FC = () => {
             >
               <div className="flex flex-col md:flex-row">
                 {/* Event Image */}
-                <div className="md:w-48 h-40 flex-shrink-0">
+                <div className="w-full md:w-80 h-48 md:h-auto flex-shrink-0 bg-gray-800">
                   <img
-                    src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'}
+                    src={event.image && event.image.startsWith('http') && !event.image.includes('localhost') && !event.image.includes('4000') ? event.image : 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80'}
                     alt={event.name}
                     className="w-full h-full object-cover"
                   />
@@ -301,21 +301,21 @@ export const EventsPage: React.FC = () => {
 
                   {/* Actions */}
                   <div className="flex flex-wrap gap-2">
-                    <button 
+                    <button
                       onClick={() => navigate(`/organizer/events/${event.eventId}`)}
                       className="px-4 py-2 bg-[#8655f6]/20 hover:bg-[#8655f6]/30 text-[#8655f6] rounded-lg text-sm transition-colors flex items-center gap-1"
                     >
                       <span className="material-symbols-outlined text-sm">info</span>
                       View Details
                     </button>
-                    <button 
+                    <button
                       onClick={() => navigate(`/organizer/stage-builder?eventId=${event.eventId}`)}
                       className="px-4 py-2 bg-[#3a3447] hover:bg-[#3a3447]/80 text-gray-300 rounded-lg text-sm transition-colors flex items-center gap-1"
                     >
                       <span className="material-symbols-outlined text-sm">grid_on</span>
                       Layout
                     </button>
-                    <button 
+                    <button
                       onClick={() => navigate(`/organizer/events/${event.eventId}/tickets`)}
                       className="px-4 py-2 bg-[#3a3447] hover:bg-[#3a3447]/80 text-gray-300 rounded-lg text-sm transition-colors flex items-center gap-1"
                     >
@@ -323,7 +323,7 @@ export const EventsPage: React.FC = () => {
                       Tickets
                     </button>
                     {event.status === 'draft' && (
-                      <button 
+                      <button
                         onClick={() => navigate(`/organizer/events/${event.eventId}/edit`)}
                         className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm transition-colors flex items-center gap-1"
                       >
@@ -332,7 +332,7 @@ export const EventsPage: React.FC = () => {
                       </button>
                     )}
                     {event.status === 'rejected' && (
-                      <button 
+                      <button
                         onClick={() => navigate(`/organizer/events/${event.eventId}/edit`)}
                         className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-sm transition-colors flex items-center gap-1"
                       >
@@ -340,7 +340,7 @@ export const EventsPage: React.FC = () => {
                         Revise & Resubmit
                       </button>
                     )}
-                    <button 
+                    <button
                       onClick={() => setDeleteConfirm(event.eventId)}
                       className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors flex items-center gap-1"
                     >

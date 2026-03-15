@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AnalyticsAPI } from '../../services/analyticsApiService';
 import { EventApprovalAPI } from '../../services/eventApprovalApiService';
+import { LayoutAPI } from '../../services/layoutApiService';
 import { useToast } from '../../components/common/ToastProvider';
 
 interface EventRevenue {
@@ -36,7 +37,22 @@ export const PayoutsPage: React.FC = () => {
     const fetchRevenues = async () => {
         setLoading(true);
         try {
-            const res = await AnalyticsAPI.getAdminEventRevenues({ limit: 50 });
+            // 1. Chỉ lấy những sự kiện đã kết thúc/hoàn thành từ layout service
+            const completedLayouts = await LayoutAPI.getCompletedLayouts();
+            const completedIds = completedLayouts?.map(l => l.eventId).join(',');
+
+            if (!completedIds) {
+                setRevenues([]);
+                setLoading(false);
+                return;
+            }
+
+            // 2. Lấy doanh thu dựa trên danh sách ID đã chốt
+            const res = await AnalyticsAPI.getAdminEventRevenues({
+                limit: 50,
+                eventIds: completedIds
+            });
+
             if (res.success) {
                 setRevenues(res.data);
             } else {

@@ -39,7 +39,8 @@ export const getLayoutByEvent = async (req, res) => {
 // Get all layouts
 export const getAllLayouts = async (req, res) => {
     try {
-        const layouts = await EventLayout.find({});
+        // Chỉ lấy những sự kiện có status là 'published' (đã được Admin duyệt)
+        const layouts = await EventLayout.find({ status: 'published' });
 
         res.status(200).json({
             success: true,
@@ -53,6 +54,35 @@ export const getAllLayouts = async (req, res) => {
             error: {
                 code: 'INTERNAL_ERROR',
                 message: 'Server error retrieving layouts'
+            }
+        });
+    }
+};
+
+// Get all completed layouts (Status is 'completed' or event date passed)
+export const getCompletedLayouts = async (req, res) => {
+    try {
+        const now = new Date();
+        const layouts = await EventLayout.find({
+            $or: [
+                { status: 'completed' },
+                { eventDate: { $lt: now } }, // Also consider events whose date passed as completed
+                { payoutStatus: 'paid' } // Events already paid should also be accessible (though analytics will filter them out if payoutStatus: pending)
+            ]
+        });
+
+        res.status(200).json({
+            success: true,
+            count: layouts.length,
+            data: layouts
+        });
+    } catch (error) {
+        console.error('Error getting completed layouts:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'INTERNAL_ERROR',
+                message: 'Server error retrieving completed layouts'
             }
         });
     }
@@ -125,7 +155,7 @@ export const createLayout = async (req, res) => {
     try {
         const {
             eventId, zones, canvasWidth, canvasHeight, canvasColor,
-            eventName, eventDate, eventImage, eventLocation, eventDescription, minPrice,
+            eventName, eventDate, eventEndDate, eventImage, eventLocation, eventDescription, minPrice,
             payoutInfo, invoiceInfo
         } = req.body;
         const userId = req.user ? req.user.id : null; // Assuming auth middleware sets req.user
@@ -146,6 +176,7 @@ export const createLayout = async (req, res) => {
             eventId,
             eventName,
             eventDate,
+            eventEndDate,
             eventImage,
             eventLocation,
             eventDescription,
@@ -222,7 +253,7 @@ export const updateLayout = async (req, res) => {
         const { eventId } = req.params;
         const {
             zones, canvasWidth, canvasHeight, canvasColor, version,
-            eventName, eventDate, eventImage, eventLocation, eventDescription, minPrice
+            eventName, eventDate, eventEndDate, eventImage, eventLocation, eventDescription, minPrice
         } = req.body;
 
         const layout = await EventLayout.findOne({ eventId });
@@ -269,6 +300,7 @@ export const updateLayout = async (req, res) => {
         // Update event metadata if provided
         if (eventName) layout.eventName = eventName;
         if (eventDate) layout.eventDate = eventDate;
+        if (eventEndDate) layout.eventEndDate = eventEndDate;
         if (eventImage) layout.eventImage = eventImage;
         if (eventLocation) layout.eventLocation = eventLocation;
         if (eventDescription) layout.eventDescription = eventDescription;

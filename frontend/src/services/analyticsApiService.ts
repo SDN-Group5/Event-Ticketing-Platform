@@ -227,6 +227,7 @@ export const AnalyticsAPI = {
     page?: number;
     limit?: number;
     search?: string;
+    eventIds?: string; // comma-separated
   }): Promise<{
     success: boolean;
     data: Array<{

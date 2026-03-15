@@ -127,12 +127,9 @@ export const setupRoutes = (app: Express) => {
   );
 
   // Static uploads (event banners) served from layout-service
-  // IMPORTANT: Express strips '/uploads' prefix before passing to middleware,
-  // so we must rewrite the path to add it back.
-  // e.g. req.url becomes '/banners/file.jpg' → rewrite to '/uploads/banners/file.jpg'
   app.use(
     '/uploads',
-    createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL, { '^': '/uploads' }))
+    createProxyMiddleware(createProxy(LAYOUT_SERVICE_URL))
   );
 
   // Event Approval Service (Admin) -> layout-service

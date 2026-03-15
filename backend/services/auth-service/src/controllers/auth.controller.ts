@@ -131,7 +131,7 @@ export const logout = (req: Request, res: Response) => {
 // POST /api/auth/register
 export const register = async (req: Request, res: Response) => {
     try {
-        const { firstName, lastName, email, password } = req.body;
+        const { firstName, lastName, email, password, role } = req.body;
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -141,22 +141,26 @@ export const register = async (req: Request, res: Response) => {
         const verificationCode = generate6DigitCode();
         const verificationExpires = getOtpExpiryDate(1);
 
-        console.log(`📝 Registering user: ${email}`);
+        console.log(`📝 Registering user: ${email} with role: ${role || 'customer'}`);
         console.log(`🔢 Generated OTP: ${verificationCode}`);
+
+        // Validate role if provided, otherwise default to customer
+        const allowedRoles = ["customer", "organizer"];
+        const finalRole = role && allowedRoles.includes(role) ? role : "customer";
 
         const user = await User.create({
             firstName,
             lastName,
             email,
             password,
-            role: "customer",
+            role: finalRole,
             emailVerified: false,
             emailVerificationCode: verificationCode,
             emailVerificationExpires: verificationExpires,
             isActive: true,
         });
 
-        console.log(`✅ User created: ${user.email}`);
+        console.log(`✅ User created: ${user.email} as ${user.role}`);
 
         try {
             const emailResult = await sendVerificationEmail({

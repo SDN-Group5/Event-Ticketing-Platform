@@ -14,6 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { LayoutAPI, EventLayout } from '../services/layoutApiService';
 import Animated, { FadeIn, SlideInRight } from 'react-native-reanimated';
+import { useTheme } from '../context/ThemeContextType';
 
 interface Message {
   id: string;
@@ -25,6 +26,7 @@ interface Message {
 
 export default function AIAssistant({ navigation }: any) {
   const { user } = useAuth();
+  const { colors } = useTheme();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -94,8 +96,6 @@ export default function AIAssistant({ navigation }: any) {
     }
 
     // 2. Search for events in the database
-    // This will match if the user input is contained in the event name/location
-    // OR if the event name/location is contained in the user input
     const foundEvents = allEvents.filter(e => {
       const name = e.eventName?.toLowerCase() || '';
       const loc = e.eventLocation?.toLowerCase() || '';
@@ -104,7 +104,6 @@ export default function AIAssistant({ navigation }: any) {
         name.includes(lowerText) || 
         lowerText.includes(loc) || 
         loc.includes(lowerText) ||
-        // Fuzzy match for common abbreviations/keywords
         (lowerText.includes('mu') && name.includes('manchester united')) ||
         (lowerText.includes('mc') && name.includes('manchester city')) ||
         (lowerText.includes('nhạc') && name.includes('music'))
@@ -116,7 +115,6 @@ export default function AIAssistant({ navigation }: any) {
       botResponse.text = `Tuyệt vời! Tôi đã tìm thấy sự kiện "${event.eventName}" diễn ra tại ${event.eventLocation}. Bạn có muốn xem chi tiết hoặc đặt vé ngay không?`;
       botResponse.event = event;
     } else {
-      // 3. Fallback to category/intent matching if no specific event found
       if (lowerText.includes('nhạc') || lowerText.includes('âm nhạc') || lowerText.includes('ca nhạc')) {
         botResponse.text = "Hiện tại tôi chưa thấy show âm nhạc nào khớp với mô tả của bạn. Bạn thử nhập tên nghệ sĩ hoặc thể loại nhạc xem sao?";
       } else if (lowerText.includes('đá bóng') || lowerText.includes('bóng đá') || lowerText.includes('mu') || lowerText.includes('mc')) {
@@ -135,42 +133,46 @@ export default function AIAssistant({ navigation }: any) {
   const renderMessage = ({ item }: { item: Message }) => (
     <Animated.View 
       entering={item.sender === 'user' ? SlideInRight : FadeIn}
-      className={`mb-4 flex-row ${item.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+      style={{ marginBottom: 16, flexDirection: 'row', justifyContent: item.sender === 'user' ? 'flex-end' : 'flex-start' }}
     >
       {item.sender === 'bot' && (
-        <View className="w-8 h-8 rounded-full bg-[#d500f9] items-center justify-center mr-2 self-end">
+        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginRight: 8, alignSelf: 'flex-end' }}>
           <MaterialIcons name="smart-toy" size={18} color="white" />
         </View>
       )}
       <View 
-        style={{ maxWidth: '80%' }}
-        className={`p-3 rounded-2xl ${
-          item.sender === 'user' 
-            ? 'bg-[#d500f9] rounded-tr-none' 
-            : 'bg-[#1a0033] border border-[#4d0099] rounded-tl-none'
-        }`}
+        style={{ 
+          maxWidth: '80%', 
+          padding: 12, 
+          borderRadius: 16, 
+          backgroundColor: item.sender === 'user' ? colors.accent : colors.surface,
+          borderWidth: item.sender === 'user' ? 0 : 1,
+          borderColor: colors.border,
+          borderTopRightRadius: item.sender === 'user' ? 0 : 16,
+          borderTopLeftRadius: item.sender === 'user' ? 16 : 0
+        }}
       >
-        <Text className="text-white text-sm">{item.text}</Text>
+        <Text style={{ color: item.sender === 'user' ? 'white' : colors.text, fontSize: 14 }}>{item.text}</Text>
         
         {item.event && (
           <TouchableOpacity 
             onPress={() => navigation.navigate('EventDetail', { eventId: item.event?.eventId })}
-            className="mt-3 bg-[#0a0014] border border-[#00e5ff] rounded-xl overflow-hidden"
+            style={{ marginTop: 12, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.accentSecondary, borderRadius: 12, overflow: 'hidden' }}
           >
             <Image 
               source={{ uri: item.event.eventImage || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=2070' }}
-              className="w-full h-24"
+              style={{ width: '100%', height: 96 }}
             />
-            <View className="p-2">
-              <Text className="text-white font-bold text-xs" numberOfLines={1}>{item.event.eventName}</Text>
-              <Text className="text-[#b388ff] text-[10px]">{item.event.eventLocation}</Text>
-              <View className="flex-row justify-between items-center mt-2">
-                <Text className="text-[#00e5ff] font-bold text-xs">${item.event.minPrice}</Text>
+            <View style={{ padding: 8 }}>
+              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 12 }} numberOfLines={1}>{item.event.eventName}</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{item.event.eventLocation}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                <Text style={{ color: colors.accentSecondary, fontWeight: 'bold', fontSize: 12 }}>${item.event.minPrice}</Text>
                 <TouchableOpacity 
                   onPress={() => navigation.navigate('TicketSelection', { eventId: item.event?.eventId })}
-                  className="bg-[#d500f9] px-2 py-1 rounded-md"
+                  style={{ backgroundColor: colors.accent, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}
                 >
-                  <Text className="text-white font-bold text-[10px]">Đặt ngay</Text>
+                  <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 10 }}>Đặt ngay</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -183,22 +185,22 @@ export default function AIAssistant({ navigation }: any) {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-[#0a0014]"
+      style={{ flex: 1, backgroundColor: colors.background }}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View className="flex-row items-center p-4 pt-12 bg-[#1a0033] border-b border-[#4d0099] z-10">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
-          <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
+      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingTop: 48, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border, zIndex: 10 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ width: 40, height: 40, backgroundColor: colors.surfaceSecondary, borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
+          <MaterialIcons name="arrow-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <View className="flex-1 items-center px-4">
-          <Text className="text-lg font-bold text-white">Eventix AI</Text>
-          <View className="flex-row items-center">
-            <View className="w-2 h-2 rounded-full bg-[#00e5ff] mr-1" />
-            <Text className="text-[#b388ff] text-[10px]">Sẵn sàng hỗ trợ</Text>
+        <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: 16 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>Eventix AI</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accentSecondary, marginRight: 4 }} />
+            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Sẵn sàng hỗ trợ</Text>
           </View>
         </View>
-        <TouchableOpacity className="w-10 h-10 items-center justify-center">
-          <MaterialIcons name="more-vert" size={24} color="#b388ff" />
+        <TouchableOpacity style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+          <MaterialIcons name="more-vert" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -210,26 +212,26 @@ export default function AIAssistant({ navigation }: any) {
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         ListFooterComponent={isTyping ? (
-          <View className="flex-row justify-start mb-4">
-            <View className="bg-[#1a0033] border border-[#4d0099] p-3 rounded-2xl rounded-tl-none">
-              <ActivityIndicator size="small" color="#d500f9" />
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-start', marginBottom: 16 }}>
+            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 12, borderRadius: 16, borderTopLeftRadius: 0 }}>
+              <ActivityIndicator size="small" color={colors.accent} />
             </View>
           </View>
         ) : null}
       />
 
-      <View className="p-4 bg-[#1a0033] border-t border-[#4d0099]">
-        <View className="flex-row items-center bg-[#0a0014] rounded-full px-4 py-2 border border-[#4d0099]">
+      <View style={{ padding: 16, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: 25, paddingHorizontal: 16, paddingVertical: 4, borderWidth: 1, borderColor: colors.border }}>
           <TextInput
             placeholder="Bạn muốn tìm sự kiện gì?"
-            placeholderTextColor="#6a1b9a"
+            placeholderTextColor={colors.textSecondary + '80'}
             value={input}
             onChangeText={setInput}
-            className="flex-1 text-white text-sm"
+            style={{ flex: 1, color: colors.text, fontSize: 14, height: 40 }}
           />
           <TouchableOpacity 
             onPress={handleSend}
-            className="w-10 h-10 bg-[#d500f9] rounded-full items-center justify-center shadow-[0_0_10px_#d500f9]"
+            style={{ width: 40, height: 40, backgroundColor: colors.accent, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
           >
             <MaterialIcons name="send" size={20} color="white" />
           </TouchableOpacity>

@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, Switch } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContextType';
 
 export default function Profile({ navigation }: any) {
   const { user, logout, refreshUser } = useAuth();
+  const { isDarkMode, toggleTheme, colors } = useTheme();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -14,86 +16,94 @@ export default function Profile({ navigation }: any) {
   );
 
   return (
-    <View className="flex-1 bg-[#0a0014]">
-      <View className="flex-row items-center p-4 border-b border-[#4d0099] bg-[#1a0033]">
-        <Text className="flex-1 text-center text-lg font-bold text-white">Profile</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 4, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface }}>
+        <Text style={{ flex: 1, textAlign: 'center', fontSize: 18, fontWeight: 'bold', color: colors.text, paddingVertical: 16 }}>Profile</Text>
       </View>
 
-      <ScrollView className="flex-1">
-        <View className="items-center py-8">
-          <View className="relative">
-            <Image 
-              source={{ uri: user?.avatar || 'https://i.pravatar.cc/150?img=68' }} 
-              className="w-24 h-24 rounded-full border-4 border-[#d500f9]"
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+          <View style={{ position: 'relative' }}>
+            <Image
+              source={{ uri: user?.avatar || 'https://i.pravatar.cc/150?img=68' }}
+              style={{ width: 96, height: 96, borderRadius: 48, borderWidth: 4, borderColor: colors.accent }}
             />
-            <TouchableOpacity className="absolute bottom-0 right-0 bg-[#d500f9] w-8 h-8 rounded-full items-center justify-center border-2 border-[#0a0014]">
+            <TouchableOpacity style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: colors.accent, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.background }}>
               <MaterialIcons name="edit" size={16} color="white" />
             </TouchableOpacity>
           </View>
-          <Text className="text-2xl font-bold text-white mt-4">
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text, marginTop: 16 }}>
             {user ? `${user.firstName} ${user.lastName}` : 'Guest'}
           </Text>
-          <Text className="text-base text-[#b388ff] mt-1">{user?.email || 'Đăng nhập để xem profile'}</Text>
+          <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 4 }}>{user?.email || 'Đăng nhập để xem profile'}</Text>
         </View>
 
-        <View className="px-4 pb-8">
-          <View className="bg-[#1a0033] rounded-2xl border border-[#4d0099] overflow-hidden mb-6">
-            <TouchableOpacity onPress={() => navigation.navigate('OrderHistory')} className="flex-row items-center p-4 border-b border-[#4d0099]">
-              <View className="w-10 h-10 rounded-full bg-[#00e5ff]/20 items-center justify-center mr-4">
-                <MaterialIcons name="receipt-long" size={24} color="#00e5ff" />
+        <View style={{ paddingHorizontal: 16, paddingBottom: 32 }}>
+          <View style={{ backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 24 }}>
+            <TouchableOpacity onPress={() => navigation.navigate('OrderHistory')} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accentSecondary + '20', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                <MaterialIcons name="receipt-long" size={24} color={colors.accentSecondary} />
               </View>
-              <Text className="flex-1 text-base font-bold text-white">Lịch sử mua vé</Text>
-              <MaterialIcons name="chevron-right" size={24} color="#b388ff" />
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Lịch sử mua vé</Text>
+              <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} className="flex-row items-center p-4 border-b border-[#4d0099]">
-              <View className="w-10 h-10 rounded-full bg-[#d500f9]/20 items-center justify-center mr-4">
-                <MaterialIcons name="person-outline" size={24} color="#d500f9" />
+
+            <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accent + '20', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                <MaterialIcons name="person-outline" size={24} color={colors.accent} />
               </View>
-              <Text className="flex-1 text-base font-bold text-white">Chỉnh sửa hồ sơ</Text>
-              <MaterialIcons name="chevron-right" size={24} color="#b388ff" />
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Chỉnh sửa hồ sơ</Text>
+              <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('SecuritySettings')} className="flex-row items-center p-4 border-b border-[#4d0099]">
-              <View className="w-10 h-10 rounded-full bg-[#7c4dff]/20 items-center justify-center mr-4">
+
+            <TouchableOpacity onPress={() => navigation.navigate('SecuritySettings')} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#7c4dff20', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
                 <MaterialIcons name="security" size={24} color="#7c4dff" />
               </View>
-              <Text className="flex-1 text-base font-bold text-white">Bảo mật & Mật khẩu</Text>
-              <MaterialIcons name="chevron-right" size={24} color="#b388ff" />
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Bảo mật & Mật khẩu</Text>
+              <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
-            <TouchableOpacity className="flex-row items-center p-4">
-              <View className="w-10 h-10 rounded-full bg-[#b388ff]/20 items-center justify-center mr-4">
-                <MaterialIcons name="notifications-none" size={24} color="#b388ff" />
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#ffab0020', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                <MaterialIcons name={isDarkMode ? "dark-mode" : "light-mode"} size={24} color="#ffab00" />
               </View>
-              <Text className="flex-1 text-base font-bold text-white">Thông báo</Text>
-              <MaterialIcons name="chevron-right" size={24} color="#b388ff" />
-            </TouchableOpacity>
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Chế độ tối</Text>
+              <Switch
+                trackColor={{ false: "#767577", true: colors.accent }}
+                thumbColor={isDarkMode ? "#ffffff" : "#f4f3f4"}
+                onValueChange={toggleTheme}
+                value={isDarkMode}
+              />
+            </View>
           </View>
 
-          <View className="bg-[#1a0033] rounded-2xl border border-[#4d0099] overflow-hidden mb-8">
-            <TouchableOpacity 
+          <View style={{ backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 32 }}>
+            <TouchableOpacity
               onPress={() => navigation.navigate('HelpSupport')}
-              className="flex-row items-center p-4 border-b border-[#4d0099]"
+              style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
             >
-              <View className="w-10 h-10 rounded-full bg-[#b388ff]/20 items-center justify-center mr-4">
-                <MaterialIcons name="help-outline" size={24} color="#b388ff" />
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.textSecondary + '20', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                <MaterialIcons name="help-outline" size={24} color={colors.textSecondary} />
               </View>
-              <Text className="flex-1 text-base font-bold text-white">Trợ giúp & Hỗ trợ</Text>
-              <MaterialIcons name="chevron-right" size={24} color="#b388ff" />
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Trợ giúp & Hỗ trợ</Text>
+              <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => navigation.navigate('AboutEventix')}
-              className="flex-row items-center p-4"
+              style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}
             >
-              <View className="w-10 h-10 rounded-full bg-[#b388ff]/20 items-center justify-center mr-4">
-                <MaterialIcons name="info-outline" size={24} color="#b388ff" />
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.textSecondary + '20', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                <MaterialIcons name="info-outline" size={24} color={colors.textSecondary} />
               </View>
-              <Text className="flex-1 text-base font-bold text-white">Về Eventix</Text>
-              <MaterialIcons name="chevron-right" size={24} color="#b388ff" />
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Về Eventix</Text>
+              <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={() => void logout()} className="flex-row items-center justify-center p-4 bg-[#ff1744]/10 rounded-2xl border border-[#ff1744]/30">
+          <TouchableOpacity onPress={() => void logout()} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, backgroundColor: '#ff174410', borderRadius: 16, borderWidth: 1, borderColor: '#ff174430' }}>
             <MaterialIcons name="logout" size={20} color="#ff1744" />
-            <Text className="text-base font-bold text-[#ff1744] ml-2">Đăng xuất</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#ff1744', marginLeft: 8 }}>Đăng xuất</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

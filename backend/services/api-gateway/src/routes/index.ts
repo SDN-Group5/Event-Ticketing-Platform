@@ -88,7 +88,7 @@ export const setupRoutes = (app: Express) => {
         '/api/v1/layouts/*',
         '/api/bookings/*',
         '/api/payments/*',
-
+        '/api/checkin/*',
       ],
     });
   });

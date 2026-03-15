@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutAPI } from '../../services/layoutApiService';
+import { useAuth } from '../../contexts/AuthContext';
 import { LayoutZone } from '../../types/layout';
 import { SEAT_UNIT_2D } from '../../constants/layoutConstants';
 import eventsData from '../../data/events';
@@ -72,6 +73,7 @@ const initialZones: Zone[] = [
 
 export const LayoutEditorPage: React.FC = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const canvasRef = useRef<HTMLDivElement>(null);
 
     const location = useLocation();
@@ -161,13 +163,17 @@ export const LayoutEditorPage: React.FC = () => {
     const loadAvailableLayouts = async () => {
         setIsLoadingLayouts(true);
         try {
-            const layouts = await LayoutAPI.getAllLayouts();
+            // If user is organizer, only fetch their own layouts
+            const layouts = user?.role === 'admin' 
+                ? await LayoutAPI.getAllLayouts() 
+                : await LayoutAPI.getMyLayouts();
+
             const layoutList = layouts.map(layout => ({
                 eventId: layout.eventId,
                 eventName: layout.eventName || layout.eventId
             }));
             setAvailableLayouts(layoutList);
-            setSaveMessage({ type: 'success', text: `Loaded ${layoutList.length} layouts from backend` });
+            setSaveMessage({ type: 'success', text: `Loaded ${layoutList.length} layouts` });
             setTimeout(() => setSaveMessage(null), 2000);
         } catch (error: any) {
             console.error('Error loading layouts:', error);
@@ -759,16 +765,18 @@ export const LayoutEditorPage: React.FC = () => {
                         className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30 transition-all"
                     >
                         <option value="">-- Select an event --</option>
-                        <optgroup label="From Backend">
+                        <optgroup label={user?.role === 'admin' ? "From Backend (All)" : "My Event Layouts"}>
                             {availableLayouts.map(layout => (
                                 <option key={layout.eventId} value={layout.eventId}>{layout.eventName}</option>
                             ))}
                         </optgroup>
-                        <optgroup label="Mock Data (Local)">
-                            {eventsData.map(event => (
-                                <option key={event.id} value={event.id}>{event.title}</option>
-                            ))}
-                        </optgroup>
+                        {user?.role === 'admin' && (
+                            <optgroup label="Mock Data (Local)">
+                                {eventsData.map(event => (
+                                    <option key={event.id} value={event.id}>{event.title}</option>
+                                ))}
+                            </optgroup>
+                        )}
                     </select>
                     {selectedEventId && (
                         <p className="text-xs text-slate-400 mt-2">

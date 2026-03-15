@@ -2,6 +2,7 @@ import express from "express";
 import verifyToken from "../middleware/auth.middleware";
 import { roleCheck } from "../middleware/roleCheck.middleware";
 import * as userController from "../controllers/user.controller";
+import { User } from "../models/user.model";
 
 const router = express.Router();
 
@@ -261,7 +262,6 @@ router.delete(
 router.get("/", verifyToken, roleCheck(["admin"]), async (req, res) => {
   try {
     const { page = 1, limit = 10, role } = req.query;
-    const { User } = await import("../models/user.model");
 
     const filter: any = {};
     if (role) filter.role = role;
@@ -303,6 +303,80 @@ router.get("/", verifyToken, roleCheck(["admin"]), async (req, res) => {
  *       - cookieAuth: []
  */
 router.post("/send-payout-email", verifyToken, roleCheck(["admin"]), userController.sendPayoutEmail);
+
+/**
+ * @swagger
+ * /api/users/{userId}:
+ *   patch:
+ *     summary: Update any user (Admin only)
+ *     description: Admin can update any user's information or status.
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *       403:
+ *         description: Forbidden - Not an admin
+ *       404:
+ *         description: User not found
+ */
+router.patch("/:userId", verifyToken, roleCheck(["admin"]), async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { firstName, lastName, phone, role, isActive } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (firstName !== undefined) user.firstName = firstName;
+    if (lastName !== undefined) user.lastName = lastName;
+    if (phone !== undefined) user.phone = phone;
+    if (role !== undefined) user.role = role;
+    if (isActive !== undefined) user.isActive = isActive;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: user,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Lỗi server",
+    });
+  }
+});
 
 /**
  * @swagger

@@ -239,7 +239,7 @@ export const PayoutsPage: React.FC = () => {
                                                     name="file-upload"
                                                     type="file"
                                                     className="sr-only"
-                                                    accept="image/*"
+                                                    accept="image/*,.pdf"
                                                     onChange={(e) => {
                                                         if (e.target.files && e.target.files[0]) {
                                                             setReceiptFile(e.target.files[0]);
@@ -248,7 +248,7 @@ export const PayoutsPage: React.FC = () => {
                                                 />
                                             </label>
                                         </div>
-                                        <p className="text-xs text-slate-500">PNG, JPG, GIF up to 5MB</p>
+                                        <p className="text-xs text-slate-500">PNG, JPG, PDF up to 5MB</p>
                                         {receiptFile && <p className="text-sm font-medium text-emerald-400 mt-2">Selected: {receiptFile.name}</p>}
                                     </div>
                                 </div>

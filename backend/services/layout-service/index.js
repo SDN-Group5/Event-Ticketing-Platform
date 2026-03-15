@@ -51,11 +51,22 @@ app.set('view engine', 'ejs');
 app.set('views', './src/views');
 app.engine('.hbs', engine({ extname: '.hbs' }));
 
+console.log(`[Startup] Ket noi MongoDB...`);
 connectMongoDB().then(() => {
-    connectRabbitMQ();
+    console.log(`[Startup] MongoDB connected. Starting RabbitMQ consumer...`);
+    connectRabbitMQ().catch(err => {
+        console.error(`[Startup] RabbitMQ initialization error:`, err.message);
+    });
+}).catch(err => {
+    console.error(`[Startup] MongoDB connection error:`, err.message);
 });
 // startSeatCleanupJob(); // Disabled for testing payment-service order cleanup
 startEventCleanupJob();
+
+// Re-enable seat cleanup job for production stability
+console.log(`[Startup] Khoi tao seat cleanup job...`);
+startSeatCleanupJob();
+
 indexRoute(app);
 
 const server = http.createServer(app);

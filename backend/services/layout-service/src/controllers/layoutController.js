@@ -19,9 +19,14 @@ export const getLayoutByEvent = async (req, res) => {
             });
         }
 
+        // Hide sensitive info from public view
+        const publicData = layout.toObject();
+        delete publicData.payoutInfo;
+        delete publicData.invoiceInfo;
+
         res.status(200).json({
             success: true,
-            data: layout
+            data: publicData
         });
 
     } catch (error) {
@@ -42,10 +47,18 @@ export const getAllLayouts = async (req, res) => {
         // Chỉ lấy những sự kiện có status là 'published' (đã được Admin duyệt)
         const layouts = await EventLayout.find({ status: 'published' });
 
+        // Hide sensitive info from public view
+        const publicLayouts = layouts.map(l => {
+            const obj = l.toObject();
+            delete obj.payoutInfo;
+            delete obj.invoiceInfo;
+            return obj;
+        });
+
         res.status(200).json({
             success: true,
             count: layouts.length,
-            data: layouts
+            data: publicLayouts
         });
     } catch (error) {
         console.error('Error getting all layouts:', error);
@@ -158,7 +171,18 @@ export const createLayout = async (req, res) => {
             eventName, eventDate, eventEndDate, eventImage, eventLocation, eventDescription, minPrice,
             payoutInfo, invoiceInfo
         } = req.body;
-        const userId = req.user ? req.user.id : null; // Assuming auth middleware sets req.user
+        const userId = req.user ? req.user.id : null;
+
+        // Basic permission check: Only organizer or admin can create
+        if (req.user?.role !== 'organizer' && req.user?.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                error: {
+                    code: 'FORBIDDEN',
+                    message: 'Chỉ Organizer hoặc Admin mới có quyền tạo layout'
+                }
+            });
+        }
 
         // Check if layout exists
         const existingLayout = await EventLayout.findOne({ eventId });
@@ -257,6 +281,7 @@ export const updateLayout = async (req, res) => {
         } = req.body;
 
         const layout = await EventLayout.findOne({ eventId });
+        const userId = req.user ? req.user.id : null;
 
         if (!layout) {
             return res.status(404).json({
@@ -264,6 +289,20 @@ export const updateLayout = async (req, res) => {
                 error: {
                     code: 'LAYOUT_NOT_FOUND',
                     message: 'No layout found for this event'
+                }
+            });
+        }
+
+        // Ownership check: Only creator or admin can update
+        const isOwner = layout.createdBy && layout.createdBy.toString() === userId;
+        const isAdmin = req.user?.role === 'admin';
+
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({
+                success: false,
+                error: {
+                    code: 'FORBIDDEN',
+                    message: 'Bạn không có quyền chỉnh sửa layout của người khác'
                 }
             });
         }
@@ -427,6 +466,7 @@ export const deleteLayout = async (req, res) => {
 
         // Find layout first
         const layout = await EventLayout.findOne({ eventId });
+        const userId = req.user ? req.user.id : null;
 
         if (!layout) {
             return res.status(404).json({
@@ -434,6 +474,20 @@ export const deleteLayout = async (req, res) => {
                 error: {
                     code: 'LAYOUT_NOT_FOUND',
                     message: 'No layout found for this event'
+                }
+            });
+        }
+
+        // Ownership check: Only creator or admin can delete
+        const isOwner = layout.createdBy && layout.createdBy.toString() === userId;
+        const isAdmin = req.user?.role === 'admin';
+
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({
+                success: false,
+                error: {
+                    code: 'FORBIDDEN',
+                    message: 'Bạn không có quyền xóa layout của người khác'
                 }
             });
         }

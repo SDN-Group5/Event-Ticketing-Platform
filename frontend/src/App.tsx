@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PaymentTimerProvider } from './contexts/PaymentTimerContext';
@@ -86,7 +86,10 @@ const ProtectedRoute: React.FC<{
 };
 
 const AppRoutes: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const targetRole = searchParams.get('role');
 
   return (
     <Routes>
@@ -162,7 +165,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path={ROUTES.REGISTER}
         element={
-          isAuthenticated
+          isAuthenticated && !targetRole
             ? <Navigate to={ROUTES.HOME} replace />
             : <AuthLayout><RegisterPage /></AuthLayout>
         }

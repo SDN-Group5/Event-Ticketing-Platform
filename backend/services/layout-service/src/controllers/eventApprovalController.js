@@ -185,8 +185,8 @@ export const processEventPayout = async (req, res) => {
 
         let receiptUrl = null;
         if (req.file) {
-            // Assuming layout service has static serving for uploads configured
-            receiptUrl = `${req.protocol}://${req.get('host')}/uploads/payouts/${req.file.filename}`;
+            // req.file.path contains the secure URL returned by Cloudinary
+            receiptUrl = req.file.path;
         }
 
         const event = await EventLayout.findOneAndUpdate(

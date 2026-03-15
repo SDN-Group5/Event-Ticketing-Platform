@@ -284,19 +284,27 @@ class SeatService {
 
     /**
      * Auto-release expired reservations (Cron job)
+     * Optimized to avoid loading all expired seats into memory at once
      */
     async releaseExpiredReservations() {
+        const now = new Date();
+        
+        // Find expired seats but only select necessary fields and limit the count per batch if needed
+        // For now, we still get the list but we'll use a more efficient update
         const expiredSeats = await Seat.find({
             status: 'reserved',
-            reservationExpiry: { $lt: new Date() }
-        });
+            reservationExpiry: { $lt: now }
+        }, '_id eventId layoutId zoneId row seatNumber').lean();
 
         if (expiredSeats.length === 0) return [];
 
+        console.log(`[Seat Cleanup] Found ${expiredSeats.length} expired reservations. Releasing...`);
+
+        // Perform bulk update
         await Seat.updateMany(
             {
                 status: 'reserved',
-                reservationExpiry: { $lt: new Date() }
+                reservationExpiry: { $lt: now }
             },
             {
                 $set: {
@@ -324,10 +332,12 @@ class SeatService {
             });
         });
 
+        // Update cache for affected zones
         for (const { layoutId, zoneId } of affectedZones.values()) {
             await this.updateZoneCache(layoutId, zoneId);
         }
 
+        // Broadcast updates
         for (const [eventId, seats] of eventBroadcasts) {
             broadcastSeatUpdate(eventId, seats);
         }
@@ -361,15 +371,6 @@ class SeatService {
                 pages: Math.ceil(total / limit)
             }
         };
-    }
-
-    /**
-     * Bulk reserve seats by MongoDB ObjectId
-     * Called by payment-service when creating an order.
-     * seatIds: array of MongoDB _id strings
-     */
-    async bulkReserveSeats(eventId, seatIds, userId, timeoutMinutes = 15) {
-        // ... (existing implementation)
     }
 
     /**

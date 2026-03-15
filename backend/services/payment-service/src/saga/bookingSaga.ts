@@ -45,6 +45,7 @@ const cleanupStep: SagaStep<BookingContext> = {
   },
 };
 
+/** Logic validate + dùng voucher phải khớp với voucher.controller.previewVoucher (CANCEL-* = 1 đơn). */
 export const validateVoucherStep: SagaStep<BookingContext> = {
   name: 'validate-voucher',
   async execute(ctx) {
@@ -73,8 +74,15 @@ export const validateVoucherStep: SagaStep<BookingContext> = {
 
     if (!voucher) throw new Error('Ma voucher khong hop le hoac khong ton tai');
     if (voucher.endDate && voucher.endDate < now) throw new Error('Ma voucher da het han');
-    if (voucher.maxUses && voucher.usedCount + totalTickets > voucher.maxUses)
-      throw new Error('Ma voucher da su dung toi da');
+    const isCancelVoucher = normalizedCode.startsWith('CANCEL-');
+    if (voucher.maxUses) {
+      if (isCancelVoucher) {
+        if (voucher.usedCount >= voucher.maxUses) throw new Error('Ma voucher da su dung toi da');
+      } else {
+        if (voucher.usedCount + totalTickets > voucher.maxUses)
+          throw new Error('Ma voucher da su dung toi da');
+      }
+    }
     if (voucher.minimumPrice && ctx.subtotal! < voucher.minimumPrice)
       throw new Error(`Don hang phai toi thieu ${voucher.minimumPrice} de dung ma nay`);
     if (voucher.eventId && voucher.eventId !== ctx.eventId)
@@ -96,22 +104,13 @@ export const validateVoucherStep: SagaStep<BookingContext> = {
     ctx.voucherCode = normalizedCode;
     ctx.voucherId = voucher._id.toString();
     ctx.voucherDoc = voucher;
-
-    voucher.usedCount += totalTickets;
-    await voucher.save();
-
+    // Lưu số lượng cần cộng khi thanh toán thành công (CANCEL-* = 1 đơn, còn lại = số vé)
+    ctx.voucherTicketCount = isCancelVoucher ? 1 : totalTickets;
+    // Không tăng usedCount ở đây — chỉ tăng khi thanh toán thực sự thành công (PaymentCompleteSaga)
     return ctx;
   },
-  async compensate(ctx) {
-    if (ctx.voucherDoc) {
-      try {
-        const ticketCount = ctx.voucherTicketCount || 1;
-        ctx.voucherDoc.usedCount = Math.max(0, ctx.voucherDoc.usedCount - ticketCount);
-        await ctx.voucherDoc.save();
-      } catch (e: any) {
-        console.warn('[BookingSaga] Compensate voucher failed:', e?.message);
-      }
-    }
+  async compensate() {
+    // Không cộng usedCount khi tạo đơn nên không cần rollback
   },
 };
 

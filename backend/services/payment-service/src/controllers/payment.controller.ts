@@ -174,9 +174,14 @@ export const createPayment = async (req: Request, res: Response) => {
     }
 
     if (!result.success) {
-      return res.status(500).json({
+      const msg = result.error || 'Lỗi tạo thanh toán';
+      // Lỗi do voucher hoặc dữ liệu từ client → 400 để frontend hiển thị đúng (vd "Ma voucher da su dung toi da")
+      const isClientError =
+        result.failedStep === 'validate-voucher' ||
+        /voucher|Ma voucher|don hang|su kien|tai khoan/i.test(msg);
+      return res.status(isClientError ? 400 : 500).json({
         success: false,
-        message: result.error || 'Lỗi tạo thanh toán',
+        message: msg,
         failedStep: result.failedStep,
       });
     }
@@ -641,9 +646,13 @@ export const cancelPaidOrderWithVoucher = async (req: Request, res: Response) =>
     }
 
     if (order.status !== 'paid') {
+      const reason =
+        order.status === 'cancelled' || order.status === 'refunded'
+          ? 'Đơn hàng này đã được huỷ trước đó.'
+          : `Chỉ có thể huỷ đơn đã thanh toán. Trạng thái hiện tại: ${order.status}.`;
       return res.status(400).json({
         success: false,
-        message: 'Chỉ có thể huỷ các đơn đã thanh toán (paid)',
+        message: reason,
       });
     }
 

@@ -95,7 +95,7 @@ services:
     environment:
       - NODE_ENV=development
       - CHECKIN_SERVICE_PORT=4005
-      - MONGODB_CONNECTION_STRING=${MONGODB_CONNECTION_STRING}
+    # MONGODB_CONNECTION_STRING lấy từ env_file: ../.env (backend/.env)
     depends_on:
       - auth-service
     networks:

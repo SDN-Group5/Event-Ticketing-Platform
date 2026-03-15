@@ -56,7 +56,7 @@ const TicketSchema = new Schema<ITicket>(
 
 TicketSchema.index({ userId: 1, status: 1 });
 TicketSchema.index({ eventId: 1, status: 1 });
-TicketSchema.index({ orderId: 1 });
+// orderId đã có index: true trong field, không khai báo thêm schema.index để tránh duplicate
 
 export const Ticket = mongoose.model<ITicket>('Ticket', TicketSchema);
 

@@ -92,6 +92,11 @@ Table event_layouts {
   canvas_color     varchar     // màu nền
   version          int
   
+  // Payout Information
+  payout_status    varchar [note: 'unpaid|processing|paid', default: 'unpaid']
+  payout_receipt_url varchar
+  payout_at        datetime
+  
   created_by       string [ref: > users.id] // userId tạo layout
   created_at       datetime
   updated_at       datetime

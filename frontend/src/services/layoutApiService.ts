@@ -85,6 +85,12 @@ export const LayoutAPI = {
         return data.data!;
     },
 
+    /** Get all completed layouts (Status is 'completed' or date passed) */
+    getCompletedLayouts: async (): Promise<EventLayout[]> => {
+        const { data } = await api.get<ApiResponse<EventLayout[]>>('/layouts/completed-events');
+        return data.data!;
+    },
+
     /** Get my layouts (createdBy current user) */
     getMyLayouts: async (): Promise<EventLayout[]> => {
         const { data } = await api.get<ApiResponse<EventLayout[]>>('/layouts/mine');
@@ -126,10 +132,8 @@ export const LayoutAPI = {
             throw new Error('Upload banner failed: empty URL');
         }
 
-        // Nếu backend trả absolute URL thì dùng luôn, nếu là relative thì prepend API_BASE (gateway)
-        return relativeUrl.startsWith('http')
-            ? relativeUrl
-            : `${API_BASE}${relativeUrl}`;
+        // Trả về trực tiếp URL do Cloudinary cung cấp
+        return relativeUrl;
     },
 
     /** Update existing layout (Regenerates seats if zones change) */

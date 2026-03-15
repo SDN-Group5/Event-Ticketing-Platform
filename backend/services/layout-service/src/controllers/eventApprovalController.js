@@ -15,7 +15,33 @@ export const getPendingEvents = async (req, res) => {
         const events = await EventLayout.find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
+
+        // Attach BankAccount info
+        try {
+            const BankAccount = (await import('../models/BankAccount.js')).default;
+            const layoutEventIds = events.map(l => l.eventId || l._id);
+            const bankAccounts = await BankAccount.find({ eventId: { $in: layoutEventIds } });
+            const bankAccountMap = {};
+            bankAccounts.forEach(ba => {
+                bankAccountMap[ba.eventId] = {
+                    accountName: ba.accountName,
+                    accountNumber: ba.accountNumber,
+                    bankName: ba.bankName,
+                    branchName: ba.branchName
+                };
+            });
+
+            events.forEach(l => {
+                const eid = l.eventId || l._id;
+                if (bankAccountMap[eid]) {
+                    l.payoutInfo = bankAccountMap[eid];
+                }
+            });
+        } catch (err) {
+            console.error('Error attaching bank accounts to pending events:', err);
+        }
 
         const formattedEvents = events.map(event => ({
             _id: event.eventId || event._id, // frontend uses event._id for API calls
@@ -57,12 +83,28 @@ export const getPendingEvents = async (req, res) => {
 export const getEventForReview = async (req, res) => {
     try {
         const { eventId } = req.params;
-        const event = await EventLayout.findOne({
+        let event = await EventLayout.findOne({
             $or: [{ eventId }, { _id: eventId }]
-        }).populate('createdBy', 'name email');
+        }).populate('createdBy', 'name email').lean();
 
         if (!event) {
             return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        try {
+            const BankAccount = (await import('../models/BankAccount.js')).default;
+            const eId = event.eventId || event._id;
+            const ba = await BankAccount.findOne({ eventId: eId });
+            if (ba) {
+                event.payoutInfo = {
+                    accountName: ba.accountName,
+                    accountNumber: ba.accountNumber,
+                    bankName: ba.bankName,
+                    branchName: ba.branchName
+                };
+            }
+        } catch (err) {
+            console.error('Error attaching bank account to single event:', err);
         }
 
         res.status(200).json({ success: true, data: event });
@@ -132,5 +174,81 @@ export const rejectEvent = async (req, res) => {
     } catch (error) {
         console.error('Error rejecting event:', error);
         res.status(500).json({ success: false, message: 'Server error rejecting event' });
+    }
+};
+
+// [PATCH] /api/events/:eventId/payout
+export const processEventPayout = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { amount, sendEmail } = req.body;
+
+        let receiptUrl = null;
+        if (req.file) {
+            // req.file.path contains the secure URL returned by Cloudinary
+            receiptUrl = req.file.path;
+        }
+
+        const event = await EventLayout.findOneAndUpdate(
+            { $or: [{ eventId }, { _id: eventId }] },
+            {
+                payoutStatus: 'paid',
+                payoutReceiptUrl: receiptUrl,
+                payoutAt: new Date()
+            },
+            { new: true }
+        );
+
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        // Trigger email sending via auth-service if requested
+        if (sendEmail === 'true' || sendEmail === true) {
+            try {
+                // auth-service runs on localhost:4001, but the gateway routes /api/users to it.
+                // In microservices, we should use internal network URLs or direct calls if known.
+                const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:4001';
+                const axios = await import('axios');
+
+                await axios.default.post(`${authServiceUrl}/users/send-payout-email`, {
+                    organizerId: event.createdBy,
+                    eventName: event.eventName,
+                    amount: Number(amount),
+                    receiptUrl: receiptUrl
+                }, {
+                    headers: {
+                        // Pass auth token if needed, or configure internal auth
+                        Authorization: req.headers.authorization
+                    }
+                });
+                console.log('Successfully requested payout email for event:', event.eventName);
+            } catch (emailError) {
+                console.error('Failed to request payout email. Payout succeeded though.', emailError.message);
+                // We don't fail the whole request just because email failed
+            }
+        }
+
+        // Sync payout status to payment-service
+        try {
+            const paymentServiceUrl = process.env.PAYMENT_SERVICE_URL || 'http://localhost:4004';
+            let axiosLib;
+            try { axiosLib = await import('axios'); } catch (e) { axiosLib = require('axios'); }
+            const axiosClient = axiosLib.default || axiosLib;
+
+            await axiosClient.patch(`${paymentServiceUrl}/api/payments/admin/payout-event/${eventId}`, {}, {
+                headers: {
+                    Authorization: req.headers.authorization
+                }
+            });
+            console.log('Successfully marked orders as paid in payment-service for event:', event.eventName);
+        } catch (paymentSyncError) {
+            console.error('Failed to sync payout status with payment-service:', paymentSyncError.message);
+        }
+
+        res.status(200).json({ success: true, data: event });
+    } catch (error) {
+        console.error('Error processing event payout:', error);
+        res.status(500).json({ success: false, message: 'Server error processing event payout' });
     }
 };

@@ -100,6 +100,7 @@ export const LayoutEditorPage: React.FC = () => {
     const [historyIndex, setHistoryIndex] = useState(0);
     const [showSeatGrid, setShowSeatGrid] = useState(false);
     const [isSaved, setIsSaved] = useState(true);
+    const [errors, setErrors] = useState<Record<string, string>>({}); // Validation errors keyed by zoneId-field
 
     // Canvas settings
     const [canvasSize, setCanvasSize] = useState<Size>({ width: 800, height: 600 });
@@ -384,8 +385,52 @@ export const LayoutEditorPage: React.FC = () => {
         setSelectedZoneId(null);
     };
 
+    // Validation helper
+    const validateField = (zoneId: string, field: string, value: any): string | null => {
+        if (field === 'name') {
+            if (!value || value.trim() === '') return 'Name is required';
+            if (value.length > 50) return 'Name too long (max 50)';
+        }
+        if (field === 'price') {
+            const p = parseFloat(value);
+            if (isNaN(p) || p < 0) return 'Price must be ≥ 0';
+        }
+        if (field === 'rows') {
+            const r = parseInt(value);
+            if (isNaN(r) || r < 1 || r > 50) return 'Rows must be 1-50';
+        }
+        if (field === 'seatsPerRow') {
+            const s = parseInt(value);
+            if (isNaN(s) || s < 1 || s > 50) return 'Seats must be 1-50';
+        }
+        if (field === 'capacity') {
+            const c = parseInt(value);
+            if (isNaN(c) || c < 1) return 'Capacity must be ≥ 1';
+        }
+        if (field === 'view360Url' && value) {
+            try {
+                new URL(value);
+            } catch {
+                return 'Invalid URL format';
+            }
+        }
+        return null;
+    };
+
     // Update zone property
     const updateZone = (zoneId: string, updates: Partial<Zone>) => {
+        // Clear errors for fields being updated
+        const newErrors = { ...errors };
+        Object.keys(updates).forEach(field => {
+            const error = validateField(zoneId, field, (updates as any)[field]);
+            if (error) {
+                newErrors[`${zoneId}-${field}`] = error;
+            } else {
+                delete newErrors[`${zoneId}-${field}`];
+            }
+        });
+        setErrors(newErrors);
+
         let finalUpdates = { ...updates };
         const zone = zones.find(z => z.id === zoneId);
 
@@ -429,6 +474,30 @@ export const LayoutEditorPage: React.FC = () => {
 
     // Save layout to backend
     const saveLayout = async () => {
+        // Final validation check
+        if (Object.keys(errors).length > 0) {
+            setSaveMessage({ type: 'error', text: 'Please fix validation errors before saving' });
+            setTimeout(() => setSaveMessage(null), 3000);
+            return;
+        }
+
+        // Validate canvas size
+        if (canvasSize.width < 400 || canvasSize.width > 2000 || canvasSize.height < 300 || canvasSize.height > 2000) {
+            setSaveMessage({ type: 'error', text: 'Invalid canvas size (Width: 400-2000, Height: 300-2000)' });
+            setSelectedZoneId(null); // Show canvas settings
+            setTimeout(() => setSaveMessage(null), 3000);
+            return;
+        }
+
+        // Check if all zones have names
+        const unnamedZones = zones.filter(z => !z.name || z.name.trim() === '');
+        if (unnamedZones.length > 0) {
+            setSaveMessage({ type: 'error', text: 'All zones must have a name' });
+            setSelectedZoneId(unnamedZones[0].id);
+            setTimeout(() => setSaveMessage(null), 3000);
+            return;
+        }
+
         if (!selectedEventId) {
             setSaveMessage({ type: 'error', text: 'Please select an event first' });
             setTimeout(() => setSaveMessage(null), 3000);
@@ -784,8 +853,14 @@ export const LayoutEditorPage: React.FC = () => {
                                     <input
                                         value={selectedZone.name}
                                         onChange={(e) => updateZone(selectedZone.id, { name: e.target.value })}
-                                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
+                                        className={`w-full bg-slate-800/50 border rounded-lg px-3 py-2 text-sm focus:ring-1 transition-colors ${errors[`${selectedZone.id}-name`]
+                                            ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
+                                            : 'border-slate-700 focus:border-[#8655f6] focus:ring-[#8655f6]/30'
+                                            }`}
                                     />
+                                    {errors[`${selectedZone.id}-name`] && (
+                                        <p className="text-[10px] text-rose-500 mt-1">{errors[`${selectedZone.id}-name`]}</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -806,15 +881,21 @@ export const LayoutEditorPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div>
+                                {/* <div>
                                     <label className="text-xs text-slate-500 uppercase mb-1.5 block">360° Image URL</label>
                                     <input
                                         value={selectedZone.view360Url || ''}
                                         onChange={(e) => updateZone(selectedZone.id, { view360Url: e.target.value })}
                                         placeholder="https://example.com/image.jpg"
-                                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
+                                        className={`w-full bg-slate-800/50 border rounded-lg px-3 py-2 text-sm focus:ring-1 transition-colors ${errors[`${selectedZone.id}-view360Url`]
+                                            ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
+                                            : 'border-slate-700 focus:border-[#8655f6] focus:ring-[#8655f6]/30'
+                                            }`}
                                     />
-                                </div>
+                                    {errors[`${selectedZone.id}-view360Url`] && (
+                                        <p className="text-[10px] text-rose-500 mt-1">{errors[`${selectedZone.id}-view360Url`]}</p>
+                                    )}
+                                </div> */}
 
                                 {selectedZone.type === 'stage' && (
                                     <div className="flex items-center gap-2">
@@ -841,8 +922,9 @@ export const LayoutEditorPage: React.FC = () => {
                                                     min="1"
                                                     max="50"
                                                     value={selectedZone.rows || 4}
-                                                    onChange={(e) => updateZone(selectedZone.id, { rows: parseInt(e.target.value) || 4 })}
-                                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm"
+                                                    onChange={(e) => updateZone(selectedZone.id, { rows: parseInt(e.target.value) || 0 })}
+                                                    className={`w-full bg-slate-800/50 border rounded-lg px-3 py-2 text-sm ${errors[`${selectedZone.id}-rows`] ? 'border-rose-500' : 'border-slate-700'
+                                                        }`}
                                                 />
                                             </div>
                                             <div>
@@ -852,8 +934,9 @@ export const LayoutEditorPage: React.FC = () => {
                                                     min="1"
                                                     max="50"
                                                     value={selectedZone.seatsPerRow || 8}
-                                                    onChange={(e) => updateZone(selectedZone.id, { seatsPerRow: parseInt(e.target.value) || 8 })}
-                                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm"
+                                                    onChange={(e) => updateZone(selectedZone.id, { seatsPerRow: parseInt(e.target.value) || 0 })}
+                                                    className={`w-full bg-slate-800/50 border rounded-lg px-3 py-2 text-sm ${errors[`${selectedZone.id}-seatsPerRow`] ? 'border-rose-500' : 'border-slate-700'
+                                                        }`}
                                                 />
                                             </div>
                                         </div>
@@ -873,8 +956,14 @@ export const LayoutEditorPage: React.FC = () => {
                                             min="1"
                                             value={selectedZone.capacity || 0}
                                             onChange={(e) => updateZone(selectedZone.id, { capacity: parseInt(e.target.value) || 0 })}
-                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
+                                            className={`w-full bg-slate-800/50 border rounded-lg px-3 py-2 text-sm focus:ring-1 transition-colors ${errors[`${selectedZone.id}-capacity`]
+                                                ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
+                                                : 'border-slate-700 focus:border-[#8655f6] focus:ring-[#8655f6]/30'
+                                                }`}
                                         />
+                                        {errors[`${selectedZone.id}-capacity`] && (
+                                            <p className="text-[10px] text-rose-500 mt-1">{errors[`${selectedZone.id}-capacity`]}</p>
+                                        )}
                                         <p className="text-[10px] text-slate-500 mt-1">
                                             Max number of people allowed in this standing area.
                                         </p>
@@ -887,10 +976,16 @@ export const LayoutEditorPage: React.FC = () => {
                                         <input
                                             type="number"
                                             min="0"
-                                            value={selectedZone.price}
+                                            value={selectedZone.price || 0}
                                             onChange={(e) => updateZone(selectedZone.id, { price: parseInt(e.target.value) || 0 })}
-                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm"
+                                            className={`w-full bg-slate-800/50 border rounded-lg px-3 py-2 text-sm focus:ring-1 transition-colors ${errors[`${selectedZone.id}-price`]
+                                                ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
+                                                : 'border-slate-700 focus:border-[#8655f6] focus:ring-[#8655f6]/30'
+                                                }`}
                                         />
+                                        {errors[`${selectedZone.id}-price`] && (
+                                            <p className="text-[10px] text-rose-500 mt-1">{errors[`${selectedZone.id}-price`]}</p>
+                                        )}
                                     </div>
                                 )}
 
@@ -1024,8 +1119,11 @@ export const LayoutEditorPage: React.FC = () => {
                                             min="400"
                                             max="2000"
                                             value={canvasSize.width}
-                                            onChange={(e) => setCanvasSize(prev => ({ ...prev, width: parseInt(e.target.value) || 800 }))}
-                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
+                                            onChange={(e) => setCanvasSize(prev => ({ ...prev, width: parseInt(e.target.value) || 0 }))}
+                                            className={`w-full bg-slate-800/50 border rounded-lg px-3 py-2 text-sm focus:ring-1 transition-colors ${canvasSize.width < 400 || canvasSize.width > 2000
+                                                ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
+                                                : 'border-slate-700 focus:border-[#8655f6] focus:ring-[#8655f6]/30'
+                                                }`}
                                         />
                                     </div>
                                     <div>
@@ -1035,8 +1133,11 @@ export const LayoutEditorPage: React.FC = () => {
                                             min="300"
                                             max="2000"
                                             value={canvasSize.height}
-                                            onChange={(e) => setCanvasSize(prev => ({ ...prev, height: parseInt(e.target.value) || 600 }))}
-                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-[#8655f6] focus:ring-1 focus:ring-[#8655f6]/30"
+                                            onChange={(e) => setCanvasSize(prev => ({ ...prev, height: parseInt(e.target.value) || 0 }))}
+                                            className={`w-full bg-slate-800/50 border rounded-lg px-3 py-2 text-sm focus:ring-1 transition-colors ${canvasSize.height < 300 || canvasSize.height > 2000
+                                                ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
+                                                : 'border-slate-700 focus:border-[#8655f6] focus:ring-[#8655f6]/30'
+                                                }`}
                                         />
                                     </div>
                                 </div>
@@ -1113,8 +1214,8 @@ export const LayoutEditorPage: React.FC = () => {
                             Show Seats
                         </label>
                         <button
-                            onClick={() => selectedEventId ? navigate(`/event/${selectedEventId}/venue-3d`, { 
-                                state: { returnTo: `/organizer/stage-builder?eventId=${selectedEventId}` } 
+                            onClick={() => selectedEventId ? navigate(`/event/${selectedEventId}/venue-3d`, {
+                                state: { returnTo: `/organizer/stage-builder?eventId=${selectedEventId}` }
                             }) : null}
                             disabled={!selectedEventId}
                             className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:brightness-110 transition-all flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"

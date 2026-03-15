@@ -147,3 +147,76 @@ export const sendResetPasswordEmail = async ({ to, firstName, code }: ResetPassw
         return false;
     }
 };
+
+// ============================================
+// SEND PAYOUT NOTIFICATION EMAIL
+// ============================================
+interface PayoutEmailParams {
+    to: string;
+    organizerName: string;
+    eventName: string;
+    amount: number;
+    receiptUrl?: string;
+}
+
+export const sendPayoutNotificationEmail = async ({ to, organizerName, eventName, amount, receiptUrl }: PayoutEmailParams): Promise<boolean> => {
+    if (!EMAIL_USER || !EMAIL_PASSWORD) {
+        console.warn('⚠️  [EMAIL] Email credentials not configured. Payout email not sent.');
+        return false;
+    }
+
+    try {
+        const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+
+        const mailOptions = {
+            from: `"TicketVibe Admin" <${EMAIL_USER}>`,
+            to,
+            subject: '💰 Thông báo thanh toán doanh thu sự kiện - TicketVibe',
+            html: `
+                <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #a855f7; margin: 0; font-size: 28px;">🎫 TicketVibe Admin</h1>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; margin-bottom: 20px;">
+                        <h2 style="color: #ffffff; margin-top: 0;">Xin chào ${organizerName},</h2>
+                        <p style="color: #d1d5db; font-size: 16px; line-height: 1.6;">
+                            TicketVibe đã hoàn tất việc thanh toán doanh thu cho sự kiện <strong>${eventName}</strong> của bạn.
+                        </p>
+                        
+                        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; padding: 25px; text-align: center; margin: 25px 0;">
+                            <p style="color: #ffffff; font-size: 14px; margin: 0 0 10px 0; opacity: 0.9;">Số tiền đã chuyển khoản:</p>
+                            <div style="font-size: 32px; font-weight: bold; color: #ffffff;">
+                                ${formattedAmount}
+                            </div>
+                        </div>
+                        
+                        ${receiptUrl ? `
+                        <div style="text-align: center; margin-top: 20px;">
+                            <a href="${receiptUrl}" target="_blank" style="background-color: #a855f7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                                Xem biên lai chuyển khoản
+                            </a>
+                        </div>
+                        ` : ''}
+                        
+                        <p style="color: #9ca3af; font-size: 14px; margin-top: 30px;">
+                            Nếu bạn có bất kỳ thắc mắc nào về khoản thanh toán này, vui lòng liên hệ với ban quản trị TicketVibe.
+                        </p>
+                    </div>
+                    
+                    <div style="text-align: center; color: #6b7280; font-size: 12px;">
+                        <p>Cảm ơn bạn đã đồng hành cùng TicketVibe!</p>
+                        <p>© 2024 TicketVibe. All rights reserved.</p>
+                    </div>
+                </div>
+            `,
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ [EMAIL] Payout notification email sent to ${to}`);
+        return true;
+    } catch (error) {
+        console.error('❌ [EMAIL] Failed to send payout notification email:', error);
+        return false;
+    }
+};

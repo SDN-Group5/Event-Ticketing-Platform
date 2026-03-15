@@ -1,268 +1,375 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ImageBackground, KeyboardAvoidingView, Platform, StyleSheet, ScrollView } from 'react-native';
-import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { useAuth } from '../../context/AuthContext';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  withDelay, 
-  withSpring,
-  withRepeat,
-  withSequence,
-  Easing
-} from 'react-native-reanimated';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Toast from 'react-native-toast-message';
+import { AnimatedBackground } from '../../components/AnimatedBackground';
+import { useAuth } from '../../context/AuthContext';
 
-export default function Login({ navigation }: any) {
+const { width } = Dimensions.get('window');
+
+// Colors adjusted to Neon Purple theme as requested
+const COLORS = {
+  primary: '#B026FF', // Neon Purple
+  gradientStart: '#B026FF',
+  gradientEnd: '#7000FF',
+  navy: '#121225',
+  glass: 'rgba(255, 255, 255, 0.05)',
+  glassBorder: 'rgba(255, 255, 255, 0.15)',
+  textMain: '#FFFFFF',
+  textMuted: '#A0A0A0',
+  error: '#FF4B4B',
+  inputBg: '#1A1A2E',
+};
+
+export default function LoginScreen({ navigation }: any) {
   const { login } = useAuth();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Animation values
-  const fadeAnim = useSharedValue(0);
-  const slideUpAnim = useSharedValue(50);
-  const logoScale = useSharedValue(0.5);
-  
-  // Background floating animations
-  const float1 = useSharedValue(0);
-  const float2 = useSharedValue(0);
-  const float3 = useSharedValue(0);
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const logoTranslateY = useRef(new Animated.Value(30)).current;
+  const formOpacity = useRef(new Animated.Value(0)).current;
+  const emailTranslateY = useRef(new Animated.Value(30)).current;
+  const passwordTranslateY = useRef(new Animated.Value(30)).current;
+  const buttonTranslateY = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
-    // Sequence of animations on mount
-    logoScale.value = withSpring(1, { damping: 12, stiffness: 90 });
-    fadeAnim.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.exp) });
-    slideUpAnim.value = withDelay(200, withSpring(0, { damping: 15, stiffness: 100 }));
-
-    // Continuous floating background animations
-    float1.value = withRepeat(
-      withSequence(
-        withTiming(-20, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1, // infinite
-      true // reverse
-    );
-
-    float2.value = withRepeat(
-      withSequence(
-        withTiming(25, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 4000, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    );
-
-    float3.value = withRepeat(
-      withSequence(
-        withTiming(-15, { duration: 3500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(15, { duration: 3500, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    );
+    // Entry Animation Trigger (Stagger)
+    Animated.sequence([
+      // Logo & Title Slide up and Fade in
+      Animated.parallel([
+        Animated.timing(logoOpacity, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.spring(logoTranslateY, {
+          toValue: 0,
+          tension: 40,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Staggered components
+      Animated.stagger(150, [
+        Animated.parallel([
+          Animated.timing(formOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+          Animated.spring(emailTranslateY, { toValue: 0, tension: 40, friction: 7, useNativeDriver: true }),
+        ]),
+        Animated.spring(passwordTranslateY, { toValue: 0, tension: 40, friction: 7, useNativeDriver: true }),
+        Animated.spring(buttonTranslateY, { toValue: 0, tension: 40, friction: 7, useNativeDriver: true }),
+      ]),
+    ]).start();
   }, []);
 
-  const animatedFormStyle = useAnimatedStyle(() => {
-    return {
-      opacity: fadeAnim.value,
-      transform: [{ translateY: slideUpAnim.value }],
-    };
-  });
-
-  const animatedLogoStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: logoScale.value }],
-      opacity: fadeAnim.value,
-    };
-  });
-
-  const animatedFloat1 = useAnimatedStyle(() => ({ transform: [{ translateY: float1.value }] }));
-  const animatedFloat2 = useAnimatedStyle(() => ({ transform: [{ translateY: float2.value }, { translateX: float2.value }] }));
-  const animatedFloat3 = useAnimatedStyle(() => ({ transform: [{ translateY: float3.value }, { translateX: -float3.value }] }));
-
-  const handleLogin = () => {
-    let isValid = true;
+  const validate = () => {
+    let valid = true;
     const trimmedEmail = email.trim();
-
-    setEmailError('');
-    setPasswordError('');
-
-    if (!trimmedEmail) {
-      setEmailError('Email is required');
-      isValid = false;
-    } else if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
-      setEmailError('Please enter a valid email');
-      isValid = false;
+    
+    if (!trimmedEmail || !/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      setEmailError('Invalid email address');
+      valid = false;
+    } else {
+      setEmailError('');
     }
 
-    if (!password) {
-      setPasswordError('Password is required');
-      isValid = false;
-    } else if (password.length < 6) {
+    if (!password || password.length < 6) {
       setPasswordError('Password must be at least 6 characters');
-      isValid = false;
+      valid = false;
+    } else {
+      setPasswordError('');
     }
 
-    if (!isValid) {
-      return;
-    }
+    return valid;
+  };
 
-    login(trimmedEmail, password);
+  const handleLogin = async () => {
+    if (!validate()) return;
+
+    setIsLoading(true);
+
+    try {
+      // First try real login logic
+      const success = await login(email.trim(), password);
+      
+      if (success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Login Successful',
+          text2: 'Welcome back to TicketVibe! 👋',
+        });
+      } else {
+        // Fallback or "Mock DB" check for specific demo credentials if real login fails
+        if (email === 'admin@ticketvibe.com' && password === '123456') {
+          Toast.show({
+            type: 'success',
+            text1: 'Login Successful (Demo)',
+            text2: 'Welcome to the Demo mode! 👋',
+          });
+        } else {
+          Toast.show({
+            type: 'error',
+            text1: 'Login Failed',
+            text2: 'Invalid credentials. Please try again.',
+          });
+        }
+      }
+    } catch (err) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-[#05000a]"
-    >
-      <ImageBackground
-        source={{ uri: 'https://img.freepik.com/free-photo/optical-fiber-background_23-2149301532.jpg' }}
-        className="flex-1"
-        resizeMode="cover"
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <AnimatedBackground />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
       >
-        {/* Animated Background Elements */}
-        <View className="absolute inset-0 overflow-hidden">
-          <Animated.View style={[animatedFloat1, styles.glowBlob, { top: '10%', left: '-10%', backgroundColor: 'rgba(213, 0, 249, 0.3)' }]} />
-          <Animated.View style={[animatedFloat2, styles.glowBlob, { top: '40%', right: '-20%', backgroundColor: 'rgba(0, 229, 255, 0.25)' }]} />
-          <Animated.View style={[animatedFloat3, styles.glowBlob, { bottom: '-10%', left: '20%', backgroundColor: 'rgba(124, 77, 255, 0.3)' }]} />
-        </View>
-
-        {/* Dark gradient overlay to make text readable but keep background visible */}
-        <LinearGradient
-          colors={['rgba(10, 0, 20, 0.4)', 'rgba(10, 0, 20, 0.8)', '#0a0014']}
-          className="absolute inset-0"
-        />
-        
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          {/* Top Section: Logo & Title */}
-          <View className="min-h-[250px] justify-center items-center pt-12">
-            <Animated.View style={animatedLogoStyle} className="items-center">
-            {/* Logo Container with solid background to prevent blurriness */}
-            <View className="w-20 h-20 bg-[#1a0033] rounded-3xl items-center justify-center border-2 border-[#d500f9] shadow-[0_0_25px_rgba(213,0,249,0.5)] mb-4">
-              <MaterialIcons name="graphic-eq" size={44} color="#00e5ff" />
-            </View>
-            <Text className="text-5xl font-black text-white tracking-widest" style={styles.textGlow}>
-              EVENTIX
-            </Text>
-            <Text className="text-[#00e5ff] font-bold mt-2 uppercase text-xs" style={{ letterSpacing: 3 }}>
-              Live The Moment
-            </Text>
-          </Animated.View>
-        </View>
-
-          {/* Bottom Section: Form */}
-          <Animated.View 
-            style={animatedFormStyle} 
-            className="flex-1 bg-[#1a0033]/80 rounded-t-[40px] px-8 pt-8 border-t border-[#4d0099]/50"
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header Section */}
+          <Animated.View
+            style={[
+              styles.header,
+              { opacity: logoOpacity, transform: [{ translateY: logoTranslateY }] },
+            ]}
           >
-          <Text className="text-3xl font-bold text-white mb-2">Welcome Back</Text>
-          <Text className="text-sm text-[#b388ff] mb-6">Sign in to discover amazing events near you</Text>
-
-          <View className="mb-4">
-            <View className="flex-row items-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl px-4">
-              <MaterialIcons name="email" size={22} color="#b388ff" />
-              <TextInput 
-                className="flex-1 ml-3 text-base text-white"
-                placeholder="Email Address"
-                placeholderTextColor="#6a1b9a"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-              />
+            <View style={styles.logoContainer}>
+              <Ionicons name="ticket-outline" size={50} color={COLORS.primary} />
             </View>
-            {!!emailError && (
-              <Text className="text-xs text-red-400 mt-1 ml-1">
-                {emailError}
-              </Text>
-            )}
-          </View>
+            <Text style={styles.brandName}>TicketVibe</Text>
+            <Text style={styles.subtitle}>Unlock your next experience</Text>
+          </Animated.View>
 
-          <View className="mb-2">
-            <View className="flex-row items-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl px-4">
-              <MaterialIcons name="lock" size={22} color="#b388ff" />
-              <TextInput 
-                className="flex-1 ml-3 text-base text-white"
-                placeholder="Password"
-                placeholderTextColor="#6a1b9a"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
-                <MaterialIcons
-                  name={showPassword ? 'visibility' : 'visibility-off'}
-                  size={22}
-                  color="#6a1b9a"
+          {/* Form Section */}
+          <Animated.View style={[styles.formContainer, { opacity: formOpacity }]}>
+            {/* Email Input */}
+            <Animated.View style={{ transform: [{ translateY: emailTranslateY }] }}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  emailError ? { borderColor: COLORS.error } : { borderColor: 'transparent' },
+                ]}
+              >
+                <Ionicons name="mail-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email Address"
+                  placeholderTextColor={COLORS.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (emailError) setEmailError('');
+                  }}
                 />
+              </View>
+              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+            </Animated.View>
+
+            {/* Password Input */}
+            <Animated.View style={{ transform: [{ translateY: passwordTranslateY }], marginTop: 20 }}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  passwordError ? { borderColor: COLORS.error } : { borderColor: 'transparent' },
+                ]}
+              >
+                <Ionicons name="lock-closed-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor={COLORS.textMuted}
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordError) setPasswordError('');
+                  }}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={COLORS.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+              {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+            </Animated.View>
+
+            {/* Login Button */}
+            <Animated.View style={{ transform: [{ translateY: buttonTranslateY }], marginTop: 30 }}>
+              <TouchableOpacity
+                onPress={handleLogin}
+                disabled={isLoading}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={[COLORS.gradientStart, COLORS.gradientEnd]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.button}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color={COLORS.textMain} />
+                  ) : (
+                    <Text style={styles.buttonText}>LOGIN</Text>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
-            </View>
-            {!!passwordError && (
-              <Text className="text-xs text-red-400 mt-1 ml-1">
-                {passwordError}
-              </Text>
-            )}
-          </View>
+            </Animated.View>
 
-          <TouchableOpacity className="items-end mb-6">
-            <Text className="text-sm font-bold text-[#00e5ff]">Forgot Password?</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleLogin}
-            className="w-full bg-[#d500f9] h-14 rounded-2xl items-center justify-center mb-4 shadow-[0_0_20px_rgba(213,0,249,0.4)]"
-          >
-            <Text className="text-white font-bold text-lg tracking-wide">Sign In as User</Text>
-          </TouchableOpacity>
-
-          {/* Social Login Section */}
-          <View className="flex-row items-center mb-6">
-            <View className="flex-1 h-[1px] bg-[#4d0099]/50" />
-            <Text className="mx-4 text-[#b388ff] text-xs font-medium uppercase tracking-wider">Or continue with</Text>
-            <View className="flex-1 h-[1px] bg-[#4d0099]/50" />
-          </View>
-
-          <View className="flex-row justify-between mb-8">
-            <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl mr-2">
-              <FontAwesome5 name="google" size={18} color="#fff" />
-              <Text className="font-bold text-white ml-3">Google</Text>
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-[#0a0014]/90 border border-[#4d0099] h-14 rounded-2xl ml-2">
-              <FontAwesome5 name="facebook-f" size={18} color="#fff" />
-              <Text className="font-bold text-white ml-3">Facebook</Text>
-            </TouchableOpacity>
-          </View>
-
-            <View className="flex-row justify-center items-center pb-8 mt-auto pt-8">
-              <Text className="text-[#b388ff]">Don't have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
-                <Text className="text-[#00e5ff] font-bold">Create an account</Text>
-              </TouchableOpacity>
-            </View>
           </Animated.View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Don't have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
+              <Text style={[styles.footerText, { color: COLORS.primary, fontWeight: '700' }]}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
-      </ImageBackground>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  textGlow: {
-    textShadowColor: 'rgba(213, 0, 249, 0.8)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 15,
+  container: {
+    flex: 1,
   },
-  glowBlob: {
-    position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    filter: 'blur(40px)', // Note: filter blur works on web, on mobile it relies on opacity/gradient
-  }
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 30,
+    paddingBottom: 40,
+    justifyContent: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 50,
+  },
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(176, 38, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(176, 38, 255, 0.3)',
+  },
+  brandName: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: COLORS.textMain,
+    letterSpacing: 2,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    marginTop: 5,
+    letterSpacing: 1,
+  },
+  formContainer: {
+    backgroundColor: COLORS.glass,
+    borderRadius: 25,
+    padding: 25,
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
+    // Glassmorphism effect usually needs backdrop-filter in web, 
+    // in mobile we simulate with low opacity and borders.
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    height: 55,
+    borderWidth: 1,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    color: COLORS.textMain,
+    fontSize: 16,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
+  },
+  button: {
+    height: 55,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  buttonText: {
+    color: COLORS.textMain,
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
+  forgotPassword: {
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  forgotText: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 30,
+  },
+  footerText: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+  },
 });

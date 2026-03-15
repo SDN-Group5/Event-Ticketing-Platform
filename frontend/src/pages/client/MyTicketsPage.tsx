@@ -190,7 +190,7 @@ export const MyTicketsPage: React.FC = () => {
     }
     try {
       setCancelLoading(cancelTicketTarget.id);
-      const res = await RefundAPI.cancelPaidOrderWithVoucher(orderCode);
+      const res = await RefundAPI.cancelPaidOrderWithVoucher(orderCode, user.id);
       console.log('cancel-with-voucher result', res);
       setShowVoucherBanner(true);
       // Reload lịch sử vé để cập nhật trạng thái
@@ -201,10 +201,17 @@ export const MyTicketsPage: React.FC = () => {
       resetCancelModal();
     } catch (err: any) {
       console.error('Error cancel ticket with voucher:', err);
+      const status = err?.response?.status;
       const msg =
         err?.response?.data?.message ||
         err?.message ||
         'Huỷ vé thất bại, vui lòng thử lại.';
+      if (status === 401) {
+        alert('Phiên đăng nhập hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.\n\n' + msg);
+        resetCancelModal();
+        navigate(ROUTES.LOGIN);
+        return;
+      }
       alert(msg);
       setCancelLoading(null);
     }

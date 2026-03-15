@@ -1,15 +1,15 @@
-# Railway: build context = REPO ROOT.
-# Settings: Root Directory = "." (để trống) | Dockerfile path = backend/services/checkin-service/Dockerfile
+# Build context = thư mục checkin-service (docker-compose: context: ../services/checkin-service).
+# Railway: set Root Directory = backend/services/checkin-service, Dockerfile = Dockerfile.
 
 FROM node:20-alpine
 
 WORKDIR /app
 
-COPY backend/services/checkin-service/package*.json ./
+COPY package*.json ./
 
 RUN npm install
 
-COPY backend/services/checkin-service/ .
+COPY . .
 
 RUN npx tsc
 

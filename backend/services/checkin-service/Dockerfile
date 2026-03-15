@@ -1,13 +1,7 @@
-# Cách 1 – Context = repo root (Ticket / Railway / Render):
-#   Root directory: . (hoặc để trống)
-#   Dockerfile path: backend/services/checkin-service/Dockerfile
-#   Build arg (nếu có): SVC_PATH=backend/services/checkin-service (đã mặc định)
-#
-# Cách 2 – Context = thư mục service (build local):
-#   cd backend/services/checkin-service
-#   docker build --build-arg SVC_PATH=. -t checkin-service .
+# Build context = thư mục checkin-service (Root directory trên Ticket/Railway = backend/services/checkin-service).
+# Khi build từ repo root: docker build -f backend/services/checkin-service/Dockerfile --build-arg SVC_PATH=backend/services/checkin-service .
 
-ARG SVC_PATH=backend/services/checkin-service
+ARG SVC_PATH=.
 
 FROM node:20-alpine AS builder
 

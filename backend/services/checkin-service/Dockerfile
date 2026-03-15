@@ -1,17 +1,14 @@
-# Build context = thư mục checkin-service (Root directory trên Ticket/Railway = backend/services/checkin-service).
-# Khi build từ repo root: docker build -f backend/services/checkin-service/Dockerfile --build-arg SVC_PATH=backend/services/checkin-service .
-
-ARG SVC_PATH=.
+# Bắt buộc: Root directory trên Railway = backend/services/checkin-service (build context = thư mục này).
 
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY ${SVC_PATH}/package*.json ./
+COPY package*.json ./
 
 RUN npm install
 
-COPY ${SVC_PATH}/ .
+COPY . .
 
 RUN npx tsc
 
@@ -19,7 +16,7 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-COPY ${SVC_PATH}/package*.json ./
+COPY package*.json ./
 
 RUN npm install --omit=dev
 

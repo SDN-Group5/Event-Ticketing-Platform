@@ -75,6 +75,9 @@ services:
         condition: service_healthy
     networks:
       - ticketing-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     restart: unless-stopped
 
   # ============================================
@@ -94,6 +97,9 @@ services:
     # Không cần depends_on mongodb nữa vì dùng Atlas
     networks:
       - ticketing-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     restart: unless-stopped
 
   # ============================================
@@ -112,6 +118,9 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - ticketing-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]

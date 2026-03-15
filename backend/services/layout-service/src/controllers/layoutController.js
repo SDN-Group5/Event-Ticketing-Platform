@@ -41,6 +41,8 @@ export const getLayoutByEvent = async (req, res) => {
 };
 
 // Get all layouts
+export const getAllLayouts = async (req, res) => {
+    try {
         const layouts = await EventLayout.find({});
 
         // Hide sensitive info from public view
@@ -108,6 +110,7 @@ export const getMyLayouts = async (req, res) => {
 // The spec says POST for create and PUT for update.
 
 export const createLayout = async (req, res) => {
+    try {
         const {
             eventId, zones, canvasWidth, canvasHeight, canvasColor,
             eventName, eventDate, eventImage, eventLocation, eventDescription, minPrice,

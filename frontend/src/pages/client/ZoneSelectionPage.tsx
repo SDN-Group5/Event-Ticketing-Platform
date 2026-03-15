@@ -180,8 +180,12 @@ export const ZoneSelectionPage: React.FC = () => {
         setSelectedSeats(prev => {
             const exists = prev.find(s => s.id === seat.id);
             if (exists) {
-                // Bỏ chọn
-                return prev.filter(s => s.id !== seat.id);
+                const next = prev.filter(s => s.id !== seat.id);
+                // Khi quantity xuống 0 (bỏ hết ghế) thì xóa luôn mã voucher
+                if (next.length === 0) {
+                    setVoucherCode('');
+                }
+                return next;
             }
             // Chọn thêm
             return [...prev, seat];
@@ -192,9 +196,15 @@ export const ZoneSelectionPage: React.FC = () => {
     useEffect(() => {
         const handleCancel = () => {
             setSelectedSeats([]);
+            setVoucherCode('');
+            setVoucherPreview(null);
+            setVoucherError(null);
         };
         const handleExpire = () => {
             setSelectedSeats([]);
+            setVoucherCode('');
+            setVoucherPreview(null);
+            setVoucherError(null);
             setError('Hết thời gian giữ ghế (5 phút). Ghế đã được trả lại. Vui lòng chọn lại.');
         };
 
@@ -220,6 +230,7 @@ export const ZoneSelectionPage: React.FC = () => {
             return;
         }
 
+        // Màn chọn ghế: cho áp dụng voucher để hiển thị giảm giá (preview). Thanh toán mới tính tiền thực tế.
         try {
             setVoucherError(null);
             const items = selectedSeats.map(seat => ({
@@ -375,11 +386,13 @@ export const ZoneSelectionPage: React.FC = () => {
             window.open(result.checkoutUrl, '_blank');
         } catch (err: any) {
             console.error('Error creating payment from ZoneSelectionPage:', err);
-            // Release các ghế đã reserve trước đó để chúng không bị kẹt xám
-            // (Nếu luồng tạo Order/Payment bị lỗi)
             await releaseReservedSeats();
             const msg = err?.response?.data?.message || 'Không thể tạo thanh toán. Vui lòng thử lại.';
             setVoucherError(msg);
+            // 400 = lỗi nghiệp vụ (vd voucher đã dùng) — user có thể đổi mã hoặc bỏ voucher
+            if (err?.response?.status === 400) {
+                setVoucherPreview(null);
+            }
         } finally {
             setIsProcessingPayment(false);
         }

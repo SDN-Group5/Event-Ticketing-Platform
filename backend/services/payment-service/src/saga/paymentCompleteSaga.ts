@@ -1,4 +1,5 @@
 import { SagaOrchestrator, SagaStep } from './sagaOrchestrator';
+import { Voucher } from '../models/voucher.model';
 import { publishEvent } from '../config/rabbitmq';
 import { transferToOrganizerBank } from '../services/bankTransfer.service';
 import { sendPaymentConfirmationEmail, sendTicketQREmail } from '../services/email.service';
@@ -8,6 +9,9 @@ import { createTicketsForOrder } from '../services/ticket.service';
 export interface PaymentCompleteContext {
   order: any;
   previousStatus?: string;
+  /** Dùng khi compensate: trừ lại usedCount đã cộng */
+  voucherUsedIncrement?: number;
+  voucherDoc?: any;
 }
 
 const markPaidStep: SagaStep<PaymentCompleteContext> = {
@@ -26,6 +30,47 @@ const markPaidStep: SagaStep<PaymentCompleteContext> = {
       await ctx.order.save();
     } catch (e: any) {
       console.warn('[PaymentCompleteSaga] Compensate mark-paid failed:', e?.message);
+    }
+  },
+};
+
+/** Chỉ tăng voucher.usedCount khi thanh toán thực sự thành công (user đã trả tiền). */
+const incrementVoucherUsedStep: SagaStep<PaymentCompleteContext> = {
+  name: 'increment-voucher-used',
+  async execute(ctx) {
+    const order = ctx.order;
+    if (!order.voucherId && !order.voucherCode) return ctx;
+
+    const voucher = order.voucherId
+      ? await Voucher.findById(order.voucherId)
+      : await Voucher.findOne({ code: String(order.voucherCode).trim().toUpperCase() });
+    if (!voucher) return ctx;
+
+    const totalTickets = (order.items || []).reduce(
+      (sum: number, item: any) => sum + (item.quantity || 1),
+      0,
+    );
+    const isCancelVoucher = String(voucher.code || '').startsWith('CANCEL-');
+    const increment = isCancelVoucher ? 1 : totalTickets;
+
+    voucher.usedCount = (voucher.usedCount || 0) + increment;
+    await voucher.save();
+
+    ctx.voucherDoc = voucher;
+    ctx.voucherUsedIncrement = increment;
+    return ctx;
+  },
+  async compensate(ctx) {
+    if (ctx.voucherDoc && ctx.voucherUsedIncrement != null) {
+      try {
+        ctx.voucherDoc.usedCount = Math.max(
+          0,
+          (ctx.voucherDoc.usedCount || 0) - ctx.voucherUsedIncrement,
+        );
+        await ctx.voucherDoc.save();
+      } catch (e: any) {
+        console.warn('[PaymentCompleteSaga] Compensate voucher usedCount failed:', e?.message);
+      }
     }
   },
 };
@@ -247,6 +292,7 @@ const sendTicketQRStep: SagaStep<PaymentCompleteContext> = {
 export function createPaymentCompleteSaga() {
   return new SagaOrchestrator<PaymentCompleteContext>('PaymentCompleteSaga', [
     markPaidStep,
+    incrementVoucherUsedStep,
     markSeatsSoldStep,
     autoPayoutStep,
     sendEmailStep,

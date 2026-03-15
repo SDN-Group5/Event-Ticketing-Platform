@@ -164,7 +164,8 @@ export const createVoucher = async (req: Request, res: Response) => {
 
 /**
  * POST /api/payments/vouchers/preview
- * Preview giảm giá cho khách trước khi tạo đơn (không tăng usedCount)
+ * Preview giảm giá cho khách trước khi tạo đơn (không tăng usedCount).
+ * Logic phải khớp với bookingSaga.validateVoucherStep (CANCEL-* = 1 đơn, voucher thường = theo số vé).
  */
 export const previewVoucher = async (req: Request, res: Response) => {
   try {
@@ -224,11 +225,28 @@ export const previewVoucher = async (req: Request, res: Response) => {
         message: 'Ma voucher da het han',
       });
     }
-    if (voucher.maxUses && voucher.usedCount + totalTickets > voucher.maxUses) {
-      return res.status(400).json({
-        success: false,
-        message: 'Ma voucher da su dung toi da',
-      });
+    // Voucher CANCEL-* (từ huỷ vé): 1 lần dùng = 1 đơn (không giới hạn số vé trong đơn)
+    const isCancelVoucher = normalizedCode.startsWith('CANCEL-');
+    if (voucher.maxUses) {
+      if (isCancelVoucher) {
+        if (voucher.usedCount >= voucher.maxUses) {
+          return res.status(400).json({
+            success: false,
+            message: 'Ma voucher da su dung toi da',
+          });
+        }
+      } else {
+        if (voucher.usedCount + totalTickets > voucher.maxUses) {
+          const remaining = voucher.maxUses - voucher.usedCount;
+          return res.status(400).json({
+            success: false,
+            message:
+              remaining <= 0
+                ? 'Ma voucher da su dung toi da'
+                : `Voucher này chỉ áp dụng tối đa cho ${remaining} vé. Đơn của bạn có ${totalTickets} vé.`,
+          });
+        }
+      }
     }
     if (voucher.minimumPrice && subtotal < voucher.minimumPrice) {
       return res.status(400).json({

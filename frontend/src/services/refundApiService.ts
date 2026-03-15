@@ -28,7 +28,8 @@ export const RefundAPI = {
   async cancelPaidOrderWithVoucher(orderCode: number | string, userId?: string) {
     const headers: Record<string, string> = {};
     if (userId) headers['x-user-id'] = userId;
-    const res = await refundClient.post(`/cancel-with-voucher/${orderCode}`, null, { headers });
+    // Gửi {} thay vì null để tránh body-parser strict JSON lỗi "null is not valid JSON"
+    const res = await refundClient.post(`/cancel-with-voucher/${orderCode}`, {}, { headers });
     return res.data;
   },
 };

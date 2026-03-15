@@ -200,7 +200,7 @@ export const MyTicketsPage: React.FC = () => {
       setTickets(mapped);
       resetCancelModal();
     } catch (err: any) {
-      console.error('Error cancel ticket with voucher:', err);
+      console.error('Error cancel ticket with voucher:', err?.response?.data ?? err);
       const status = err?.response?.status;
       const msg =
         err?.response?.data?.message ||
@@ -210,6 +210,18 @@ export const MyTicketsPage: React.FC = () => {
         alert('Phiên đăng nhập hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.\n\n' + msg);
         resetCancelModal();
         navigate(ROUTES.LOGIN);
+        return;
+      }
+      if (status === 400) {
+        alert(msg + '\n\nDanh sách vé sẽ được cập nhật.');
+        resetCancelModal();
+        setCancelLoading(null);
+        // Reload danh sách để đồng bộ trạng thái (vd đơn đã huỷ trước đó)
+        try {
+          const data = await PaymentAPI.getUserOrders(user.id);
+          const orders = Array.isArray(data) ? data : (data as any)?.data ?? [];
+          setTickets(ordersToTickets(orders));
+        } catch (_) {}
         return;
       }
       alert(msg);

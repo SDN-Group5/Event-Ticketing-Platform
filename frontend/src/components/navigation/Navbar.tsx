@@ -58,6 +58,28 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </div>
                 )}
 
+                {/* Nút Tạo sự kiện */}
+                <div className="hidden lg:flex items-center ml-2">
+                    <Button 
+                        size="md" 
+                        className="bg-gradient-to-r from-[#8655f6] to-[#d946ef] hover:from-[#9566f8] hover:to-[#e159f3] text-white font-bold px-5 py-2.5 rounded-xl shadow-[0_0_15px_rgba(134,85,246,0.3)] hover:shadow-[0_0_20px_rgba(134,85,246,0.5)] transform hover:scale-105 transition-all duration-300 border-none group"
+                        onClick={() => {
+                            if (isAuthenticated) {
+                                if (authUser?.role === 'organizer' || authUser?.role === 'admin') {
+                                    navigate(ROUTES.CREATE_EVENT);
+                                } else {
+                                    navigate(`${ROUTES.REGISTER}?role=organizer`);
+                                }
+                            } else {
+                                navigate(`${ROUTES.REGISTER}?role=organizer`);
+                            }
+                        }}
+                    >
+                        <span className="material-symbols-outlined mr-1.5 text-[22px] group-hover:rotate-90 transition-transform duration-300">add_circle</span>
+                        Tạo sự kiện
+                    </Button>
+                </div>
+
                 {/* Khi đăng nhập (customer): Vé | Sự kiện | Lịch sử thanh toán */}
                 {isCustomer && (
                     <nav className="hidden lg:flex items-center gap-1">

@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const RegisterPage: React.FC = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const roleParam = searchParams.get('role');
+    const isOrganizerMode = roleParam === 'organizer';
+    
     const { isLoading, error, clearError } = useAuth();
     const [formData, setFormData] = useState({
         firstName: '',
@@ -59,6 +63,7 @@ export const RegisterPage: React.FC = () => {
                     lastName: formData.lastName,
                     email: formData.email,
                     password: formData.password,
+                    role: roleParam || 'customer'
                 }),
                 credentials: 'include',
             });
@@ -147,8 +152,14 @@ export const RegisterPage: React.FC = () => {
 
                     <div className="relative z-10">
                         <div className="text-center mb-8">
-                            <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-                            <p className="text-slate-300 text-sm">Join TicketVibe and discover amazing events</p>
+                            <h1 className="text-3xl font-bold text-white mb-2">
+                                {isOrganizerMode ? 'Organizer Registration' : 'Create Account'}
+                            </h1>
+                            <p className="text-slate-300 text-sm">
+                                {isOrganizerMode 
+                                    ? 'Start organizing amazing events with TicketVibe' 
+                                    : 'Join TicketVibe and discover amazing events'}
+                            </p>
                         </div>
 
                         {(validationError || error) && (

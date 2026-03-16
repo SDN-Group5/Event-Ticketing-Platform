@@ -38,6 +38,8 @@ interface AuthContextType {
     error: string | null;
     login: (email: string, password: string) => Promise<User | null>;
     loginWithGoogle: (credential: string) => Promise<User | null>;
+    verifyEmail: (email: string, code: string) => Promise<boolean>;
+    resendVerification: (email: string) => Promise<boolean>;
     logout: () => void;
     clearError: () => void;
 }
@@ -423,6 +425,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error,
         login,
         loginWithGoogle,
+        verifyEmail,
+        resendVerification,
         logout,
         clearError,
     };

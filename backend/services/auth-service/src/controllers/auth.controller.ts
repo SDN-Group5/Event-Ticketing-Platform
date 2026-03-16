@@ -132,8 +132,8 @@ export const logout = (req: Request, res: Response) => {
 export const register = async (req: Request, res: Response) => {
     try {
         const { firstName, lastName, email, password, role } = req.body;
-
-        const existingUser = await User.findOne({ email });
+        const normalizedEmail = email.toLowerCase().trim();
+        const existingUser = await User.findOne({ email: normalizedEmail });
         if (existingUser) {
             return res.status(409).json({ message: "Email đã tồn tại" });
         }
@@ -151,7 +151,7 @@ export const register = async (req: Request, res: Response) => {
         const user = await User.create({
             firstName,
             lastName,
-            email,
+            email: normalizedEmail,
             password,
             role: finalRole,
             emailVerified: false,
@@ -185,8 +185,14 @@ export const register = async (req: Request, res: Response) => {
             requiresEmailVerification: true,
             email: user.email,
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("❌ Lỗi register:", error);
+
+        // Chống lỗi Race Condition: Nếu User được tạo giữa lúc kiểm tra và lưu
+        if (error.code === 11000) {
+            return res.status(409).json({ message: "Email đã tồn tại" });
+        }
+
         return res.status(500).json({ message: "Something went wrong" });
     }
 };

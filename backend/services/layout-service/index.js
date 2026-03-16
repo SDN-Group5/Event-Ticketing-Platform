@@ -6,6 +6,7 @@ import cors from 'cors';
 import express from 'express';
 import indexRoute from './src/routes/index.js';
 import { startSeatCleanupJob } from './src/jobs/seatCleanup.js';
+import { startEventCleanupJob } from './src/jobs/eventCleanup.js';
 import { setIO } from './src/socket.js';
 import { connectRabbitMQ } from './src/config/rabbitmq.js'; // import rabiit mq
 import path from 'path';
@@ -16,12 +17,9 @@ import { engine } from 'express-handlebars';
 
 const app = express();
 const port = config.port;
-
-// Static uploads directory for event banners
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsRoot = path.join(__dirname, 'uploads');
-fs.mkdirSync(uploadsRoot, { recursive: true });
+// (Cloudinary usage replaces local uploads)
+// const storagePath = path.join(process.cwd(), 'uploads');
+// fs.mkdirSync(storagePath, { recursive: true });
 
 const allowedOrigins = [
     'http://localhost:3000',
@@ -44,7 +42,10 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files
-app.use('/uploads', express.static(uploadsRoot));
+// app.use('/uploads', express.static(storagePath));
+// Fallback: Nếu API Gateway strip mất prefix '/uploads' (vd req.url còn lại là '/banners/test.jpg')
+// thì tìm luôn trong storagePath.
+// app.use(express.static(storagePath));
 
 app.set('view engine', 'ejs');
 app.set('views', './src/views');
@@ -59,10 +60,12 @@ connectMongoDB().then(() => {
 }).catch(err => {
     console.error(`[Startup] MongoDB connection error:`, err.message);
 });
+// startSeatCleanupJob(); // Disabled for testing payment-service order cleanup
+startEventCleanupJob();
 
 // Re-enable seat cleanup job for production stability
 console.log(`[Startup] Khoi tao seat cleanup job...`);
-startSeatCleanupJob(); 
+startSeatCleanupJob();
 
 indexRoute(app);
 

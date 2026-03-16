@@ -217,5 +217,45 @@ export const AnalyticsAPI = {
     } catch (error: any) {
       throw error;
     }
+  },
+
+  /**
+   * GET /api/analytics/admin/event-revenues
+   * Get all event revenues for admin payouts
+   */
+  getAdminEventRevenues: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    eventIds?: string; // comma-separated
+  }): Promise<{
+    success: boolean;
+    data: Array<{
+      _id: string; // eventId
+      eventName: string;
+      organizerId: string;
+      ticketsSold: number;
+      totalRevenue: number;
+      totalSubtotal: number;
+      totalCommission: number;
+      totalOrganizerAmount: number;
+      latestOrderDate: string;
+      orderCount: number;
+    }>;
+    pagination: {
+      total: number;
+      page: number;
+      pages: number;
+    };
+  }> => {
+    try {
+      const response = await axios.get(`${API_URL}/admin/event-revenues`, {
+        params,
+        ...getAuthHeader()
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
   }
 };

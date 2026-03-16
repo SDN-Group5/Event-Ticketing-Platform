@@ -2,6 +2,8 @@ import express from 'express';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import {
     getLayoutByEvent,
     createLayout,
@@ -9,25 +11,27 @@ import {
     deleteLayout,
     validateLayout,
     getAllLayouts,
+    getCompletedLayouts,
     getMyLayouts
 } from '../controllers/layoutController.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Configure multer storage for event banner uploads
-const bannersDir = path.join(process.cwd(), 'uploads', 'banners');
-fs.mkdirSync(bannersDir, { recursive: true });
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, bannersDir);
-    },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname) || '.jpg';
-        const base = path.basename(file.originalname, ext).replace(/\s+/g, '-');
-        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `${base}-${unique}${ext}`);
+// Configure multer storage for event banner uploads to Cloudinary
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'event-banners',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+        transformation: [{ width: 1200, crop: 'limit' }]
     }
 });
 
@@ -44,6 +48,7 @@ const upload = multer({
 
 // Public routes
 router.get('/', getAllLayouts); // GET /api/v1/layouts
+router.get('/completed-events', getCompletedLayouts); // GET /api/v1/layouts/completed-events
 router.get('/mine', requireAuth, getMyLayouts); // GET /api/v1/layouts/mine
 router.get('/event/:eventId', getLayoutByEvent);
 
@@ -63,11 +68,10 @@ router.post('/upload-banner', requireAuth, upload.single('banner'), (req, res) =
         });
     }
 
-    const relativePath = `/uploads/banners/${req.file.filename}`;
-
+    // req.file.path contains the secure URL returned by Cloudinary
     return res.status(201).json({
         success: true,
-        data: { url: relativePath }
+        data: { url: req.file.path }
     });
 });
 

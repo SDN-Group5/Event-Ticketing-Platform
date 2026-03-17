@@ -10,11 +10,12 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import healthRoutes from './routes/health.routes';
+import { User } from './models/user.model';
 
 // Export middleware để các service khác có thể dùng
 export { default as verifyToken } from './middleware/auth.middleware';
 export { roleCheck } from './middleware/roleCheck.middleware';
-export { User } from './models/user.model';
+export { User };
 
 // ============================================
 // LOAD ENV FROM backend/.env

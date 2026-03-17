@@ -8,7 +8,7 @@ export const RegisterPage: React.FC = () => {
     const roleParam = searchParams.get('role');
     const isOrganizerMode = roleParam === 'organizer';
 
-    const { error, clearError } = useAuth();
+    const { error, clearError, register } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         firstName: '',
@@ -54,29 +54,16 @@ export const RegisterPage: React.FC = () => {
         }
 
         setIsLoading(true);
-        // Call register API
         try {
-            const apiUrl = (import.meta as any).env.VITE_API_URL || 'http://localhost:4001';
-            const response = await fetch(`${apiUrl}/api/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    email: formData.email,
-                    password: formData.password,
-                    role: roleParam || 'customer'
-                }),
-                credentials: 'include',
+            const ok = await register({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                password: formData.password,
+                role: roleParam === 'organizer' ? 'organizer' : 'customer',
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                setValidationError(data?.message || 'Registration failed');
-                setIsLoading(false);
-                return;
-            }
+            if (!ok) return;
 
             // Success - store email for OTP page and redirect
             sessionStorage.setItem('pending_verification_email', formData.email);
@@ -84,6 +71,7 @@ export const RegisterPage: React.FC = () => {
         } catch (err) {
             console.error(err);
             setValidationError('Cannot connect to server');
+        } finally {
             setIsLoading(false);
         }
     };

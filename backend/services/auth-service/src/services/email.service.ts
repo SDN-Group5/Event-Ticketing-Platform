@@ -13,6 +13,10 @@ const transporter = nodemailer.createTransport({
         user: EMAIL_USER,
         pass: EMAIL_PASSWORD,
     },
+    // Tránh request API bị treo quá lâu khi SMTP bị chặn/timeout trên môi trường deploy
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
 });
 
 // ============================================

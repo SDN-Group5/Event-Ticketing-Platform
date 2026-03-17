@@ -5,11 +5,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+# Với Railway: build context là root repo → cần chỉ rõ đường dẫn con
+COPY backend/services/checkin-service/package*.json ./
 
 RUN npm install
 
-COPY . .
+COPY backend/services/checkin-service/ .
 
 RUN npx tsc
 

@@ -5,8 +5,8 @@ import { CheckinLog } from '../models/checkinLog.model';
 
 export const scanTicket = async (req: AuthRequest, res: Response) => {
   try {
-    const { ticketCode } = req.body as { ticketCode?: string };
-    const staffId = req.userId;
+    const { ticketCode, staffId: staffIdFromBody } = req.body as { ticketCode?: string; staffId?: string };
+    const staffId = req.userId || staffIdFromBody;
 
     if (!ticketCode) {
       return res.status(400).json({ success: false, message: 'Thiếu mã vé (ticketCode)' });

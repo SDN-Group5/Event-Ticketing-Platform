@@ -8,6 +8,7 @@
 import { Response } from 'express';
 import express from 'express';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import { scanTicket, getEventSummary, getRecentScans } from '../controllers/checkin.controller';
 import checkinRoutes from '../routes/checkin.routes';
 import { Ticket } from '../models/ticket.model';
@@ -29,14 +30,15 @@ function mockRes(): jest.Mocked<Response> {
   } as unknown as jest.Mocked<Response>;
 }
 
-/** App Express dùng cho integration test: inject req.userId để giả lập nhân viên đã đăng nhập */
+function signTestToken(payload: { userId: string; role?: string }) {
+  const secret = process.env.JWT_SECRET_KEY || 'your-secret-key';
+  return jwt.sign(payload, secret, { expiresIn: '1h' });
+}
+
+/** App Express dùng cho integration test */
 function createTestApp() {
   const app = express();
   app.use(express.json());
-  app.use((req: AuthRequest, _res, next) => {
-    req.userId = req.headers['x-test-user-id'] as string || 'staff-1';
-    next();
-  });
   app.use('/api/checkin', checkinRoutes);
   return app;
 }
@@ -351,7 +353,7 @@ describe('Checkin Service – BDD', () => {
       const res1 = await request(app)
         .post('/api/checkin/scan')
         .set('Content-Type', 'application/json')
-        .set('x-test-user-id', 'staff-flow')
+        .set('Authorization', `Bearer ${signTestToken({ userId: 'staff-flow', role: 'staff' })}`)
         .send({ ticketCode: ticketId });
 
       expect(res1.status).toBe(200);
@@ -366,7 +368,7 @@ describe('Checkin Service – BDD', () => {
       const res2 = await request(app)
         .post('/api/checkin/scan')
         .set('Content-Type', 'application/json')
-        .set('x-test-user-id', 'staff-flow')
+        .set('Authorization', `Bearer ${signTestToken({ userId: 'staff-flow', role: 'staff' })}`)
         .send({ ticketCode: ticketId });
 
       expect(res2.status).toBe(400);

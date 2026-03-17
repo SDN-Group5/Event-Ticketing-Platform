@@ -97,6 +97,14 @@ const connectDB = async () => {
     console.log(`✅ [${SERVICE_NAME}] MongoDB connected: ${mongoose.connection.name}`);
     console.log(`   🔗 URI: ${MONGO_URI}`);
     console.log(`   🗄  DB Name: ${mongoose.connection.name} | Host: ${mongoose.connection.host}`);
+
+    // Đảm bảo index unique (email) được tạo/sync trên môi trường production
+    try {
+      await User.syncIndexes();
+      console.log(`✅ [${SERVICE_NAME}] MongoDB indexes synced`);
+    } catch (indexErr) {
+      console.warn(`⚠️  [${SERVICE_NAME}] Failed to sync indexes:`, indexErr);
+    }
   } catch (error) {
     console.error(`❌ [${SERVICE_NAME}] MongoDB connection error:`, error);
     // Không exit, cho phép service chạy với mock data nếu cần

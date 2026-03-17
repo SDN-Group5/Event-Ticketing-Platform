@@ -38,6 +38,7 @@ interface AuthContextType {
     error: string | null;
     login: (email: string, password: string) => Promise<User | null>;
     loginWithGoogle: (credential: string) => Promise<User | null>;
+    register: (payload: { firstName: string; lastName: string; email: string; password: string; role?: string }) => Promise<boolean>;
     verifyEmail: (email: string, code: string) => Promise<boolean>;
     resendVerification: (email: string) => Promise<boolean>;
     logout: () => void;
@@ -169,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // ============================================
     // REGISTER
     // ============================================
-    const register = useCallback(async (payload: { firstName: string; lastName: string; email: string; password: string }): Promise<boolean> => {
+    const register = useCallback(async (payload: { firstName: string; lastName: string; email: string; password: string; role?: string }): Promise<boolean> => {
         setIsLoading(true);
         setError(null);
 
@@ -178,6 +179,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
+                credentials: 'include',
             });
 
             const data = await response.json();
@@ -425,6 +427,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error,
         login,
         loginWithGoogle,
+        register,
         verifyEmail,
         resendVerification,
         logout,

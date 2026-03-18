@@ -1,7 +1,12 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || '';
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const EMAIL_FROM = process.env.EMAIL_FROM || EMAIL_USER || '';
+
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 // Create transporter
 const transporter = nodemailer.createTransport({
@@ -10,7 +15,27 @@ const transporter = nodemailer.createTransport({
     user: EMAIL_USER,
     pass: EMAIL_PASSWORD,
   },
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 15_000,
 });
+
+async function sendWithResend(params: { to: string; subject: string; html: string }): Promise<boolean> {
+  if (!resend || !EMAIL_FROM) return false;
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+    });
+    console.log(`✅ [EMAIL] Resend sent to ${params.to}`);
+    return true;
+  } catch (error) {
+    console.error('❌ [EMAIL] Resend failed:', error);
+    return false;
+  }
+}
 
 // ============================================
 // SEND PAYMENT CONFIRMATION EMAIL
@@ -34,7 +59,7 @@ export const sendPaymentConfirmationEmail = async ({
   items,
   ticketCount,
 }: PaymentConfirmationEmailParams): Promise<boolean> => {
-  if (!EMAIL_USER || !EMAIL_PASSWORD) {
+  if (!RESEND_API_KEY && (!EMAIL_USER || !EMAIL_PASSWORD)) {
     console.warn('⚠️  [EMAIL] Email credentials not configured.');
     console.log(`📧 [EMAIL] Would send payment confirmation to ${to} for order ${orderCode}`);
     return false;
@@ -61,11 +86,8 @@ export const sendPaymentConfirmationEmail = async ({
       )
       .join('');
 
-    const mailOptions = {
-      from: `"TicketVibe" <${EMAIL_USER}>`,
-      to,
-      subject: '🎉 Đơn hàng thanh toán thành công - TicketVibe',
-      html: `
+    const subject = '🎉 Đơn hàng thanh toán thành công - TicketVibe';
+    const html = `
         <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #a855f7; margin: 0; font-size: 28px;">🎫 TicketVibe</h1>
@@ -142,10 +164,12 @@ export const sendPaymentConfirmationEmail = async ({
             </div>
           </div>
         </div>
-      `,
-    };
+      `;
 
-    await transporter.sendMail(mailOptions);
+    const resendOk = await sendWithResend({ to, subject, html });
+    if (resendOk) return true;
+
+    await transporter.sendMail({ from: `"TicketVibe" <${EMAIL_USER}>`, to, subject, html });
     console.log(`✅ [EMAIL] Payment confirmation email sent to ${to} (Order #${orderCode})`);
     return true;
   } catch (error) {
@@ -175,18 +199,15 @@ export const sendRefundEmail = async ({
   refundAmount,
   reason,
 }: RefundEmailParams): Promise<boolean> => {
-  if (!EMAIL_USER || !EMAIL_PASSWORD) {
+  if (!RESEND_API_KEY && (!EMAIL_USER || !EMAIL_PASSWORD)) {
     console.warn('⚠️  [EMAIL] Email credentials not configured.');
     console.log(`📧 [EMAIL] Would send refund email to ${to} for order ${orderCode}`);
     return false;
   }
 
   try {
-    const mailOptions = {
-      from: `"TicketVibe" <${EMAIL_USER}>`,
-      to,
-      subject: '💰 Hoàn tiền đã được xử lý - TicketVibe',
-      html: `
+    const subject = '💰 Hoàn tiền đã được xử lý - TicketVibe';
+    const html = `
         <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #a855f7; margin: 0; font-size: 28px;">🎫 TicketVibe</h1>
@@ -225,10 +246,12 @@ export const sendRefundEmail = async ({
             </div>
           </div>
         </div>
-      `,
-    };
+      `;
 
-    await transporter.sendMail(mailOptions);
+    const resendOk = await sendWithResend({ to, subject, html });
+    if (resendOk) return true;
+
+    await transporter.sendMail({ from: `"TicketVibe" <${EMAIL_USER}>`, to, subject, html });
     console.log(`✅ [EMAIL] Refund email sent to ${to} (Order #${orderCode})`);
     return true;
   } catch (error) {
@@ -261,7 +284,7 @@ export const sendTicketQREmail = async ({
   orderCode,
   tickets,
 }: TicketQREmailParams): Promise<boolean> => {
-  if (!EMAIL_USER || !EMAIL_PASSWORD) {
+  if (!RESEND_API_KEY && (!EMAIL_USER || !EMAIL_PASSWORD)) {
     console.warn('⚠️  [EMAIL] Email credentials not configured.');
     console.log(`📧 [EMAIL] Would send ticket QR email to ${to} for order ${orderCode}`);
     return false;
@@ -306,12 +329,8 @@ export const sendTicketQREmail = async ({
       })
       .join('');
 
-    const mailOptions = {
-      from: `"TicketVibe" <${EMAIL_USER}>`,
-      to,
-      subject: '🎫 Mã QR vé của bạn - TicketVibe',
-      attachments, // Attach QR code images
-      html: `
+    const subject = '🎫 Mã QR vé của bạn - TicketVibe';
+    const html = `
         <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #a855f7; margin: 0; font-size: 28px;">🎫 TicketVibe</h1>
@@ -373,10 +392,18 @@ export const sendTicketQREmail = async ({
             </div>
           </div>
         </div>
-      `,
-    };
+      `;
 
-    await transporter.sendMail(mailOptions);
+    const resendOk = await sendWithResend({ to, subject, html });
+    if (resendOk) return true;
+
+    await transporter.sendMail({
+      from: `"TicketVibe" <${EMAIL_USER}>`,
+      to,
+      subject,
+      attachments,
+      html,
+    });
     console.log(`✅ [EMAIL] Ticket QR email sent to ${to} (Order #${orderCode}) - ${tickets.length} tickets`);
     return true;
   } catch (error) {

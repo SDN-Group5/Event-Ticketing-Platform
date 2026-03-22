@@ -592,14 +592,33 @@ export const ManageVouchersPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Apply to Events
-                  <span className="text-gray-500 ml-1">(bỏ trống = tất cả sự kiện)</span>
+                <label className="block text-sm text-gray-400 mb-2">Apply to Events</label>
+                <label className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg bg-[#2a2436] border border-[#3a3447] cursor-pointer hover:bg-white/5">
+                  <input
+                    type="radio"
+                    name="eventScope"
+                    checked={selectedEventIds.length === 0}
+                    onChange={() => setSelectedEventIds([])}
+                    className="h-4 w-4 accent-[#8655f6]"
+                  />
+                  <span className="text-sm text-emerald-400 font-medium">Toàn bộ sự kiện</span>
                 </label>
-                {orgEvents.length === 0 ? (
-                  <p className="text-gray-500 text-sm">Không có sự kiện nào</p>
-                ) : (
-                  <div className="max-h-40 overflow-y-auto bg-[#2a2436] border border-[#3a3447] rounded-lg p-2 space-y-1">
+                <label className="flex items-center gap-2 px-3 py-2 mb-1 rounded-lg bg-[#2a2436] border border-[#3a3447] cursor-pointer hover:bg-white/5">
+                  <input
+                    type="radio"
+                    name="eventScope"
+                    checked={selectedEventIds.length > 0}
+                    onChange={() => {
+                      if (selectedEventIds.length === 0 && orgEvents.length > 0) {
+                        setSelectedEventIds([orgEvents[0].eventId]);
+                      }
+                    }}
+                    className="h-4 w-4 accent-[#8655f6]"
+                  />
+                  <span className="text-sm text-white font-medium">Chọn sự kiện cụ thể</span>
+                </label>
+                {selectedEventIds.length > 0 && orgEvents.length > 0 && (
+                  <div className="max-h-40 overflow-y-auto bg-[#2a2436] border border-[#3a3447] rounded-lg p-2 space-y-1 mt-1">
                     {orgEvents.map((evt) => (
                       <label key={evt.eventId} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white/5 cursor-pointer">
                         <input
@@ -609,7 +628,8 @@ export const ManageVouchersPage: React.FC = () => {
                             if (e.target.checked) {
                               setSelectedEventIds((prev) => [...prev, evt.eventId]);
                             } else {
-                              setSelectedEventIds((prev) => prev.filter((id) => id !== evt.eventId));
+                              const next = selectedEventIds.filter((id) => id !== evt.eventId);
+                              setSelectedEventIds(next.length > 0 ? next : []);
                             }
                           }}
                           className="h-4 w-4 rounded border-gray-500 bg-transparent accent-[#8655f6]"

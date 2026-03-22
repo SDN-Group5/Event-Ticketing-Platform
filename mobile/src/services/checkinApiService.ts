@@ -31,7 +31,8 @@ async function apiRequest<T>(
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error(`Server trả về response không phải JSON (code ${response.status})`);
+    console.warn(`[API FAILED PARSE] Endpoint: ${endpoint}, Status: ${response.status}, Output:`, text.substring(0, 300));
+    throw new Error(`Server trả về response không phải JSON (code ${response.status}) - ${text.substring(0, 50)}`);
   }
 
   if (!response.ok) {
@@ -144,6 +145,12 @@ export const CheckinAPI = {
   async rejectRequest(requestId: string): Promise<any> {
     return authenticatedRequest<any>(`/api/checkin/organizer/reject-request/${requestId}`, {
       method: 'POST',
+    });
+  },
+
+  async getEventStaffs(eventId: string): Promise<any> {
+    return authenticatedRequest<any>(`/api/checkin/organizer/event/${eventId}/staff`, {
+      method: 'GET',
     });
   },
 };

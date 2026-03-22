@@ -7,6 +7,7 @@ import {
   getTicketStatistics,
   requestAssignment,
   getPendingRequests,
+  getEventStaffs,
   approveRequest,
   rejectRequest
 } from '../controllers/checkin.controller';
@@ -36,6 +37,9 @@ router.post('/staff/request-assignment', verifyToken, requireStaffRole, requestA
 
 // Organizer xem danh sách yêu cầu
 router.get('/organizer/pending-requests', verifyToken, getPendingRequests); // requireOrganizerRole nếu cần
+
+// Organizer xem danh sách nhân viên đã được phân quyền sự kiện
+router.get('/organizer/event/:eventId/staff', verifyToken, getEventStaffs);
 
 // Organizer phê duyệt/từ chối
 router.post('/organizer/approve-request/:requestId', verifyToken, approveRequest);

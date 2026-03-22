@@ -4,6 +4,7 @@ import {
   getEventSummary, 
   getRecentScans,
   requestAssignment,
+  getStaffRequestStatus,
   getPendingRequests,
   getEventStaffs,
   approveRequest,
@@ -26,6 +27,9 @@ router.get('/event/:eventId/recent', getRecentScans);
 // --- STAFF ASSIGNMENT ---
 // Staff gửi yêu cầu
 router.post('/staff/request-assignment', verifyToken, requireStaffRole, requestAssignment);
+
+// Staff kiểm tra trạng thái yêu cầu của mình
+router.get('/staff/request-status/:eventId', verifyToken, requireStaffRole, getStaffRequestStatus);
 
 // Organizer xem danh sách yêu cầu
 router.get('/organizer/pending-requests', verifyToken, getPendingRequests); // requireOrganizerRole nếu cần

@@ -248,6 +248,19 @@ export const requestAssignment = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getStaffRequestStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { eventId } = req.params;
+    const staffId = req.userId;
+    if (!eventId || !staffId) return res.status(400).json({ success: false, message: 'Thiếu dữ liệu' });
+
+    const request = await StaffRequest.findOne({ staffId, eventId }).sort({ createdAt: -1 });
+    return res.json({ success: true, data: request });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 export const getPendingRequests = async (req: AuthRequest, res: Response) => {
   try {
     const organizerId = req.userId;

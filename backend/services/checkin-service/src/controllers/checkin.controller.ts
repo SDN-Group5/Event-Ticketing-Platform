@@ -2,6 +2,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { Ticket } from '../models/ticket.model';
 import { CheckinLog } from '../models/checkinLog.model';
+import { StaffRequest } from '../models/staffRequest.model';
+import axios from 'axios';
 
 export const scanTicket = async (req: AuthRequest, res: Response) => {
   try {
@@ -167,6 +169,110 @@ export const getRecentScans = async (req: AuthRequest, res: Response) => {
   } catch (err: any) {
     console.error('[Checkin] getRecentScans error:', err?.message);
     return res.status(500).json({ success: false, message: err?.message || 'Lỗi lấy lịch sử quét vé' });
+  }
+};
+
+// --- NEW CONTROLLERS FOR STAFF ASSIGNMENT ---
+
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4001';
+const LAYOUT_SERVICE_URL = process.env.LAYOUT_SERVICE_URL || 'http://localhost:4002';
+
+export const requestAssignment = async (req: AuthRequest, res: Response) => {
+  try {
+    const { eventId } = req.body;
+    const staffId = req.userId;
+
+    if (!eventId || !staffId) {
+      return res.status(400).json({ success: false, message: 'Thiếu eventId hoặc staffId' });
+    }
+
+    // Kiểm tra xem đã có yêu cầu chưa
+    const existing = await StaffRequest.findOne({ staffId, eventId, status: 'pending' });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Bạn đã gửi yêu cầu cho sự kiện này rồi' });
+    }
+
+    // Lấy thông tin Staff từ Auth Service
+    const staffProfile = await axios.get(`${AUTH_SERVICE_URL}/api/users/${staffId}`);
+    const staffName = staffProfile.data?.data ? `${staffProfile.data.data.firstName} ${staffProfile.data.data.lastName}` : 'Staff';
+
+    // Lấy thông tin Sự kiện từ Layout Service
+    const eventLayout = await axios.get(`${LAYOUT_SERVICE_URL}/api/v1/layouts/event/${eventId}`);
+    const eventName = eventLayout.data?.data?.eventName || 'Sự kiện';
+    const organizerId = eventLayout.data?.data?.createdBy;
+
+    const newRequest = await StaffRequest.create({
+      staffId,
+      staffName,
+      eventId,
+      eventName,
+      organizerId,
+      status: 'pending'
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Yêu cầu phụ trách đã được gửi tới Organizer',
+      data: newRequest
+    });
+  } catch (err: any) {
+    console.error('[Checkin] requestAssignment error:', err.message);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getPendingRequests = async (req: AuthRequest, res: Response) => {
+  try {
+    const organizerId = req.userId;
+    const requests = await StaffRequest.find({ organizerId, status: 'pending' }).sort({ createdAt: -1 });
+    return res.json({ success: true, data: requests });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const approveRequest = async (req: AuthRequest, res: Response) => {
+  try {
+    const { requestId } = req.params;
+    const organizerId = req.userId;
+
+    const request = await StaffRequest.findById(requestId);
+    if (!request) return res.status(404).json({ success: false, message: 'Không tìm thấy yêu cầu' });
+
+    if (request.organizerId !== organizerId) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền duyệt yêu cầu này' });
+    }
+
+    request.status = 'approved';
+    await request.save();
+
+    // TODO: Có thể cập nhật quyền check-in thực tế vào User model hoặc một bảng phân quyền riêng
+    // Hiện tại chỉ cần đánh dấu approved để app Mobile hiển thị.
+
+    return res.json({ success: true, message: 'Đã phê duyệt yêu cầu' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const rejectRequest = async (req: AuthRequest, res: Response) => {
+  try {
+    const { requestId } = req.params;
+    const organizerId = req.userId;
+
+    const request = await StaffRequest.findById(requestId);
+    if (!request) return res.status(404).json({ success: false, message: 'Không tìm thấy yêu cầu' });
+
+    if (request.organizerId !== organizerId) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền từ chối yêu cầu này' });
+    }
+
+    request.status = 'rejected';
+    await request.save();
+
+    return res.json({ success: true, message: 'Đã từ chối yêu cầu' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 

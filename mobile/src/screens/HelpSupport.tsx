@@ -17,73 +17,79 @@ const FAQ_DATA = [
   }
 ];
 
+import { useTheme } from '../context/ThemeContextType';
+
 export default function HelpSupport({ navigation }: any) {
   const [expanded, setExpanded] = useState<number | null>(null);
+  const { colors } = useTheme();
 
   return (
-    <View className="flex-1 bg-[#0a0014]">
-      <View className="flex-row items-center p-4 pt-12 bg-[#1a0033] border-b border-[#4d0099]">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
-          <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingTop: 50, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={{ width: 40, height: 40, backgroundColor: colors.surfaceSecondary, borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Hỗ trợ</Text>
+        <Text style={{ flex: 1, textAlign: 'center', fontSize: 18, fontWeight: 'bold', color: colors.text, paddingRight: 40 }}>Hỗ trợ</Text>
       </View>
 
       <ScrollView className="flex-1 px-4 pt-6">
-        <Text className="text-sm font-bold text-[#b388ff] uppercase tracking-wider mb-4 ml-2">Câu hỏi thường gặp (FAQ)</Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, marginLeft: 8 }}>Câu hỏi thường gặp (FAQ)</Text>
         
-        <View className="bg-[#1a0033] border border-[#4d0099] rounded-3xl overflow-hidden mb-8">
+        <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 24, overflow: 'hidden', marginBottom: 32 }}>
           {FAQ_DATA.map((item, index) => (
-            <View key={index} className={index !== FAQ_DATA.length - 1 ? "border-b border-[#4d0099]" : ""}>
+            <View key={index} style={index !== FAQ_DATA.length - 1 ? { borderBottomWidth: 1, borderBottomColor: colors.border } : {}}>
               <TouchableOpacity 
                 onPress={() => setExpanded(expanded === index ? null : index)}
                 className="flex-row items-center justify-between p-5"
               >
-                <Text className="flex-1 text-white font-bold mr-2">{item.q}</Text>
-                <MaterialIcons name={expanded === index ? "expand-less" : "expand-more"} size={24} color="#d500f9" />
+                <Text style={{ flex: 1, color: colors.text, fontWeight: 'bold', marginRight: 8 }}>{item.q}</Text>
+                <MaterialIcons name={expanded === index ? "expand-less" : "expand-more"} size={24} color={colors.accent} />
               </TouchableOpacity>
               {expanded === index && (
                 <View className="px-5 pb-5 pt-0">
-                  <Text className="text-[#b388ff] leading-5">{item.a}</Text>
+                  <Text style={{ color: colors.textSecondary, lineHeight: 20 }}>{item.a}</Text>
                 </View>
               )}
             </View>
           ))}
         </View>
 
-        <Text className="text-sm font-bold text-[#b388ff] uppercase tracking-wider mb-4 ml-2">Gửi phản hồi</Text>
-        <View className="bg-[#1a0033] border border-[#4d0099] rounded-3xl p-5 mb-8">
-          <Text className="text-white text-xs mb-2 ml-1">Vấn đề của bạn</Text>
-          <View className="bg-[#0a0014] border border-[#4d0099] rounded-2xl px-4 py-3 mb-4 min-h-[120px]">
+        <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, marginLeft: 8 }}>Gửi phản hồi</Text>
+        <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 24, padding: 20, marginBottom: 32 }}>
+          <Text style={{ color: colors.text, fontSize: 12, marginBottom: 8, marginLeft: 4 }}>Vấn đề của bạn</Text>
+          <View style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16, minHeight: 120 }}>
             <TextInput
               multiline
               textAlignVertical="top"
-              className="text-white text-sm"
+              style={{ color: colors.text, fontSize: 14 }}
               placeholder="Mô tả chi tiết vấn đề bạn đang gặp phải..."
-              placeholderTextColor="#4d0099"
+              placeholderTextColor={colors.textSecondary + '80'}
             />
           </View>
           <TouchableOpacity 
             onPress={() => Alert.alert('Gửi thành công', 'Cảm ơn phản hồi của bạn, chúng tôi sẽ sớm liên hệ lại.')}
-            className="bg-[#00e5ff] h-12 rounded-xl items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.4)]"
+            style={{ backgroundColor: colors.accent, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
           >
-            <Text className="text-[#0a0014] font-bold">Gửi yêu cầu hỗ trợ</Text>
+            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Gửi yêu cầu hỗ trợ</Text>
           </TouchableOpacity>
         </View>
 
-        <Text className="text-sm font-bold text-[#b388ff] uppercase tracking-wider mb-4 ml-2">Liên hệ trực tiếp</Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, marginLeft: 8 }}>Liên hệ trực tiếp</Text>
         <View className="flex-row gap-4 mb-10">
-          <TouchableOpacity className="flex-1 bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 items-center">
-            <MaterialIcons name="email" size={24} color="#d500f9" />
-            <Text className="text-white font-bold mt-2">Email</Text>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, alignItems: 'center' }}>
+            <MaterialIcons name="email" size={24} color={colors.accent} />
+            <Text style={{ color: colors.text, fontWeight: 'bold', marginTop: 8 }}>Email</Text>
           </TouchableOpacity>
-          <TouchableOpacity className="flex-1 bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 items-center">
-            <MaterialIcons name="phone" size={24} color="#00e5ff" />
-            <Text className="text-white font-bold mt-2">Hotline</Text>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, alignItems: 'center' }}>
+            <MaterialIcons name="phone" size={24} color={colors.accentSecondary} />
+            <Text style={{ color: colors.text, fontWeight: 'bold', marginTop: 8 }}>Hotline</Text>
           </TouchableOpacity>
-          <TouchableOpacity className="flex-1 bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 items-center">
+          <TouchableOpacity style={{ flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, alignItems: 'center' }}>
             <MaterialIcons name="chat" size={24} color="#7c4dff" />
-            <Text className="text-white font-bold mt-2">Live Chat</Text>
+            <Text style={{ color: colors.text, fontWeight: 'bold', marginTop: 8 }}>Live Chat</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

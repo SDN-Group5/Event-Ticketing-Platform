@@ -234,6 +234,7 @@ export const AnalyticsAPI = {
       _id: string; // eventId
       eventName: string;
       organizerId: string;
+      organizerName?: string;
       ticketsSold: number;
       totalRevenue: number;
       totalSubtotal: number;

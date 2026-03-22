@@ -342,6 +342,41 @@ export const getAdminEventRevenues = async (req: Request, res: Response) => {
           orderCount: { $sum: 1 }
         }
       },
+      // Add safely converted ObjectId for joining
+      {
+        $addFields: {
+          orgObjectId: {
+            $convert: { input: '$organizerId', to: 'objectId', onError: null, onNull: null }
+          }
+        }
+      },
+      // Lookup organizer name
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'orgObjectId',
+          foreignField: '_id',
+          as: 'organizerInfo'
+        }
+      },
+      {
+        $addFields: {
+          organizerName: {
+            $cond: {
+              if: { $gt: [{ $size: '$organizerInfo' }, 0] },
+              then: {
+                $concat: [
+                  { $ifNull: [{ $arrayElemAt: ['$organizerInfo.firstName', 0] }, 'Unknown'] },
+                  ' ',
+                  { $ifNull: [{ $arrayElemAt: ['$organizerInfo.lastName', 0] }, 'User'] }
+                ]
+              },
+              else: '$organizerId'
+            }
+          }
+        }
+      },
+      { $project: { organizerInfo: 0, orgObjectId: 0 } },
       { $sort: { latestOrderDate: -1 } },
       { $skip: skip },
       { $limit: limit }

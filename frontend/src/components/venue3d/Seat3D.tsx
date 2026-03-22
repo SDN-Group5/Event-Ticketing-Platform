@@ -83,6 +83,22 @@ export function Seat3D({
                 />
             </mesh>
 
+            {/* Person sitting on booked seat */}
+            {status === 'booked' && (
+                <group position={[0, 0.2, 0]}>
+                    {/* Body */}
+                    <mesh position={[0, 0.5, 0]} castShadow>
+                        <boxGeometry args={[0.4, 0.6, 0.3]} />
+                        <meshStandardMaterial color="#2c3e50" />
+                    </mesh>
+                    {/* Head */}
+                    <mesh position={[0, 1.0, 0]} castShadow>
+                        <sphereGeometry args={[0.15, 16, 16]} />
+                        <meshStandardMaterial color="#d4a574" />
+                    </mesh>
+                </group>
+            )}
+
             {/* Seat label (shown on hover) */}
             {hovered && !isDragging && (
                 <Text

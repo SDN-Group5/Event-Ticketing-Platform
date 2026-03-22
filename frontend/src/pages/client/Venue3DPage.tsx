@@ -175,6 +175,7 @@ export default function Venue3DPage() {
 
                 if (zoneIds.length > 0) {
                     const bookedIds = await SeatAPI.getBookedSeatIds(selectedLayoutId, zoneIds);
+                    console.log('[Venue3D] Booked seats fetched:', bookedIds);
                     setBookedSeatsData(bookedIds);
                 } else {
                     setBookedSeatsData([]);

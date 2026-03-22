@@ -662,27 +662,8 @@ export function Venue3DViewer({
                     });
                 }
             } else {
-                for (let row = 0; row < zone.rows; row++) {
-                    for (let seat = 0; seat < zone.seatsPerRow; seat++) {
-                        const seatId = `${zone.id}-R${row + 1}-S${seat + 1}`;
-                        if (bookedSeats.includes(seatId)) {
-                            const x = (seat - (zone.seatsPerRow - 1) / 2) * SEAT_SPACING_3D;
-                            const z = row * ROW_SPACING_3D - (zone.rows * ROW_SPACING_3D) / 2 + ROW_SPACING_3D / 2;
-                            const y = baseElevation + row * 0.2 + 0.2; 
-
-                            const rotatedX = x * Math.cos(-rotationRad) - z * Math.sin(-rotationRad);
-                            const rotatedZ = x * Math.sin(-rotationRad) + z * Math.cos(-rotationRad);
-
-                            const shirtColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-                            people.push({
-                                id: `${seatId}-person`,
-                                position: [baseX + rotatedX, y, baseZ + rotatedZ],
-                                color: shirtColors[(row + seat) % shirtColors.length],
-                                pose: 'sitting'
-                            });
-                        }
-                    }
-                }
+                // Seat zones - people are now rendered by Seat3D component
+                // No need to generate people here anymore
             }
         });
         return people;

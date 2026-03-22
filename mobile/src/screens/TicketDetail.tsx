@@ -16,6 +16,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+/** Bỏ slash cuối để tránh //t/... */
+function normalizeWebBaseUrl(raw: string): string {
+  return (raw || '').trim().replace(/\/+$/, '');
+}
+
+/** Link công khai xem vé (đồng bộ với web /t/:ticketId) */
+function buildPublicTicketUrl(base: string, ticketId: string): string {
+  const b = normalizeWebBaseUrl(base);
+  const id = encodeURIComponent(ticketId);
+  return `${b}/t/${id}`;
+}
+
 export default function TicketDetail({ navigation, route }: any) {
   const { orderCode } = route.params || {};
   const [order, setOrder] = useState<any>(null);
@@ -95,30 +107,40 @@ export default function TicketDetail({ navigation, route }: any) {
   // Map tickets (có QR payload) theo thứ tự để hiển thị
   const tickets = (order as any).tickets || [];
 
-  const webBaseUrl = process.env.EXPO_PUBLIC_WEB_URL || 'https://event-ticketing-platform-six.vercel.app';
+  const webBaseUrl = normalizeWebBaseUrl(
+    process.env.EXPO_PUBLIC_WEB_URL || 'https://event-ticketing-platform-six.vercel.app'
+  );
   const activeTicket = tickets[activeIndex];
 
   const handleShareTicket = async () => {
-    const hasRealTickets = tickets.length > 0;
+    const items = order.items || [];
+    const activeItem = items[activeIndex];
+    const matchingTicket =
+      activeItem && tickets.length
+        ? tickets.find(
+            (t: any) =>
+              (t.seatId && activeItem.seatId && t.seatId === activeItem.seatId) ||
+              (t.zoneName && activeItem.zoneName && t.zoneName === activeItem.zoneName)
+          ) || tickets[activeIndex]
+        : tickets[activeIndex];
 
-    // Ưu tiên ticketId thật nếu backend đã tạo vé
     let ticketId: string | null =
-      hasRealTickets && activeTicket?.ticketId
-        ? String(activeTicket.ticketId)
-        : null;
+      matchingTicket?.ticketId != null ? String(matchingTicket.ticketId) : null;
 
-    // Nếu chưa có ticket trong DB, tự sinh ticketId theo pattern backend: TV-{orderCode}-{index}
+    // Khớp backend: TV-{orderCode base36}-{số thứ tự vé}; vé cũ có thể vẫn là TV-{số thập phân}-...
     if (!ticketId) {
-      const index = Number.isFinite(activeIndex) ? activeIndex : 0;
-      ticketId = `TV-${order.orderCode}-${index + 1}`;
+      const idx = Number.isFinite(activeIndex) ? activeIndex : 0;
+      const slug = Number(order.orderCode).toString(36);
+      ticketId = `TV-${slug}-${idx + 1}`;
     }
 
-    const url = `${webBaseUrl}/t/${encodeURIComponent(ticketId)}`;
+    const url = buildPublicTicketUrl(webBaseUrl, ticketId);
 
     try {
+      // Chỉ truyền `message`: Android tự ghép message + url → URL bị lặp 2 lần nếu gửi cả hai.
       await Share.share({
-        message: `Vé điện tử của bạn: ${url}`,
-        url,
+        message: `🎫 TicketVibe — xem vé:\n${url}`,
+        title: 'TicketVibe',
       });
     } catch (e) {
       // ignore share cancel/errors

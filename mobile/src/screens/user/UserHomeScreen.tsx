@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  ScrollView, 
-  ImageBackground, 
-  StyleSheet, 
-  ActivityIndicator, 
-  TextInput 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  ImageBackground,
+  StyleSheet,
+  ActivityIndicator,
+  TextInput,
+  RefreshControl,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -20,8 +21,31 @@ export default function UserScreen({ navigation }: any) {
   const { colors } = useTheme();
   const [events, setEvents] = useState<EventLayout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+
+  const loadEvents = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
+    try {
+      setError(null);
+      if (mode === 'refresh') {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      const data = await LayoutAPI.listLayouts();
+      setEvents(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      const msg = e?.message || 'Không tải được danh sách sự kiện';
+      setError(msg);
+      if (mode === 'initial') {
+        setEvents([]);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -30,26 +54,13 @@ export default function UserScreen({ navigation }: any) {
   );
 
   useEffect(() => {
-    let isMounted = true;
-    async function load() {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await LayoutAPI.listLayouts();
-        if (!isMounted) return;
-        setEvents(Array.isArray(data) ? data : []);
-      } catch (e: any) {
-        if (!isMounted) return;
-        setError(e?.message || 'Không tải được danh sách sự kiện');
-        setEvents([]);
-      } finally {
-        if (!isMounted) return;
-        setLoading(false);
-      }
-    }
-    void load();
-    return () => { isMounted = false; };
-  }, []);
+    void loadEvents('initial');
+  }, [loadEvents]);
+
+  const onRefresh = useCallback(() => {
+    void refreshUser();
+    void loadEvents('refresh');
+  }, [loadEvents, refreshUser]);
 
   const filteredEvents = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -133,7 +144,18 @@ export default function UserScreen({ navigation }: any) {
         </View>
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+          />
+        }
+      >
         {!query && (
           <>
             <View style={styles.sectionHeaderRow}>

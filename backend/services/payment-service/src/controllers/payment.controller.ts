@@ -244,6 +244,14 @@ export const getOrder = async (req: Request, res: Response) => {
 
 // ==================== GET USER ORDERS ====================
 
+function sortTicketsByLineIndex(tickets: { ticketId: string }[]) {
+  return [...tickets].sort((a, b) => {
+    const ma = String(a.ticketId).match(/-(\d+)$/);
+    const mb = String(b.ticketId).match(/-(\d+)$/);
+    return (ma ? parseInt(ma[1], 10) : 0) - (mb ? parseInt(mb[1], 10) : 0);
+  });
+}
+
 export const getUserOrders = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
@@ -252,7 +260,23 @@ export const getUserOrders = async (req: Request, res: Response) => {
       status: { $in: ['paid', 'refunded', 'cancelled', 'expired', 'pending', 'processing'] },
     }).sort({ createdAt: -1 });
 
-    return res.json({ success: true, data: orders });
+    const data = await Promise.all(
+      orders.map(async (order) => {
+        const plain = order.toObject();
+        let tickets: Awaited<ReturnType<typeof getTicketsByOrderId>> = [];
+        try {
+          tickets = await getTicketsByOrderId(order._id.toString());
+        } catch (e: any) {
+          console.warn('[getUserOrders] tickets for order', order.orderCode, e?.message);
+        }
+        return {
+          ...plain,
+          tickets: sortTicketsByLineIndex(tickets),
+        };
+      })
+    );
+
+    return res.json({ success: true, data });
   } catch (err: any) {
     console.error('[getUserOrders] Error:', err);
     return res.status(500).json({ success: false, message: err.message });

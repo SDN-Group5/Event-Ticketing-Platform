@@ -253,6 +253,7 @@ export const LayoutEditorPage: React.FC = () => {
 
         const rows = selectedTool === 'seats' ? 4 : undefined;
         const seatsPerRow = selectedTool === 'seats' ? 8 : undefined;
+        const capacity = selectedTool === 'standing' ? 100 : undefined;
 
         let width = 150;
         let height = 80;
@@ -272,6 +273,7 @@ export const LayoutEditorPage: React.FC = () => {
             color: COLORS[Math.floor(Math.random() * COLORS.length)],
             rows,
             seatsPerRow,
+            capacity,
             price: selectedTool === 'stage' || selectedTool === 'barrier' ? undefined : 50,
         };
 

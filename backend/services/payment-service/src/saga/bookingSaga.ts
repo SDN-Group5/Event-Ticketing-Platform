@@ -85,7 +85,7 @@ export const validateVoucherStep: SagaStep<BookingContext> = {
     }
     if (voucher.minimumPrice && ctx.subtotal! < voucher.minimumPrice)
       throw new Error(`Don hang phai toi thieu ${voucher.minimumPrice} de dung ma nay`);
-    if (voucher.eventId && voucher.eventId !== ctx.eventId)
+    if (voucher.eventIds && voucher.eventIds.length > 0 && !voucher.eventIds.includes(ctx.eventId))
       throw new Error('Ma voucher khong ap dung cho su kien nay');
     if (voucher.userId && voucher.userId !== ctx.userId)
       throw new Error('Ma voucher nay chi ap dung cho tai khoan da duoc cap');

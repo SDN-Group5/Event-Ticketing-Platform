@@ -27,7 +27,7 @@ export interface VoucherInput {
   startDate?: string;
   minimumPrice?: number;
   status?: 'active' | 'inactive' | 'expired';
-  eventId?: string;
+  eventIds?: string[];
   userId?: string;
 }
 

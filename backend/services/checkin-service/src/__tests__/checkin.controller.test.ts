@@ -123,6 +123,31 @@ describe('Checkin Service – BDD', () => {
       expect(ticket.save).not.toHaveBeenCalled();
     });
 
+    it('vé trạng thái used: từ chối check-in (tránh client nhận 200 rồi goBack)', async () => {
+      const ticket = {
+        ticketId: 'T-USED',
+        eventId: 'ev-1',
+        eventName: 'Event A',
+        zoneName: 'VIP',
+        seatLabel: 'A1',
+        userId: 'user-1',
+        status: 'used',
+        save: jest.fn(),
+      } as any;
+      mockTicketFindOne.mockResolvedValue(ticket);
+      const req = { body: { ticketCode: 'T-USED' }, userId: 'staff-1' } as AuthRequest;
+      const res = mockRes();
+      await scanTicket(req, res);
+      expect(mockCheckinLogCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          result: 'ALREADY_CHECKED_IN',
+          reason: 'Vé đã được đánh dấu đã sử dụng',
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(ticket.save).not.toHaveBeenCalled();
+    });
+
     it('vé đã hủy hoặc hoàn tiền: từ chối check-in và ghi log CANCELLED/REFUNDED', async () => {
       const ticketCancelled = {
         ticketId: 'T-C',
@@ -222,7 +247,7 @@ describe('Checkin Service – BDD', () => {
 
     it('xem báo cáo khi chưa có ai check-in: total=0, checkedIn=0, remaining=0 (không crash chia cho 0)', async () => {
       mockTicketCountDocuments.mockImplementation((filter: any) => {
-        if (filter.eventId && filter.status === 'checked-in') return Promise.resolve(0) as any;
+        if (filter.eventId && filter.status?.$in) return Promise.resolve(0) as any;
         if (filter.eventId) return Promise.resolve(0) as any;
         return Promise.resolve(0) as any;
       });
@@ -237,7 +262,7 @@ describe('Checkin Service – BDD', () => {
 
     it('trả về total, checkedIn, remaining chính xác khi có dữ liệu', async () => {
       mockTicketCountDocuments.mockImplementation((filter: any) => {
-        if (filter.eventId && filter.status === 'checked-in') return Promise.resolve(30) as any;
+        if (filter.eventId && filter.status?.$in) return Promise.resolve(30) as any;
         if (filter.eventId) return Promise.resolve(100) as any;
         return Promise.resolve(0) as any;
       });
@@ -245,7 +270,10 @@ describe('Checkin Service – BDD', () => {
       const res = mockRes();
       await getEventSummary(req, res);
       expect(mockTicketCountDocuments).toHaveBeenCalledWith({ eventId: 'ev-1' });
-      expect(mockTicketCountDocuments).toHaveBeenCalledWith({ eventId: 'ev-1', status: 'checked-in' });
+      expect(mockTicketCountDocuments).toHaveBeenCalledWith({
+        eventId: 'ev-1',
+        status: { $in: ['checked-in', 'used'] },
+      });
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: { total: 100, checkedIn: 30, remaining: 70 },
@@ -376,7 +404,7 @@ describe('Checkin Service – BDD', () => {
       expect(res2.body.code).toBe('ALREADY_CHECKED_IN');
 
       mockTicketCountDocuments.mockImplementation((filter: any) => {
-        if (filter.eventId === eventId && filter.status === 'checked-in') return Promise.resolve(1) as any;
+        if (filter.eventId === eventId && filter.status?.$in) return Promise.resolve(1) as any;
         if (filter.eventId === eventId) return Promise.resolve(10) as any;
         return Promise.resolve(0) as any;
       });

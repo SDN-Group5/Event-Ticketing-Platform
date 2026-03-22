@@ -1,10 +1,15 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 // ============================================
 // EMAIL CONFIGURATION
 // ============================================
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || '';
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const EMAIL_FROM = process.env.EMAIL_FROM || EMAIL_USER || '';
+
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 // Create transporter
 const transporter = nodemailer.createTransport({
@@ -19,6 +24,27 @@ const transporter = nodemailer.createTransport({
     socketTimeout: 15_000,
 });
 
+async function sendWithResend(params: { to: string; subject: string; html: string }): Promise<boolean> {
+    if (!resend) return false;
+    if (!EMAIL_FROM) {
+        console.warn('⚠️  [EMAIL] EMAIL_FROM not configured for Resend.');
+        return false;
+    }
+    try {
+        await resend.emails.send({
+            from: EMAIL_FROM,
+            to: params.to,
+            subject: params.subject,
+            html: params.html,
+        });
+        console.log(`✅ [EMAIL] Resend sent to ${params.to}`);
+        return true;
+    } catch (error) {
+        console.error('❌ [EMAIL] Resend failed:', error);
+        return false;
+    }
+}
+
 // ============================================
 // SEND VERIFICATION EMAIL
 // ============================================
@@ -29,18 +55,15 @@ interface VerificationEmailParams {
 }
 
 export const sendVerificationEmail = async ({ to, firstName, code }: VerificationEmailParams): Promise<boolean> => {
-    if (!EMAIL_USER || !EMAIL_PASSWORD) {
+    if (!RESEND_API_KEY && (!EMAIL_USER || !EMAIL_PASSWORD)) {
         console.warn('⚠️  [EMAIL] Email credentials not configured. OTP code:', code);
         console.log(`📧 [EMAIL] Would send to ${to}: Verification code = ${code}`);
         return false;
     }
 
     try {
-        const mailOptions = {
-            from: `"TicketVibe" <${EMAIL_USER}>`,
-            to,
-            subject: '🔐 Xác thực email - TicketVibe',
-            html: `
+        const subject = '🔐 Xác thực email - TicketVibe';
+        const html = `
                 <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px;">
                     <div style="text-align: center; margin-bottom: 30px;">
                         <h1 style="color: #a855f7; margin: 0; font-size: 28px;">🎫 TicketVibe</h1>
@@ -72,7 +95,17 @@ export const sendVerificationEmail = async ({ to, firstName, code }: Verificatio
                         <p>© 2024 TicketVibe. All rights reserved.</p>
                     </div>
                 </div>
-            `,
+            `;
+
+        // Prefer Resend (production friendly) then fallback to SMTP (local)
+        const resentOk = await sendWithResend({ to, subject, html });
+        if (resentOk) return true;
+
+        const mailOptions = {
+            from: `"TicketVibe" <${EMAIL_USER}>`,
+            to,
+            subject,
+            html,
         };
 
         await transporter.sendMail(mailOptions);
@@ -95,18 +128,15 @@ interface ResetPasswordEmailParams {
 }
 
 export const sendResetPasswordEmail = async ({ to, firstName, code }: ResetPasswordEmailParams): Promise<boolean> => {
-    if (!EMAIL_USER || !EMAIL_PASSWORD) {
+    if (!RESEND_API_KEY && (!EMAIL_USER || !EMAIL_PASSWORD)) {
         console.warn('⚠️  [EMAIL] Email credentials not configured. Reset code:', code);
         console.log(`📧 [EMAIL] Would send to ${to}: Reset code = ${code}`);
         return false;
     }
 
     try {
-        const mailOptions = {
-            from: `"TicketVibe" <${EMAIL_USER}>`,
-            to,
-            subject: '🔑 Đặt lại mật khẩu - TicketVibe',
-            html: `
+        const subject = '🔑 Đặt lại mật khẩu - TicketVibe';
+        const html = `
                 <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px;">
                     <div style="text-align: center; margin-bottom: 30px;">
                         <h1 style="color: #a855f7; margin: 0; font-size: 28px;">🎫 TicketVibe</h1>
@@ -139,7 +169,16 @@ export const sendResetPasswordEmail = async ({ to, firstName, code }: ResetPassw
                         <p>© 2024 TicketVibe. All rights reserved.</p>
                     </div>
                 </div>
-            `,
+            `;
+
+        const resentOk = await sendWithResend({ to, subject, html });
+        if (resentOk) return true;
+
+        const mailOptions = {
+            from: `"TicketVibe" <${EMAIL_USER}>`,
+            to,
+            subject,
+            html,
         };
 
         await transporter.sendMail(mailOptions);
@@ -164,7 +203,7 @@ interface PayoutEmailParams {
 }
 
 export const sendPayoutNotificationEmail = async ({ to, organizerName, eventName, amount, receiptUrl }: PayoutEmailParams): Promise<boolean> => {
-    if (!EMAIL_USER || !EMAIL_PASSWORD) {
+    if (!RESEND_API_KEY && (!EMAIL_USER || !EMAIL_PASSWORD)) {
         console.warn('⚠️  [EMAIL] Email credentials not configured. Payout email not sent.');
         return false;
     }
@@ -172,11 +211,8 @@ export const sendPayoutNotificationEmail = async ({ to, organizerName, eventName
     try {
         const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
-        const mailOptions = {
-            from: `"TicketVibe Admin" <${EMAIL_USER}>`,
-            to,
-            subject: '💰 Thông báo thanh toán doanh thu sự kiện - TicketVibe',
-            html: `
+        const subject = '💰 Thông báo thanh toán doanh thu sự kiện - TicketVibe';
+        const html = `
                 <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px;">
                     <div style="text-align: center; margin-bottom: 30px;">
                         <h1 style="color: #a855f7; margin: 0; font-size: 28px;">🎫 TicketVibe Admin</h1>
@@ -213,7 +249,16 @@ export const sendPayoutNotificationEmail = async ({ to, organizerName, eventName
                         <p>© 2024 TicketVibe. All rights reserved.</p>
                     </div>
                 </div>
-            `,
+            `;
+
+        const resentOk = await sendWithResend({ to, subject, html });
+        if (resentOk) return true;
+
+        const mailOptions = {
+            from: `"TicketVibe Admin" <${EMAIL_USER}>`,
+            to,
+            subject,
+            html,
         };
 
         await transporter.sendMail(mailOptions);

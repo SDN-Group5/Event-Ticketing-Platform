@@ -22,17 +22,6 @@ export interface IUserDocument extends Document {
     country?: string;
     zipCode?: string;
   };
-  preferences?: {
-    preferredDestinations?: string[];
-    preferredHotelTypes?: string[];
-    budgetRange?: {
-      min?: number;
-      max?: number;
-    };
-  };
-  totalBookings?: number;
-  totalSpent?: number;
-  lastLogin?: Date;
   isActive: boolean;
   emailVerified: boolean;
   emailVerificationCode?: string | null;
@@ -94,17 +83,6 @@ const userSchema = new Schema<IUserDocument>(
       country: String,
       zipCode: String,
     },
-    preferences: {
-      preferredDestinations: [String],
-      preferredHotelTypes: [String],
-      budgetRange: {
-        min: Number,
-        max: Number,
-      },
-    },
-    totalBookings: { type: Number, default: 0 },
-    totalSpent: { type: Number, default: 0 },
-    lastLogin: { type: Date },
     isActive: {
       type: Boolean,
       default: true,

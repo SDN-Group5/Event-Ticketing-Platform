@@ -29,13 +29,17 @@ export const scanTicket = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, code: 'NOT_FOUND', message: 'Mã QR không hợp lệ' });
     }
 
-    if (ticket.status === 'checked-in') {
+    // checked-in và used đều là vé đã qua cửa — không cho check-in lại (tránh app client coi là 200 rồi goBack / về màn hình trước).
+    if (ticket.status === 'checked-in' || ticket.status === 'used') {
       await CheckinLog.create({
         ticketCode: ticket.ticketId,
         eventId: ticket.eventId,
         staffId,
         result: 'ALREADY_CHECKED_IN',
-        reason: 'Vé đã được check-in trước đó',
+        reason:
+          ticket.status === 'used'
+            ? 'Vé đã được đánh dấu đã sử dụng'
+            : 'Vé đã được check-in trước đó',
       });
 
       return res.status(400).json({
@@ -121,7 +125,10 @@ export const getEventSummary = async (req: AuthRequest, res: Response) => {
     }
 
     const total = await Ticket.countDocuments({ eventId });
-    const checkedIn = await Ticket.countDocuments({ eventId, status: 'checked-in' });
+    const checkedIn = await Ticket.countDocuments({
+      eventId,
+      status: { $in: ['checked-in', 'used'] },
+    });
     const remaining = total - checkedIn;
 
     return res.json({

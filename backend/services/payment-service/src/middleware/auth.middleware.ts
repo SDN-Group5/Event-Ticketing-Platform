@@ -31,9 +31,14 @@ export const extractUserId = (req: Request, res: Response, next: NextFunction) =
       }
     }
 
-    // Cách 2: Lấy từ x-user-id header hoặc body (fallback)
+    // Cách 2: Lấy từ x-user-id header, body hoặc query (fallback)
     if (!userId) {
-      userId = (req.headers['x-user-id'] as string) || (req.body?.userId as string) || (req.body?.organizerId as string);
+      userId =
+        (req.headers['x-user-id'] as string) ||
+        (req.body?.userId as string) ||
+        (req.body?.organizerId as string) ||
+        (req.query?.userId as string) ||
+        (req.query?.organizerId as string);
     }
 
     if (!userId) {

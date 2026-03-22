@@ -121,5 +121,30 @@ export const CheckinAPI = {
       method: 'GET',
     });
   },
+
+  async requestAssignment(eventId: string): Promise<{ success: boolean; message: string }> {
+    return authenticatedRequest<{ success: boolean; message: string }>('/api/checkin/staff/request-assignment', {
+      method: 'POST',
+      body: JSON.stringify({ eventId }),
+    });
+  },
+
+  async getPendingRequests(): Promise<any> {
+    return authenticatedRequest<any>('/api/checkin/organizer/pending-requests', {
+      method: 'GET',
+    });
+  },
+
+  async approveRequest(requestId: string): Promise<any> {
+    return authenticatedRequest<any>(`/api/checkin/organizer/approve-request/${requestId}`, {
+      method: 'POST',
+    });
+  },
+
+  async rejectRequest(requestId: string): Promise<any> {
+    return authenticatedRequest<any>(`/api/checkin/organizer/reject-request/${requestId}`, {
+      method: 'POST',
+    });
+  },
 };
 

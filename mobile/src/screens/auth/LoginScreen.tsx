@@ -108,36 +108,26 @@ export default function LoginScreen({ navigation }: any) {
     setIsLoading(true);
 
     try {
-      // First try real login logic
       const success = await login(email.trim(), password);
       
       if (success) {
         Toast.show({
           type: 'success',
-          text1: 'Login Successful',
-          text2: 'Welcome back to TicketVibe! 👋',
+          text1: 'Đăng nhập thành công',
+          text2: 'Chào mừng bạn quay trở lại 👋',
         });
       } else {
-        // Fallback or "Mock DB" check for specific demo credentials if real login fails
-        if (email === 'admin@ticketvibe.com' && password === '123456') {
-          Toast.show({
-            type: 'success',
-            text1: 'Login Successful (Demo)',
-            text2: 'Welcome to the Demo mode! 👋',
-          });
-        } else {
-          Toast.show({
-            type: 'error',
-            text1: 'Login Failed',
-            text2: 'Invalid credentials. Please try again.',
-          });
-        }
+        Toast.show({
+          type: 'error',
+          text1: 'Đăng nhập thất bại',
+          text2: 'Email hoặc mật khẩu không chính xác.',
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'An unexpected error occurred.',
+        text1: 'Lỗi',
+        text2: err.message || 'Đã xảy ra lỗi không xác định.',
       });
     } finally {
       setIsLoading(false);

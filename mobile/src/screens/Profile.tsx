@@ -40,13 +40,15 @@ export default function Profile({ navigation }: any) {
 
         <View style={{ paddingHorizontal: 16, paddingBottom: 32 }}>
           <View style={{ backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 24 }}>
-            <TouchableOpacity onPress={() => navigation.navigate('OrderHistory')} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accentSecondary + '20', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
-                <MaterialIcons name="receipt-long" size={24} color={colors.accentSecondary} />
-              </View>
-              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Lịch sử mua vé</Text>
-              <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
+            {(user?.role === 'user' || user?.role === 'admin') && (
+              <TouchableOpacity onPress={() => navigation.navigate('OrderHistory')} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accentSecondary + '20', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                  <MaterialIcons name="receipt-long" size={24} color={colors.accentSecondary} />
+                </View>
+                <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Lịch sử mua vé</Text>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accent + '20', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
@@ -63,6 +65,26 @@ export default function Profile({ navigation }: any) {
               <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Bảo mật & Mật khẩu</Text>
               <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
+
+            {(user?.role === 'organizer' || user?.role === 'admin') && (
+              <TouchableOpacity onPress={() => navigation.navigate('VoucherManagement')} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#00e5ff20', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                  <MaterialIcons name="local-offer" size={24} color="#00e5ff" />
+                </View>
+                <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Quản lý Voucher (Org)</Text>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+
+            {(user?.role === 'user' || user?.role === 'admin') && (
+              <TouchableOpacity onPress={() => navigation.navigate('EventTimeline')} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#d500f920', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                  <MaterialIcons name="auto-awesome" size={24} color="#d500f9" />
+                </View>
+                <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text }}>Lịch trình sự kiện</Text>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
 
             <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
               <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#ffab0020', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>

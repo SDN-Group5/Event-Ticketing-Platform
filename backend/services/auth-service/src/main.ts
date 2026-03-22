@@ -96,7 +96,6 @@ const connectDB = async () => {
     console.log(`🔌 [${SERVICE_NAME}] Kết nối MongoDB...`);
     await mongoose.connect(MONGO_URI);
     console.log(`✅ [${SERVICE_NAME}] MongoDB connected: ${mongoose.connection.name}`);
-    console.log(`   🔗 URI: ${MONGO_URI}`);
     console.log(`   🗄  DB Name: ${mongoose.connection.name} | Host: ${mongoose.connection.host}`);
 
     // Đảm bảo index unique (email) được tạo/sync trên môi trường production

@@ -45,3 +45,20 @@ export const requireStaffRole = (req: AuthRequest, res: Response, next: NextFunc
   next();
 };
 
+export const requireOrganizerOrStaff = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.userRole) {
+    return res.status(401).json({ success: false, message: 'Không có thông tin vai trò người dùng' });
+  }
+
+  const allowed = ['staff', 'admin', 'organizer'];
+  if (!allowed.includes(req.userRole)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Không có quyền truy cập',
+      yourRole: req.userRole,
+    });
+  }
+
+  next();
+};
+

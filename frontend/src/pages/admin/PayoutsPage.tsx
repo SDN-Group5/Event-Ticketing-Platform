@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { AnalyticsAPI } from '../../services/analyticsApiService';
 import { EventApprovalAPI } from '../../services/eventApprovalApiService';
 import { LayoutAPI } from '../../services/layoutApiService';
 import { useToast } from '../../components/common/ToastProvider';
+
+const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
+
+/** Đánh dấu tất cả orders của sự kiện là payout success trong payment-service */
+async function markPaymentServicePayoutSuccess(eventId: string): Promise<void> {
+  const token = localStorage.getItem('auth_token');
+  await axios.patch(
+    `${API_BASE}/api/payments/admin/payout-event/${eventId}`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
 
 interface EventRevenue {
     _id: string; // eventId
@@ -83,19 +96,29 @@ export const PayoutsPage: React.FC = () => {
 
         setProcessingPayout(true);
         try {
+            // 1. Ghi nhận payout ở layout service (receipt, email thông báo)
             const res = await EventApprovalAPI.processPayout(selectedEvent._id, {
                 amount: selectedEvent.totalOrganizerAmount,
                 sendEmail,
                 receipt: receiptFile || undefined
             });
 
-            if (res.success) {
-                showToast('Payout processed successfully!', 'success');
-                handleCloseModal();
-                setRevenues(revenues.filter(r => r._id !== selectedEvent._id));
-            } else {
+            if (!res.success) {
                 showToast(res.message || 'Failed to process payout', 'error');
+                return;
             }
+
+            // 2. Cập nhật payoutStatus orders trong payment service: pending → success
+            try {
+                await markPaymentServicePayoutSuccess(selectedEvent._id);
+            } catch (paymentErr: any) {
+                console.warn('[PayoutsPage] Không cập nhật được payoutStatus trong payment-service:', paymentErr?.message);
+                // Không throw — vẫn coi là thành công về phía layout
+            }
+
+            showToast(`Đã thanh toán thành công cho sự kiện "${selectedEvent.eventName}"!`, 'success');
+            handleCloseModal();
+            setRevenues(revenues.filter(r => r._id !== selectedEvent._id));
         } catch (err: any) {
             showToast(err.message || 'Error processing payout', 'error');
         } finally {

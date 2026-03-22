@@ -282,7 +282,7 @@ const AppRoutes: React.FC = () => {
         path={ROUTES.CHECK_IN}
         element={
           <ProtectedRoute allowedRoles={['organizer']}>
-            <OrganizerLayout title="Check-In"><CheckInPage /></OrganizerLayout>
+            <OrganizerLayout title="Check-In" hideSidebar><CheckInPage /></OrganizerLayout>
           </ProtectedRoute>
         }
       />

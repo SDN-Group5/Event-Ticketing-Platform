@@ -18,17 +18,12 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Configure Cloudinary (bắt buộc trên Railway/Vercel — thiếu biến môi trường → upload sẽ lỗi)
+// Configure Cloudinary
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
-
-const cloudinaryConfigured =
-    Boolean(process.env.CLOUDINARY_CLOUD_NAME) &&
-    Boolean(process.env.CLOUDINARY_API_KEY) &&
-    Boolean(process.env.CLOUDINARY_API_SECRET);
 
 // Configure multer storage for event banner uploads to Cloudinary
 const storage = new CloudinaryStorage({
@@ -65,61 +60,18 @@ router.post('/validate', requireAuth, validateLayout);
 
 // Upload event banner image
 // POST /api/v1/layouts/upload-banner
-router.post('/upload-banner', requireAuth, (req, res) => {
-    if (!cloudinaryConfigured) {
-        console.error('[upload-banner] Thiếu CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET');
-        return res.status(503).json({
+router.post('/upload-banner', requireAuth, upload.single('banner'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({
             success: false,
-            error: {
-                code: 'CLOUDINARY_NOT_CONFIGURED',
-                message:
-                    'Server chưa cấu hình Cloudinary. Thêm CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET trên Railway (Variables).'
-            }
+            error: { code: 'NO_FILE', message: 'No file uploaded' }
         });
     }
 
-    upload.single('banner')(req, res, (err) => {
-        if (err) {
-            console.error('[upload-banner]', err?.message || err);
-            const isImageFilter = err.message === 'Only image files are allowed';
-            const isTooBig = err.code === 'LIMIT_FILE_SIZE';
-            const msg = String(err.message || err.error?.message || '');
-            const looksLikeCloudinary =
-                /cloudinary|Invalid api_key|401|signature/i.test(msg) ||
-                /Must supply api_key/i.test(msg);
-
-            let status = 500;
-            let message = 'Upload banner thất bại. Thử lại sau hoặc kiểm tra cấu hình Cloudinary.';
-
-            if (isImageFilter) {
-                status = 400;
-                message = err.message;
-            } else if (isTooBig) {
-                status = 400;
-                message = 'Ảnh quá lớn (tối đa 5MB).';
-            } else if (looksLikeCloudinary) {
-                status = 502;
-                message = 'Lỗi kết nối Cloudinary (kiểm tra API key/secret trên server).';
-            }
-
-            return res.status(status).json({
-                success: false,
-                error: { code: 'UPLOAD_FAILED', message }
-            });
-        }
-
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                error: { code: 'NO_FILE', message: 'No file uploaded' }
-            });
-        }
-
-        const url = req.file.path || req.file.secure_url || req.file.url;
-        return res.status(201).json({
-            success: true,
-            data: { url }
-        });
+    // req.file.path contains the secure URL returned by Cloudinary
+    return res.status(201).json({
+        success: true,
+        data: { url: req.file.path }
     });
 });
 

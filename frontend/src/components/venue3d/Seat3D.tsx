@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { ThreeEvent } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
@@ -11,6 +11,7 @@ interface Seat3DProps {
     color: string;
     status?: 'available' | 'selected' | 'booked';
     onClick?: (seatId: string, position: [number, number, number]) => void;
+    isDragging?: boolean; // Add this to disable hover during camera drag
 }
 
 const statusColors = {
@@ -27,6 +28,7 @@ export function Seat3D({
     color,
     status = 'available',
     onClick,
+    isDragging = false,
 }: Seat3DProps) {
     const meshRef = useRef<THREE.Mesh>(null);
     const [hovered, setHovered] = useState(false);
@@ -34,22 +36,23 @@ export function Seat3D({
     const seatColor = status === 'available' ? color : statusColors[status];
     const finalColor = seatColor || color;
 
-    const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation();
         if (status !== 'booked' && onClick) {
             onClick(seatId, position);
         }
-    };
+    }, [status, onClick, seatId, position]);
 
-    const handlePointerOver = () => {
+    const handlePointerOver = useCallback(() => {
+        if (isDragging) return; // Skip hover during drag
         setHovered(true);
         document.body.style.cursor = status === 'booked' ? 'not-allowed' : 'pointer';
-    };
+    }, [status, isDragging]);
 
-    const handlePointerOut = () => {
+    const handlePointerOut = useCallback(() => {
         setHovered(false);
         document.body.style.cursor = 'auto';
-    };
+    }, []);
 
     return (
         <group position={position}>
@@ -80,8 +83,24 @@ export function Seat3D({
                 />
             </mesh>
 
+            {/* Person sitting on booked seat */}
+            {status === 'booked' && (
+                <group position={[0, 0.2, 0]}>
+                    {/* Body */}
+                    <mesh position={[0, 0.5, 0]} castShadow>
+                        <boxGeometry args={[0.4, 0.6, 0.3]} />
+                        <meshStandardMaterial color="#2c3e50" />
+                    </mesh>
+                    {/* Head */}
+                    <mesh position={[0, 1.0, 0]} castShadow>
+                        <sphereGeometry args={[0.15, 16, 16]} />
+                        <meshStandardMaterial color="#d4a574" />
+                    </mesh>
+                </group>
+            )}
+
             {/* Seat label (shown on hover) */}
-            {hovered && (
+            {hovered && !isDragging && (
                 <Text
                     position={[0, 0.85, 0]}
                     fontSize={0.22}

@@ -13,6 +13,9 @@ import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { PaymentAPI } from '../services/paymentApiService';
 import QRCode from 'react-native-qrcode-svg';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
+import { useTheme } from '../context/ThemeContextType';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -33,6 +36,7 @@ export default function TicketDetail({ navigation, route }: any) {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const { colors } = useTheme();
 
   useEffect(() => {
     async function loadOrder() {
@@ -40,25 +44,53 @@ export default function TicketDetail({ navigation, route }: any) {
         setLoading(false);
         return;
       }
+      
+      const CACHE_KEY = `@ticket_detail_${orderCode}`;
+      let hasCachedData = false;
+      
       try {
         setLoading(true);
+        
+        // 1. Tải từ Cache lên trước (Offline Mode)
+        const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          setOrder(JSON.parse(cachedData));
+          hasCachedData = true;
+          // Cho phép tắt loading ngang đây để UI hiện lập tức, call API chạy ngầm:
+          setLoading(false); 
+        }
+
         // Sync with PayOS since webhooks might not work on localhost
-        const verifyData = await PaymentAPI.verifyPayment(Number(orderCode));
-        if (verifyData.order) {
-          setOrder(verifyData.order);
-        } else {
-          const fallbackData = await PaymentAPI.getOrder(Number(orderCode));
-          setOrder(fallbackData);
-        }
-      } catch (error) {
+        let finalOrder = null;
         try {
-          // Verify có thể fail (PayOS không có mã), nhưng DB vẫn có order → fallback nhẹ nhàng
-          console.warn('Verify payment failed, fallback to getOrder:', (error as any)?.message || error);
-          const fallbackData = await PaymentAPI.getOrder(Number(orderCode));
-          setOrder(fallbackData);
-        } catch (e) {
-          console.error('Error fetching order detail:', e);
+          const verifyData = await PaymentAPI.verifyPayment(Number(orderCode));
+          if (verifyData.order) {
+            finalOrder = verifyData.order;
+          } else {
+            finalOrder = await PaymentAPI.getOrder(Number(orderCode));
+          }
+        } catch (error) {
+           console.warn('Verify payment failed, fallback to getOrder:', (error as any)?.message || error);
+           finalOrder = await PaymentAPI.getOrder(Number(orderCode));
         }
+        
+        if (finalOrder) {
+           setOrder(finalOrder);
+           // 3. Cập nhật Cache
+           await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(finalOrder));
+        }
+
+      } catch (error) {
+           // Nếu mạng đứt hoàn toàn và vào catch tổng:
+           if (hasCachedData) {
+              Toast.show({
+                type: 'info',
+                text1: 'Đang dùng chế độ Ngoại tuyến',
+                text2: 'Vẫn hiển thị vé bình thường.',
+              });
+           } else {
+              console.error('Error fetching order detail from API and no cache:', error);
+           }
       } finally {
         setLoading(false);
       }
@@ -68,9 +100,9 @@ export default function TicketDetail({ navigation, route }: any) {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-[#0a0014] items-center justify-center">
-        <ActivityIndicator size="large" color="#d500f9" />
-        <Text className="text-[#b388ff] mt-4 font-bold">Đang tải thông tin vé...</Text>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={colors.accent} />
+        <Text style={{ color: colors.textSecondary, marginTop: 16, fontWeight: 'bold' }}>Đang tải thông tin vé...</Text>
       </View>
     );
   }
@@ -148,13 +180,16 @@ export default function TicketDetail({ navigation, route }: any) {
   };
 
   return (
-    <View className="flex-1 bg-[#0a0014]">
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
-      <View className="flex-row items-center p-4 pt-12 bg-[#1a0033] border-b border-[#4d0099]">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
-          <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
+      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingTop: 50, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={{ width: 40, height: 40, backgroundColor: colors.surfaceSecondary, borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Chi tiết vé</Text>
+        <Text style={{ flex: 1, textAlign: 'center', fontSize: 18, fontWeight: 'bold', color: colors.text, paddingRight: 40 }}>Chi tiết vé</Text>
       </View>
 
       <View className="flex-1">
@@ -184,8 +219,8 @@ export default function TicketDetail({ navigation, route }: any) {
                 '';
 
               return (
-              <View style={{ width: SCREEN_WIDTH }} className="px-4">
-                <View className="bg-[#1a0033] rounded-3xl overflow-hidden border border-[#d500f9] shadow-[0_0_20px_rgba(213,0,249,0.3)] mb-4">
+              <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 16 }}>
+                <View style={{ backgroundColor: colors.surface, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, marginBottom: 16, shadowColor: colors.accent, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 6 }}>
                   <Image
                     source={{ uri: order.eventImage || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=2070&auto=format&fit=crop' }}
                     className="w-full h-48"
@@ -193,18 +228,16 @@ export default function TicketDetail({ navigation, route }: any) {
                   <View className="p-6">
                     <View className="flex-row justify-between items-start mb-4">
                       <View className="flex-1 mr-4">
-                        <Text className="text-2xl font-black text-white">{order.eventName}</Text>
-                        <Text className="text-[#b388ff] text-xs font-bold uppercase mt-1 tracking-widest">
+                        <Text style={{ fontSize: 24, fontWeight: '900', color: colors.text }}>{order.eventName}</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', marginTop: 4, letterSpacing: 1.5 }}>
                           Ticket {index + 1} of {order.items?.length}
                         </Text>
                       </View>
                       <View
-                        className="px-3 py-1 rounded-full border"
-                        style={{ backgroundColor: `${statusInfo.color}20`, borderColor: `${statusInfo.color}50` }}
+                        style={{ backgroundColor: statusInfo.color + '20', borderColor: statusInfo.color + '50', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, borderWidth: 1 }}
                       >
                         <Text
-                          className="font-bold text-[10px] uppercase tracking-wider"
-                          style={{ color: statusInfo.color }}
+                          style={{ color: statusInfo.color, fontWeight: 'bold', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}
                         >
                           {statusInfo.text}
                         </Text>
@@ -212,44 +245,44 @@ export default function TicketDetail({ navigation, route }: any) {
                     </View>
 
                     <View className="flex-row items-center mb-4">
-                      <MaterialIcons name="location-on" size={16} color="#00e5ff" />
-                      <Text className="ml-2 text-white font-bold">{order.eventLocation || 'Nhà thi đấu Phú Thọ'}</Text>
+                      <MaterialIcons name="location-on" size={16} color={colors.accentSecondary} />
+                      <Text style={{ marginLeft: 8, color: colors.text, fontWeight: 'bold' }}>{order.eventLocation || 'Nhà thi đấu Phú Thọ'}</Text>
                     </View>
 
-                    <View className="border-t border-[#4d0099]/30 my-4" />
+                    <View style={{ borderTopWidth: 1, borderTopColor: colors.border, marginVertical: 16 }} />
 
                     <View className="mb-6">
-                      <Text className="text-[#b388ff] text-[10px] uppercase font-bold tracking-tighter mb-3 opacity-50">Transaction Details</Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 10, textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: 1, marginBottom: 12, opacity: 0.6 }}>Transaction Details</Text>
                       <View className="flex-row justify-between mb-2">
-                        <Text className="text-[#b388ff]/70 text-sm">Zone / Seat</Text>
-                        <Text className="text-white text-sm font-bold">{item.zoneName}</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Zone / Seat</Text>
+                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>{item.zoneName}</Text>
                       </View>
                       <View className="flex-row justify-between mb-2">
-                        <Text className="text-[#b388ff]/70 text-sm">Order Reference</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Order Reference</Text>
                         <View className="flex-row items-center">
-                          <Text className="text-white text-sm font-mono">#{order.orderCode}</Text>
+                          <Text style={{ color: colors.text, fontSize: 14, fontVariant: ['tabular-nums'] }}>#{order.orderCode}</Text>
                           <TouchableOpacity className="ml-2">
-                            <MaterialIcons name="content-copy" size={14} color="#00e5ff" />
+                            <MaterialIcons name="content-copy" size={14} color={colors.accentSecondary} />
                           </TouchableOpacity>
                         </View>
                       </View>
                       <View className="flex-row justify-between mb-2">
-                        <Text className="text-[#b388ff]/70 text-sm">Date & Time</Text>
-                        <Text className="text-white text-sm">{new Date(order.createdAt).toLocaleString('vi-VN')}</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Date & Time</Text>
+                        <Text style={{ color: colors.text, fontSize: 14 }}>{new Date(order.createdAt).toLocaleString('vi-VN')}</Text>
                       </View>
-                      <View className="flex-row justify-between mt-3 pt-3 border-t border-[#4d0099]/20">
-                        <Text className="text-white font-bold">Ticket Price</Text>
-                        <Text className="text-[#00e5ff] font-black text-xl">${(order.totalAmount / (order.items?.length || 1)).toFixed(2)}</Text>
+                      <View className="flex-row justify-between mt-3 pt-3 border-t" style={{ borderTopColor: colors.border }}>
+                        <Text style={{ color: colors.text, fontWeight: 'bold' }}>Ticket Price</Text>
+                        <Text style={{ color: colors.accentSecondary, fontWeight: '900', fontSize: 20 }}>${(order.totalAmount / (order.items?.length || 1)).toFixed(2)}</Text>
                       </View>
                     </View>
 
                     {/* Receipt Dashed Line Effect */}
                     <View className="flex-row items-center justify-center mb-6">
-                      <View className="h-[0.5px] flex-1 bg-[#4d0099]/50" />
-                      <View className="w-5 h-5 rounded-full bg-[#0a0014] -ml-2.5 border border-[#4d0099]/20" />
-                      <View className="h-[0.5px] w-6" />
-                      <View className="w-5 h-5 rounded-full bg-[#0a0014] -mr-2.5 border border-[#4d0099]/20" />
-                      <View className="h-[0.5px] flex-1 bg-[#4d0099]/50" />
+                      <View style={{ height: 1, flex: 1, backgroundColor: colors.border }} />
+                      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.background, marginLeft: -12, borderWidth: 1, borderColor: colors.border }} />
+                      <View style={{ width: 24 }} />
+                      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.background, marginRight: -12, borderWidth: 1, borderColor: colors.border }} />
+                      <View style={{ height: 1, flex: 1, backgroundColor: colors.border }} />
                     </View>
 
                     <View className="items-center bg-white p-6 rounded-2xl mb-2">
@@ -279,7 +312,7 @@ export default function TicketDetail({ navigation, route }: any) {
               {order.items.map((_: any, i: number) => (
                 <View
                   key={i}
-                  className={`w-1.5 h-1.5 rounded-full mx-1 ${i === activeIndex ? 'bg-[#00e5ff] w-4' : 'bg-[#4d0099]'}`}
+                  style={{ width: i === activeIndex ? 16 : 6, height: 6, borderRadius: 3, marginHorizontal: 4, backgroundColor: i === activeIndex ? colors.accent : colors.border }}
                 />
               ))}
             </View>

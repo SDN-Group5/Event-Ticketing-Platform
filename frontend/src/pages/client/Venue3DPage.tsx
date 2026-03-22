@@ -175,6 +175,7 @@ export default function Venue3DPage() {
 
                 if (zoneIds.length > 0) {
                     const bookedIds = await SeatAPI.getBookedSeatIds(selectedLayoutId, zoneIds);
+                    console.log('[Venue3D] Booked seats fetched:', bookedIds);
                     setBookedSeatsData(bookedIds);
                 } else {
                     setBookedSeatsData([]);
@@ -214,7 +215,7 @@ export default function Venue3DPage() {
     const legendItems = useMemo(() => {
         return currentZones.map(zone => ({
             color: zone.color,
-            label: `${zone.name} - $${zone.price}`,
+            label: `${zone.name} • $${zone.price}`,
         }));
     }, [currentZones]);
 
@@ -388,14 +389,14 @@ export default function Venue3DPage() {
                                 <span>🎭</span>
                                 Zones & Pricing
                             </h3>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-white/5 hover:scrollbar-thumb-white/40">
                                 {legendItems.map((item, index) => (
                                     <div key={index} className="flex items-center gap-2">
                                         <div
-                                            className="w-4 h-4 rounded"
+                                            className="w-3 h-3 rounded shrink-0"
                                             style={{ backgroundColor: item.color }}
                                         />
-                                        <span className="text-xs">{item.label}</span>
+                                        <span className="text-[11px] leading-tight">{item.label}</span>
                                     </div>
                                 ))}
                             </div>

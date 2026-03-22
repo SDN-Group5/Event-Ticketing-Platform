@@ -3,6 +3,9 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshCon
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useStaffHome } from './useStaffHome';
+import { useTheme } from '../../context/ThemeContextType';
+import { CheckinAPI } from '../../services/checkinApiService';
+import Toast from 'react-native-toast-message';
 
 interface StaffHomeProps {
   navigation: any;
@@ -10,6 +13,7 @@ interface StaffHomeProps {
 }
 
 export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
+  const { colors } = useTheme();
   const { logout, user } = useAuth();
   const eventId = route?.params?.eventId;
   const eventNameParam = route?.params?.eventName;
@@ -21,78 +25,133 @@ export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
     loadingSummary,
     loadingRecent,
     refreshing,
-    todayEvent,
+    eventDetails,
     onRefresh,
   } = useStaffHome(eventId);
 
+  const displayEventName = eventNameParam || eventDetails?.eventName || 'Đang tải...';
+  const displayLocation = venueNameParam || eventDetails?.eventLocation || 'Hệ thống';
+
   return (
-    <View className="flex-1 bg-[#0a0014]">
-      <View className="flex-row items-center justify-between p-4 pt-12 bg-[#1a0033] border-b border-[#4d0099]">
-        <View>
-          <Text className="text-sm text-[#b388ff]">Welcome back,</Text>
-          <Text className="text-xl font-bold text-white">{user ? `${user.firstName} ${user.lastName}` : 'Staff Member'}</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingTop: 50, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, marginRight: 12 }}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={colors.accent} />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 13, color: colors.textSecondary }}>Quản lý nhân sự</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }} numberOfLines={1}>{eventNameParam || 'Sự kiện'}</Text>
         </View>
-        <TouchableOpacity onPress={() => void logout()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
+        <TouchableOpacity onPress={() => void logout()} style={{ width: 44, height: 44, backgroundColor: colors.surfaceSecondary, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
           <MaterialIcons name="logout" size={20} color="#ff1744" />
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        className="flex-1 px-4 pt-6"
+        style={{ flex: 1, paddingHorizontal: 16, paddingTop: 20 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#d500f9" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
       >
-        <View className="bg-[#1a0033] rounded-3xl p-6 border border-[#4d0099] mb-6 shadow-[0_0_15px_rgba(213,0,249,0.2)]">
-          <Text className="text-lg font-bold text-white mb-4">Quick Actions</Text>
-          <View className="flex-row justify-between">
+        <View style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 20, borderWidth: 1, borderColor: colors.border, marginBottom: 24, shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 16 }}>Quick Actions</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <TouchableOpacity
               onPress={() => navigation.navigate('ScanTicket')}
-              className="flex-1 bg-[#d500f9] rounded-2xl p-4 items-center justify-center mr-2 shadow-[0_0_15px_rgba(213,0,249,0.4)]"
+              style={{ flex: 1, backgroundColor: colors.accent, borderRadius: 16, padding: 16, alignItems: 'center', justifyContent: 'center', marginRight: 8, shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 }}
             >
-              <MaterialIcons name="qr-code-scanner" size={32} color="white" />
-              <Text className="text-white font-bold mt-2 text-center">Scan Ticket</Text>
+              <View style={{ alignItems: 'center' }}>
+                <MaterialIcons name="qr-code-scanner" size={32} color="white" />
+                <Text style={{ color: 'white', fontWeight: 'bold', marginTop: 8, textAlign: 'center' }}>Scan Ticket</Text>
+              </View>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => navigation.navigate('MyEvents')}
-              className="flex-1 bg-[#2a004d] border border-[#d500f9] rounded-2xl p-4 items-center justify-center ml-2"
-            >
-              <MaterialIcons name="event-note" size={32} color="#00e5ff" />
-              <Text className="text-[#00e5ff] font-bold mt-2 text-center">Manage Events</Text>
-            </TouchableOpacity>
+            {(user?.role === 'organizer' || user?.role === 'admin') && (
+              <TouchableOpacity
+                onPress={() => {
+                  // TODO: Implement actual staff creation logic
+                  import('react-native-toast-message').then(Toast => {
+                    Toast.default.show({
+                      type: 'info',
+                      text1: 'Tính năng nâng cao',
+                      text2: 'Vui lòng sử dụng trang Web để quản lý nhân sự chi tiết.'
+                    });
+                  });
+                }}
+                style={{ flex: 1, backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.accent, borderRadius: 16, padding: 16, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}
+              >
+                <MaterialIcons name="person-add" size={32} color={colors.accentSecondary} />
+                <Text style={{ color: colors.accentSecondary, fontWeight: 'bold', marginTop: 8, textAlign: 'center' }}>Thêm nhân sự</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
-        <Text className="text-lg font-bold text-white mb-4">Today's Event</Text>
+        <Text className="text-lg font-bold text-white mb-4">Thông tin sự kiện</Text>
         <View className="bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 mb-6">
           <View className="flex-row justify-between items-start mb-4">
-            <View>
+            <View className="flex-1">
               <Text className="text-white font-bold text-lg">
-                {eventNameParam || 'Current Event'}
+                {displayEventName}
               </Text>
               <Text className="text-[#b388ff] text-sm">
-                {venueNameParam || 'Venue'}
+                {displayLocation}
               </Text>
             </View>
 
-            <View className="flex-row justify-between border-t border-[#4d0099] pt-4">
-              <View className="items-center">
-                <Text className="text-[#b388ff] text-xs mb-1">Status</Text>
-                <Text className="text-white font-bold text-base">Active</Text>
-              </View>
-              <View className="items-center">
-                <Text className="text-[#b388ff] text-xs mb-1">Zones</Text>
-                <Text className="text-white font-bold text-base">{todayEvent.zones?.length || 0}</Text>
-              </View>
-              <View className="items-center">
-                <Text className="text-[#b388ff] text-xs mb-1">Price</Text>
-                <Text className="text-[#d500f9] font-bold text-base">${todayEvent.minPrice}</Text>
+            <View className="items-end">
+              <View className="px-2 py-1 rounded bg-[#00e5ff]/20 border border-[#00e5ff]/50">
+                <Text className="text-[#00e5ff] text-[10px] font-bold">STATUS: {eventDetails ? 'ACTIVE' : 'READY'}</Text>
               </View>
             </View>
           </View>
 
           <View className="flex-row justify-between border-t border-[#4d0099] pt-4">
+            <View className="items-center">
+              <Text className="text-[#b388ff] text-xs mb-1">Khu vực</Text>
+              <Text className="text-white font-bold text-base">{eventDetails?.zones?.length || 0}</Text>
+            </View>
+            <View className="items-center">
+              <Text className="text-[#b388ff] text-xs mb-1">Giá từ</Text>
+              <Text className="text-[#d500f9] font-bold text-base">₫{eventDetails?.minPrice?.toLocaleString() || '0'}</Text>
+            </View>
+            <View className="items-center">
+              <Text className="text-[#b388ff] text-xs mb-1">Loại hình</Text>
+              <Text className="text-white font-bold text-base">Trực tiếp</Text>
+            </View>
+          </View>
+        </View>
+
+        {(user?.role === 'staff' && !summary) && (
+          <TouchableOpacity
+            style={{ backgroundColor: colors.accent, padding: 16, borderRadius: 16, marginBottom: 24, alignItems: 'center', shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 }}
+            onPress={async () => {
+              try {
+                if (!eventId) return;
+                const res = await CheckinAPI.requestAssignment(eventId);
+                Toast.show({
+                  type: 'success',
+                  text1: 'Đã gửi yêu cầu',
+                  text2: res.message || 'Vui lòng chờ Organizer phê duyệt cho bạn phụ trách sự kiện này.'
+                });
+              } catch (err: any) {
+                Toast.show({
+                  type: 'error',
+                  text1: 'Gửi yêu cầu thất bại',
+                  text2: err.message || 'Vui lòng thử lại sau'
+                });
+              }
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>YÊU CẦU PHỤ TRÁCH SỰ KIỆN</Text>
+          </TouchableOpacity>
+        )}
+
+        {eventId && (
+          <View className="flex-row justify-between border-t border-[#4d0099] pt-4 mb-6">
             <View className="items-center">
               <Text className="text-[#b388ff] text-xs mb-1">Checked In</Text>
               {loadingSummary ? (
@@ -116,7 +175,7 @@ export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
               </Text>
             </View>
           </View>
-        </View>
+        )}
 
         <Text className="text-lg font-bold text-white mb-4">Recent Scans</Text>
         {loadingRecent && (

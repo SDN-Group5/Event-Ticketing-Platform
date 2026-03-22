@@ -360,6 +360,22 @@ export function Zone3D({
                         </Html>
                     )}
 
+                    {/* People sitting on booked seats */}
+                    {seatData.filter(seat => bookedSeats.includes(seat.id)).map((seat) => (
+                        <group key={`person-${seat.id}`} position={[seat.position[0], seat.position[1] + 0.2, seat.position[2]]}>
+                            {/* Body */}
+                            <mesh position={[0, 0.5, 0]} castShadow>
+                                <boxGeometry args={[0.4, 0.6, 0.3]} />
+                                <meshStandardMaterial color="#2c3e50" />
+                            </mesh>
+                            {/* Head */}
+                            <mesh position={[0, 1.0, 0]} castShadow>
+                                <sphereGeometry args={[0.15, 16, 16]} />
+                                <meshStandardMaterial color="#d4a574" />
+                            </mesh>
+                        </group>
+                    ))}
+
                     {/* 3D People on Booked Seats (Centralized to Venue3DViewer) */}
                 </>
             )}

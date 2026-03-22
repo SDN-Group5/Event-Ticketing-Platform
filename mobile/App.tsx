@@ -9,6 +9,16 @@ import { FloatingPaymentTimer } from './src/components/FloatingPaymentTimer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import * as NavigationBar from 'expo-navigation-bar';
+import { Platform, StyleSheet, View } from 'react-native';
+
+if (Platform.OS === 'android') {
+  NavigationBar.setVisibilityAsync('visible').catch(() => {});
+  NavigationBar.setButtonStyleAsync('dark').catch(() => {});
+  // Đối với Expo SDK mới (Edge-to-Edge mặc định), ta set mờ cho cả 2 trạng thái
+  NavigationBar.setBackgroundColorAsync('#FFFFFF').catch(() => {});
+  NavigationBar.setBorderColorAsync('#E5E5E5').catch(() => {});
+}
 
 const App: React.FC = () => {
   return (

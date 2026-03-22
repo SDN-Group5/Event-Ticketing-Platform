@@ -5,11 +5,17 @@ import {
   VoucherDTO,
   VoucherInput,
 } from '../../services/voucherApiService';
+import { LayoutAPI } from '../../services/layoutApiService';
 import ConfirmModal from '../../components/modals/ConfirmModal';
 import { useToast } from '../../components/common/ToastProvider';
 
 interface Voucher extends VoucherDTO {
   id: string;
+}
+
+interface SimpleEvent {
+  eventId: string;
+  name: string;
 }
 
 interface VoucherFormState {
@@ -47,6 +53,8 @@ export const ManageVouchersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const todayStr = new Date().toISOString().slice(0, 10);
+  const [orgEvents, setOrgEvents] = useState<SimpleEvent[]>([]);
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchVouchers = async () => {
@@ -71,6 +79,21 @@ export const ManageVouchersPage: React.FC = () => {
     };
 
     fetchVouchers();
+
+    const fetchEvents = async () => {
+      try {
+        const layouts = await LayoutAPI.getMyLayouts();
+        setOrgEvents(
+          (layouts || []).map((l) => ({
+            eventId: String(l.eventId),
+            name: l.eventName || 'Untitled event',
+          })),
+        );
+      } catch {
+        console.error('Error fetching events for voucher');
+      }
+    };
+    fetchEvents();
   }, [user?.id]);
 
   const handleDelete = (id: string) => {
@@ -111,6 +134,7 @@ export const ManageVouchersPage: React.FC = () => {
         voucher.minimumPrice != null ? String(voucher.minimumPrice) : '',
       status: voucher.status,
     });
+    setSelectedEventIds(voucher.eventIds || []);
     setError(null);
     setShowModal(true);
   };
@@ -127,6 +151,7 @@ export const ManageVouchersPage: React.FC = () => {
       minimumPrice: '',
       status: 'active',
     });
+    setSelectedEventIds([]);
     setError(null);
     setShowModal(true);
   };
@@ -150,6 +175,7 @@ export const ManageVouchersPage: React.FC = () => {
         ? Number(form.minimumPrice)
         : undefined,
       status: form.status,
+      eventIds: selectedEventIds.length > 0 ? selectedEventIds : undefined,
     };
   };
 
@@ -383,6 +409,22 @@ export const ManageVouchersPage: React.FC = () => {
                 </div>
 
                 {/* Additional Info */}
+                {voucher.eventIds && voucher.eventIds.length > 0 && (
+                  <div className="text-sm text-gray-400 mb-2 flex items-start gap-1">
+                    <span className="material-symbols-outlined text-sm mt-0.5">event</span>
+                    <span className="truncate">
+                      {voucher.eventIds
+                        .map((eid) => orgEvents.find((e) => e.eventId === eid)?.name || eid)
+                        .join(', ')}
+                    </span>
+                  </div>
+                )}
+                {(!voucher.eventIds || voucher.eventIds.length === 0) && (
+                  <div className="text-sm text-emerald-400/70 mb-2 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">public</span>
+                    Tất cả sự kiện
+                  </div>
+                )}
                 {voucher.minimumPrice && (
                   <div className="text-sm text-gray-400 mb-4">
                     Minimum order: {voucher.minimumPrice.toLocaleString()} đ
@@ -547,6 +589,61 @@ export const ManageVouchersPage: React.FC = () => {
                     handleFormChange('minimumPrice', e.target.value)
                   }
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Apply to Events</label>
+                <label className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg bg-[#2a2436] border border-[#3a3447] cursor-pointer hover:bg-white/5">
+                  <input
+                    type="radio"
+                    name="eventScope"
+                    checked={selectedEventIds.length === 0}
+                    onChange={() => setSelectedEventIds([])}
+                    className="h-4 w-4 accent-[#8655f6]"
+                  />
+                  <span className="text-sm text-emerald-400 font-medium">Toàn bộ sự kiện</span>
+                </label>
+                <label className="flex items-center gap-2 px-3 py-2 mb-1 rounded-lg bg-[#2a2436] border border-[#3a3447] cursor-pointer hover:bg-white/5">
+                  <input
+                    type="radio"
+                    name="eventScope"
+                    checked={selectedEventIds.length > 0}
+                    onChange={() => {
+                      if (selectedEventIds.length === 0 && orgEvents.length > 0) {
+                        setSelectedEventIds([orgEvents[0].eventId]);
+                      }
+                    }}
+                    className="h-4 w-4 accent-[#8655f6]"
+                  />
+                  <span className="text-sm text-white font-medium">Chọn sự kiện cụ thể</span>
+                </label>
+                {selectedEventIds.length > 0 && orgEvents.length > 0 && (
+                  <div className="max-h-40 overflow-y-auto bg-[#2a2436] border border-[#3a3447] rounded-lg p-2 space-y-1 mt-1">
+                    {orgEvents.map((evt) => (
+                      <label key={evt.eventId} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white/5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedEventIds.includes(evt.eventId)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedEventIds((prev) => [...prev, evt.eventId]);
+                            } else {
+                              const next = selectedEventIds.filter((id) => id !== evt.eventId);
+                              setSelectedEventIds(next.length > 0 ? next : []);
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-gray-500 bg-transparent accent-[#8655f6]"
+                        />
+                        <span className="text-sm text-white truncate">{evt.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {selectedEventIds.length > 0 && (
+                  <p className="text-xs text-[#8655f6] mt-1">
+                    Đã chọn {selectedEventIds.length} sự kiện
+                  </p>
+                )}
               </div>
             </div>
 

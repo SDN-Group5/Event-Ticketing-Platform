@@ -20,7 +20,7 @@ export interface IVoucher extends Document {
   status: 'active' | 'inactive' | 'expired';
 
   organizerId?: string;
-  eventId?: string;
+  eventIds?: string[];
   userId?: string;
 }
 
@@ -51,7 +51,7 @@ const VoucherSchema = new Schema<IVoucher>(
     },
 
     organizerId: { type: String },
-    eventId: { type: String },
+    eventIds: { type: [String], default: [] },
     userId: { type: String },
   },
   {

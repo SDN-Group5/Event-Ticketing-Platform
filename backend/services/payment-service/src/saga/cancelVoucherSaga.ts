@@ -36,7 +36,7 @@ const createVoucherStep: SagaStep<CancelVoucherContext> = {
       minimumPrice: undefined,
       status: 'active',
       organizerId: ctx.order.organizerId,
-      eventId: ctx.order.eventId,
+      eventIds: [ctx.order.eventId],
       userId: ctx.order.userId,
     });
 

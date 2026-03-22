@@ -5,11 +5,12 @@ import { Voucher } from '../models/voucher.model';
  * Helper: lấy organizerId từ header hoặc body/query (tạm thời, vì payment-service không verify JWT trực tiếp)
  */
 function getOrganizerId(req: Request): string | null {
+  const fromMiddleware = (req as any).userId as string | undefined;
   const headerId = (req.headers['x-user-id'] as string) || (req.headers['x-organizer-id'] as string);
   const bodyId = (req.body && (req.body.organizerId as string)) || undefined;
   const queryId = (req.query && (req.query.organizerId as string)) || undefined;
 
-  return headerId || bodyId || queryId || null;
+  return fromMiddleware || headerId || bodyId || queryId || null;
 }
 
 /**
@@ -31,7 +32,7 @@ export const getOrganizerVouchers = async (req: Request, res: Response) => {
     const { eventId } = req.query;
     const filter: any = { organizerId };
     if (eventId) {
-      filter.eventId = eventId;
+      filter.eventIds = eventId;
     }
 
     const vouchers = await Voucher.find(filter).sort({ createdAt: -1 });
@@ -74,7 +75,7 @@ export const createVoucher = async (req: Request, res: Response) => {
       endDate,
       minimumPrice,
       status,
-      eventId,
+      eventIds,
       userId,
     } = req.body;
 
@@ -145,7 +146,7 @@ export const createVoucher = async (req: Request, res: Response) => {
       minimumPrice: minimumPrice != null ? Number(minimumPrice) : undefined,
       status: status || 'active',
       organizerId,
-      eventId,
+      eventIds: Array.isArray(eventIds) ? eventIds : [],
       userId,
     });
 
@@ -254,7 +255,7 @@ export const previewVoucher = async (req: Request, res: Response) => {
         message: `Don hang phai toi thieu ${voucher.minimumPrice} de dung ma nay`,
       });
     }
-    if (voucher.eventId && eventId && voucher.eventId !== eventId) {
+    if (voucher.eventIds && voucher.eventIds.length > 0 && eventId && !voucher.eventIds.includes(eventId)) {
       return res.status(400).json({
         success: false,
         message: 'Ma voucher khong ap dung cho su kien nay',
@@ -330,7 +331,7 @@ export const updateVoucher = async (req: Request, res: Response) => {
       endDate,
       minimumPrice,
       status,
-      eventId,
+      eventIds,
       userId,
     } = req.body;
 
@@ -398,8 +399,8 @@ export const updateVoucher = async (req: Request, res: Response) => {
       (voucher as any).status = status;
     }
 
-    if (eventId !== undefined) {
-      (voucher as any).eventId = eventId || undefined;
+    if (eventIds !== undefined) {
+      (voucher as any).eventIds = Array.isArray(eventIds) ? eventIds : [];
     }
 
     if (userId !== undefined) {

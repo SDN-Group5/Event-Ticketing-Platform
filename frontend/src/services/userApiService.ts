@@ -47,5 +47,15 @@ export const UserAPI = {
     updateMe: async (userData: any) => {
         const response = await axios.patch(`${USERS_API_URL}/me`, userData, getAuthHeaders());
         return response.data;
-    }
+    },
+
+    // 5. [POST] Change password
+    changePassword: async (currentPassword: string, newPassword: string) => {
+        const response = await axios.post(
+            `${API_BASE}/api/auth/change-password`,
+            { currentPassword, newPassword },
+            getAuthHeaders(),
+        );
+        return response.data;
+    },
 };

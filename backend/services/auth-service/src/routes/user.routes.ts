@@ -357,8 +357,21 @@ router.patch("/:userId", verifyToken, roleCheck(["admin"]), async (req, res) => 
       });
     }
 
-    if (firstName !== undefined) user.firstName = firstName;
-    if (lastName !== undefined) user.lastName = lastName;
+    const NAME_REGEX = /^[\p{L}\s'-]+$/u;
+    if (firstName !== undefined) {
+      const fn = firstName.trim();
+      if (fn.length < 2 || fn.length > 10 || !NAME_REGEX.test(fn)) {
+        return res.status(400).json({ success: false, message: "First name không hợp lệ (2-10 ký tự, chỉ chữ cái)" });
+      }
+      user.firstName = fn;
+    }
+    if (lastName !== undefined) {
+      const ln = lastName.trim();
+      if (ln.length < 2 || ln.length > 10 || !NAME_REGEX.test(ln)) {
+        return res.status(400).json({ success: false, message: "Last name không hợp lệ (2-10 ký tự, chỉ chữ cái)" });
+      }
+      user.lastName = ln;
+    }
     if (phone !== undefined) user.phone = phone;
     if (role !== undefined) user.role = role;
     if (isActive !== undefined) user.isActive = isActive;

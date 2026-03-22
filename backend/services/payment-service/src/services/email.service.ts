@@ -28,6 +28,23 @@ const sendBrevoEmail = async (payload: any) => {
   }
 };
 
+async function sendWithResend(params: { to: string; subject: string; html: string }): Promise<boolean> {
+  if (!resend || !EMAIL_FROM) return false;
+  try {
+    await resend.emails.send({
+      from: EMAIL_FROM,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+    });
+    console.log(`✅ [EMAIL] Resend sent to ${params.to}`);
+    return true;
+  } catch (error) {
+    console.error('❌ [EMAIL] Resend failed:', error);
+    return false;
+  }
+}
+
 // ============================================
 // SEND PAYMENT CONFIRMATION EMAIL
 // ============================================

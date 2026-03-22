@@ -46,5 +46,30 @@ export const EventApprovalAPI = {
             getAuthHeaders()
         );
         return response.data;
+    },
+
+    // 4. [PATCH] Process Event Payout (Admin)
+    processPayout: async (eventId: string, data: { amount: number; sendEmail: boolean; receipt?: File }) => {
+        const formData = new FormData();
+        formData.append('amount', data.amount.toString());
+        formData.append('sendEmail', data.sendEmail.toString());
+
+        if (data.receipt) {
+            formData.append('receipt', data.receipt);
+        }
+
+        const headers = getAuthHeaders().headers;
+
+        const response = await axios.patch(
+            `${EVENTS_API_URL}/${eventId}/payout`,
+            formData,
+            {
+                headers: {
+                    ...headers,
+                    'Content-Type': 'multipart/form-data',
+                }
+            }
+        );
+        return response.data;
     }
 };

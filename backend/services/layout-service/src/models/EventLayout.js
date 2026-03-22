@@ -114,6 +114,9 @@ const eventLayoutSchema = new mongoose.Schema({
         required: true,
         default: Date.now
     },
+    eventEndDate: {
+        type: Date
+    },
     eventImage: {
         type: String,
         default: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30' // Default placeholder image
@@ -177,12 +180,25 @@ const eventLayoutSchema = new mongoose.Schema({
     approvedAt: {
         type: Date
     },
-    // Payout / bank info for organizer
+    // Note: payoutInfo is DEPRECATED. Bank details are now stored in the separate BankAccount model.
+    // Kept here for backward compatibility with old data.
     payoutInfo: {
         accountName: { type: String, maxlength: 100 },
         accountNumber: { type: String, maxlength: 50 },
         bankName: { type: String, maxlength: 100 },
         branchName: { type: String, maxlength: 100 }
+    },
+    // Liquidity Payout Status
+    payoutStatus: {
+        type: String,
+        enum: ['unpaid', 'processing', 'paid'],
+        default: 'unpaid'
+    },
+    payoutReceiptUrl: {
+        type: String
+    },
+    payoutAt: {
+        type: Date
     },
     // Invoice / billing info
     invoiceInfo: {

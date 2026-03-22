@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:4001';
+// API Gateway default port (xem backend/docker/docker-compose.yml)
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'success';
 

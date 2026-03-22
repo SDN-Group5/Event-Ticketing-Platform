@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITicket extends Document {
-  ticketId: string; // Unique ticket identifier (TV-{orderCode}-{itemIndex})
+  ticketId: string; // Unique: TV-{orderCode base36}-{itemIndex} (cũ có thể là TV-{orderCode thập phân}-{itemIndex})
   orderId: string; // Reference to Order
   orderCode: number; // Order code for easy tracking
   userId: string; // Customer who owns the ticket

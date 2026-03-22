@@ -37,8 +37,9 @@ export const createTicketsForOrder = async (
       for (let i = 0; i < item.quantity; i++) {
         itemIndex++;
 
-        // Generate unique ticket ID
-        const ticketId = `TV-${orderCode}-${itemIndex}`;
+        // Mã vé ngắn gọn hơn trên URL: TV-{orderCode base36}-{số thứ tự vé trong đơn}
+        const orderSlug = orderCode.toString(36);
+        const ticketId = `TV-${orderSlug}-${itemIndex}`;
 
         // Create QR code payload (contains essential ticket info)
         const qrPayload = JSON.stringify({

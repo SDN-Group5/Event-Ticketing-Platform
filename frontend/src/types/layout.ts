@@ -41,9 +41,11 @@ export interface LayoutZone {
 export interface EventLayout {
   eventId: string;
   eventName?: string;
-
+  status: 'draft' | 'published' | 'rejected' | 'completed';
+  rejectionReason?: string; // Thêm luôn cái này để dùng ở EventsPage
   // Optional event metadata used by the frontend
   eventDate?: string;
+  eventEndDate?: string;
   eventImage?: string;
   eventLocation?: string;
   eventDescription?: string;
@@ -55,6 +57,19 @@ export interface EventLayout {
   canvasWidth?: number;
   canvasHeight?: number;
   canvasColor?: string;
+
+  payoutInfo?: {
+    accountName?: string;
+    accountNumber?: string;
+    bankName?: string;
+    branchName?: string;
+  };
+  invoiceInfo?: {
+    businessType?: string;
+    fullName?: string;
+    address?: string;
+    taxCode?: string;
+  };
 
   createdAt?: string;
   updatedAt?: string;

@@ -10,11 +10,12 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import healthRoutes from './routes/health.routes';
+import { User } from './models/user.model';
 
 // Export middleware để các service khác có thể dùng
 export { default as verifyToken } from './middleware/auth.middleware';
 export { roleCheck } from './middleware/roleCheck.middleware';
-export { User } from './models/user.model';
+export { User };
 
 // ============================================
 // LOAD ENV FROM backend/.env
@@ -95,8 +96,15 @@ const connectDB = async () => {
     console.log(`🔌 [${SERVICE_NAME}] Kết nối MongoDB...`);
     await mongoose.connect(MONGO_URI);
     console.log(`✅ [${SERVICE_NAME}] MongoDB connected: ${mongoose.connection.name}`);
-    console.log(`   🔗 URI: ${MONGO_URI}`);
     console.log(`   🗄  DB Name: ${mongoose.connection.name} | Host: ${mongoose.connection.host}`);
+
+    // Đảm bảo index unique (email) được tạo/sync trên môi trường production
+    try {
+      await User.syncIndexes();
+      console.log(`✅ [${SERVICE_NAME}] MongoDB indexes synced`);
+    } catch (indexErr) {
+      console.warn(`⚠️  [${SERVICE_NAME}] Failed to sync indexes:`, indexErr);
+    }
   } catch (error) {
     console.error(`❌ [${SERVICE_NAME}] MongoDB connection error:`, error);
     // Không exit, cho phép service chạy với mock data nếu cần

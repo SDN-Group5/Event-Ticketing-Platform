@@ -7,8 +7,9 @@ export const RegisterPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const roleParam = searchParams.get('role');
     const isOrganizerMode = roleParam === 'organizer';
-    
-    const { isLoading, error, clearError } = useAuth();
+
+    const { error, clearError, register } = useAuth();
+    const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -52,34 +53,26 @@ export const RegisterPage: React.FC = () => {
             return;
         }
 
-        // Call register from AuthContext
+        setIsLoading(true);
         try {
-            const apiUrl = (import.meta as any).env.VITE_API_URL || 'http://localhost:4001';
-            const response = await fetch(`${apiUrl}/api/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    email: formData.email,
-                    password: formData.password,
-                    role: roleParam || 'customer'
-                }),
-                credentials: 'include',
+            const ok = await register({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                password: formData.password,
+                role: roleParam === 'organizer' ? 'organizer' : 'customer',
             });
 
-            const data = await response.json();
+            if (!ok) return;
 
-            if (!response.ok) {
-                setValidationError(data?.message || 'Registration failed');
-                return;
-            }
-
-            // Success - redirect to OTP verification
+            // Success - store email for OTP page and redirect
+            sessionStorage.setItem('pending_verification_email', formData.email);
             navigate('/otp', { state: { email: formData.email } });
         } catch (err) {
             console.error(err);
             setValidationError('Cannot connect to server');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -156,8 +149,8 @@ export const RegisterPage: React.FC = () => {
                                 {isOrganizerMode ? 'Organizer Registration' : 'Create Account'}
                             </h1>
                             <p className="text-slate-300 text-sm">
-                                {isOrganizerMode 
-                                    ? 'Start organizing amazing events with TicketVibe' 
+                                {isOrganizerMode
+                                    ? 'Start organizing amazing events with TicketVibe'
                                     : 'Join TicketVibe and discover amazing events'}
                             </p>
                         </div>

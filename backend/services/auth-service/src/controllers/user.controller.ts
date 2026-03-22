@@ -354,3 +354,48 @@ export const getUserById = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * POST /api/users/send-payout-email
+ * Internal endpoint for other services (e.g. Layout Service) 
+ * to ask Auth Service to send a payout notification email.
+ */
+export const sendPayoutEmail = async (req: Request, res: Response) => {
+  try {
+    const { organizerId, eventName, amount, receiptUrl } = req.body;
+
+    if (!organizerId || !eventName || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields (organizerId, eventName, amount)"
+      });
+    }
+
+    const organizer = await User.findById(organizerId);
+    if (!organizer) {
+      return res.status(404).json({ success: false, message: "Organizer not found" });
+    }
+
+    const emailSent = await import("../services/email.service").then(m =>
+      m.sendPayoutNotificationEmail({
+        to: organizer.email,
+        organizerName: `${organizer.firstName} ${organizer.lastName}`,
+        eventName,
+        amount,
+        receiptUrl
+      })
+    );
+
+    if (emailSent) {
+      res.status(200).json({ success: true, message: "Payout notification email sent successfully" });
+    } else {
+      res.status(500).json({ success: false, message: "Failed to send email" });
+    }
+  } catch (error: any) {
+    console.error("❌ Lỗi sendPayoutEmail:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong",
+    });
+  }
+};

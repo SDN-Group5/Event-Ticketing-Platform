@@ -41,12 +41,59 @@ export const CreateEventPage: React.FC = () => {
     ];
 
     const handleNext = async () => {
+        setError(null);
+
         // Chặn ở bước 1 nếu banner không đúng tỉ lệ
-        if (step === 1 && bannerError) {
-            return;
+        if (step === 1) {
+            if (!formData.name.trim() || !formData.category) {
+                setError('Vui lòng điền đầy đủ thông tin bắt buộc (Event Name, Category)');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            if (bannerError) return;
+        } else if (step === 2) {
+            if (!formData.dateStart || !formData.time || !formData.dateEnd || !formData.timeEnd || !formData.venue.trim()) {
+                setError('Vui lòng điền đầy đủ ngày giờ và địa điểm tổ chức (*)');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            // Xac thực ngày kết thúc phải sau ngày bắt đầu và không ở trong quá khứ
+            const startD = new Date(`${formData.dateStart}T${formData.time}`);
+            const endD = new Date(`${formData.dateEnd}T${formData.timeEnd}`);
+            const now = new Date();
+
+            if (startD < now) {
+                setError('Thời gian bắt đầu sự kiện không được ở trong quá khứ');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            if (endD <= startD) {
+                setError('Thời gian kết thúc phải diễn ra sau thời gian bắt đầu');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+        } else if (step === 3) {
+            if (!formData.payoutAccountName.trim() || !formData.payoutAccountNumber.trim() || !formData.payoutBankName.trim() || !formData.payoutBranchName.trim()) {
+                setError('Vui lòng điền đầy đủ thông tin tài khoản ngân hàng nhận tiền (*)');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            if (!/^\d+$/.test(formData.payoutAccountNumber.trim())) {
+                setError('Số tài khoản của bạn chỉ được chứa các chữ số hợp lệ.');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            if (formData.invoiceTaxCode && !/^\d{10,13}$/.test(formData.invoiceTaxCode.trim())) {
+                setError('Mã số thuế của doanh nghiệp phải có từ 10 đến 13 chữ số.');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
         }
+
         if (step < 4) {
             setStep(step + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
             // Submit and redirect
             setIsSubmitting(true);
@@ -111,6 +158,7 @@ export const CreateEventPage: React.FC = () => {
                     eventId: realEventId,
                     eventName: formData.name,
                     eventDate: startTimeString,
+                    eventEndDate: endTimeString,
                     eventImage: bannerUrl,
                     eventLocation: formData.venue,
                     eventDescription: formData.description,
@@ -182,6 +230,14 @@ export const CreateEventPage: React.FC = () => {
 
                 {/* Form Card */}
                 <div className="bg-[#1e293b]/60 backdrop-blur border border-white/5 rounded-2xl p-8">
+                    {/* Error display at top of form */}
+                    {error && step < 4 && (
+                        <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3">
+                            <span className="material-symbols-outlined text-red-400">error</span>
+                            <p className="text-sm text-red-400">{error}</p>
+                        </div>
+                    )}
+
                     {step === 1 && (
                         <div className="space-y-6">
                             <div>
@@ -300,7 +356,7 @@ export const CreateEventPage: React.FC = () => {
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date Start</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date Start *</label>
                                     <input
                                         type="date"
                                         value={formData.dateStart}
@@ -309,7 +365,7 @@ export const CreateEventPage: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time Start</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time Start *</label>
                                     <input
                                         type="time"
                                         value={formData.time}
@@ -318,7 +374,7 @@ export const CreateEventPage: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date End</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Date End *</label>
                                     <input
                                         type="date"
                                         value={formData.dateEnd}
@@ -327,7 +383,7 @@ export const CreateEventPage: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time End</label>
+                                    <label className="block text-sm font-bold text-slate-300 mb-2">Time End *</label>
                                     <input
                                         type="time"
                                         value={formData.timeEnd}
@@ -375,7 +431,7 @@ export const CreateEventPage: React.FC = () => {
                                 <h4 className="text-sm font-semibold text-slate-400 mb-3">Bank Account for Payout</h4>
                                 <div className="bg-[#0f172a] rounded-xl p-4 border border-slate-700 space-y-4">
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-300 mb-2">Account Holder Name</label>
+                                        <label className="block text-sm font-bold text-slate-300 mb-2">Account Holder Name *</label>
                                         <input
                                             type="text"
                                             value={formData.payoutAccountName}
@@ -386,7 +442,7 @@ export const CreateEventPage: React.FC = () => {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-300 mb-2">Account Number</label>
+                                            <label className="block text-sm font-bold text-slate-300 mb-2">Account Number *</label>
                                             <input
                                                 type="text"
                                                 value={formData.payoutAccountNumber}
@@ -396,7 +452,7 @@ export const CreateEventPage: React.FC = () => {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-300 mb-2">Bank Name</label>
+                                            <label className="block text-sm font-bold text-slate-300 mb-2">Bank Name *</label>
                                             <input
                                                 type="text"
                                                 value={formData.payoutBankName}
@@ -407,7 +463,7 @@ export const CreateEventPage: React.FC = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-300 mb-2">Branch</label>
+                                        <label className="block text-sm font-bold text-slate-300 mb-2">Branch *</label>
                                         <input
                                             type="text"
                                             value={formData.payoutBranchName}
@@ -537,9 +593,9 @@ export const CreateEventPage: React.FC = () => {
                             )}
 
                             {!error && (
-                                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">
-                                    <span className="material-symbols-outlined text-emerald-400">check_circle</span>
-                                    <p className="text-sm text-emerald-400">Your event is ready to be published!</p>
+                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-blue-400">info</span>
+                                    <p className="text-sm text-blue-400">Vui lòng kiểm tra lại thông tin và bấm Publish Event để hoàn tất đăng sự kiện.</p>
                                 </div>
                             )}
                         </div>

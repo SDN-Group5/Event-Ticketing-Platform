@@ -8,6 +8,7 @@ import {
   handleWebhook,
   cancelPayment,
   verifyPayment,
+  markEventPayoutSuccess,
 } from '../controllers/payment.controller';
 import { getPublicTicketByTicketId } from '../controllers/ticket.controller';
 import {
@@ -65,5 +66,9 @@ router.get('/organizer/vouchers', extractUserId, verifyOrganizer, getOrganizerVo
 router.post('/organizer/vouchers', extractUserId, verifyOrganizer, createVoucher);
 router.put('/organizer/vouchers/:id', extractUserId, verifyOrganizer, updateVoucher);
 router.delete('/organizer/vouchers/:id', extractUserId, verifyOrganizer, deleteVoucher);
+
+// ================== ADMIN ==================
+// Đánh dấu orders của sự kiện là đã payout thành công
+router.patch('/admin/payout-event/:eventId', markEventPayoutSuccess);
 
 export default router;

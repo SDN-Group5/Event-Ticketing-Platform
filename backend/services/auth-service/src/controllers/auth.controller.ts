@@ -132,8 +132,8 @@ export const logout = (req: Request, res: Response) => {
 export const register = async (req: Request, res: Response) => {
     try {
         const { firstName, lastName, email, password, role } = req.body;
-
-        const existingUser = await User.findOne({ email });
+        const normalizedEmail = email.toLowerCase().trim();
+        const existingUser = await User.findOne({ email: normalizedEmail });
         if (existingUser) {
             return res.status(409).json({ message: "Email đã tồn tại" });
         }
@@ -151,7 +151,7 @@ export const register = async (req: Request, res: Response) => {
         const user = await User.create({
             firstName,
             lastName,
-            email,
+            email: normalizedEmail,
             password,
             role: finalRole,
             emailVerified: false,
@@ -162,31 +162,44 @@ export const register = async (req: Request, res: Response) => {
 
         console.log(`✅ User created: ${user.email} as ${user.role}`);
 
-        try {
-            const emailResult = await sendVerificationEmail({
-                to: user.email,
-                firstName: user.firstName,
-                code: verificationCode,
-            });
-
-            if (emailResult) {
-                console.log(`✅ [REGISTER] Email verification đã được gửi thành công đến ${user.email}`);
-            } else {
-                console.error(`❌ [REGISTER] Email service trả về false cho ${user.email}`);
-                console.error(`⚠️  [REGISTER] OTP code: ${verificationCode} - Vui lòng kiểm tra email config`);
-            }
-        } catch (emailError: any) {
-            console.error("❌ [REGISTER] Lỗi khi gửi email:", emailError);
-            console.error(`⚠️  [REGISTER] Email không được gửi! OTP for ${user.email}: ${verificationCode}`);
-        }
-
-        return res.status(201).json({
+        // Trả response ngay để tránh bị treo vì SMTP timeout trên môi trường deploy.
+        // Việc gửi email chạy "background"; nếu fail sẽ log OTP để debug.
+        res.status(201).json({
             message: "Đăng ký thành công. Vui lòng kiểm tra email để xác thực.",
             requiresEmailVerification: true,
             email: user.email,
         });
-    } catch (error) {
+
+        // Fire-and-forget email
+        setTimeout(async () => {
+            try {
+                const emailResult = await sendVerificationEmail({
+                    to: user.email,
+                    firstName: user.firstName,
+                    code: verificationCode,
+                });
+
+                if (emailResult) {
+                    console.log(`✅ [REGISTER] Email verification đã được gửi thành công đến ${user.email}`);
+                } else {
+                    console.error(`❌ [REGISTER] Email service trả về false cho ${user.email}`);
+                    console.error(`⚠️  [REGISTER] OTP code: ${verificationCode} - Vui lòng kiểm tra email config`);
+                }
+            } catch (emailError: any) {
+                console.error("❌ [REGISTER] Lỗi khi gửi email:", emailError);
+                console.error(`⚠️  [REGISTER] Email không được gửi! OTP for ${user.email}: ${verificationCode}`);
+            }
+        }, 0);
+
+        return;
+    } catch (error: any) {
         console.error("❌ Lỗi register:", error);
+
+        // Chống lỗi Race Condition: Nếu User được tạo giữa lúc kiểm tra và lưu
+        if (error.code === 11000) {
+            return res.status(409).json({ message: "Email đã tồn tại" });
+        }
+
         return res.status(500).json({ message: "Something went wrong" });
     }
 };

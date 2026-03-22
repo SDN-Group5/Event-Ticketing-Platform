@@ -25,4 +25,3 @@ ENV NODE_ENV=production
 EXPOSE 4005
 
 CMD ["node", "dist/main.js"]
-

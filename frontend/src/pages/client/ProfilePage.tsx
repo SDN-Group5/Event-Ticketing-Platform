@@ -1,84 +1,165 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ROUTES } from '../../constants/routes';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { UserAPI } from '../../services/userApiService';
+import type { UserRole } from '../../../../shared/type';
 
-const MENU_ITEMS = [
-  { label: 'Vé của tôi', path: ROUTES.MY_TICKETS },
-  { label: 'Lịch sử giao dịch', path: ROUTES.TRANSACTION_HISTORY },
-  { label: 'Yêu thích', path: ROUTES.WISHLIST },
-  { label: 'Cài đặt hồ sơ', path: ROUTES.PROFILE },
-];
+type MeUser = {
+    _id?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    avatar?: string | null;
+    role?: UserRole;
+    address?: {
+        street?: string;
+        city?: string;
+        state?: string;
+        country?: string;
+        zipCode?: string;
+    };
+    isActive?: boolean;
+    emailVerified?: boolean;
+    createdAt?: string;
+};
+
+const ROLE_LABEL: Record<UserRole, string> = {
+    customer: 'Khách hàng',
+    organizer: 'Nhà tổ chức',
+    staff: 'Nhân viên',
+    admin: 'Quản trị',
+};
+
+function formatMemberSince(iso?: string): string {
+    if (!iso) return '—';
+    try {
+        return new Date(iso).toLocaleDateString('vi-VN', {
+            month: 'short',
+            year: 'numeric',
+        });
+    } catch {
+        return '—';
+    }
+}
+
+function formatAddress(addr?: MeUser['address']): string {
+    if (!addr) return '';
+    const parts = [addr.street, addr.city, addr.state, addr.country, addr.zipCode].filter(Boolean);
+    return parts.join(', ');
+}
 
 export const ProfilePage: React.FC = () => {
-    const location = useLocation();
+    const { user: authUser } = useAuth();
+    const [me, setMe] = useState<MeUser | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const data = await UserAPI.getMe();
+                if (!cancelled) setMe(data as MeUser);
+            } catch (e: unknown) {
+                const msg =
+                    (e as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                    'Không tải được thông tin hồ sơ.';
+                if (!cancelled) setLoadError(msg);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const displayName = useMemo(() => {
+        const fromApi = `${me?.firstName ?? ''} ${me?.lastName ?? ''}`.trim();
+        if (fromApi) return fromApi;
+        if (authUser?.name) return authUser.name;
+        return me?.email || authUser?.email || 'Người dùng';
+    }, [me, authUser]);
+
+    const email = me?.email ?? authUser?.email ?? '—';
+    const phone = me?.phone?.trim() || '—';
+    const addressLine = formatAddress(me?.address) || '—';
+    const role = (me?.role ?? authUser?.role) as UserRole | undefined;
+    const roleLabel = role ? ROLE_LABEL[role] ?? role : '—';
+    const avatarUrl = me?.avatar || authUser?.avatar || null;
+    const memberSince = formatMemberSince(me?.createdAt);
+
+    const avatarStyle = avatarUrl
+        ? { backgroundImage: `url(${avatarUrl})` as const }
+        : undefined;
 
     return (
-        <div className="min-h-screen bg-[#0f172a] text-white flex">
-            {/* Side Nav */}
-            <aside className="w-64 p-6 flex flex-col gap-8 border-r border-white/5 hidden lg:flex">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gray-700 bg-cover bg-center" style={{ backgroundImage: 'url(https://lh3.googleusercontent.com/aida-public/AB6AXuAzQLjgCEZYT3Z1IquCHXVgRti4HN_IpR_ZI0626Xzmeo3jOq-mu0Nuow6DAApb6_rdyvuJhEq2q4hznXrT-Tgc1j5VnI-51JhxVBWR7FEwUD2q9WALOhWYKjo9JrV0tgBCH6Zq71AptCBLtxXhXyAGE9j3a-oW2efRycH7sNIKmq7UxRZhJwGo84k07maxd5CQyvHkEqQ0H_VlIdBqwF37eOg2TYpFsykyVyw28QBrHxtqkqLy4UJob9hPCFGjat0mGBGT_keoitGd)' }} />
-                    <div>
-                        <h2 className="font-bold">Alex Rivers</h2>
-                        <span className="text-xs text-[#8655f6] font-bold uppercase">Elite Attendee</span>
-                    </div>
-                </div>
-                <nav className="flex flex-col gap-2">
-                    {MENU_ITEMS.map(({ label, path }) => (
-                        <Link
-                            key={path}
-                            to={path}
-                            className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${location.pathname === path ? 'bg-[#8655f6] text-white shadow-lg shadow-[#8655f6]/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
-                        >
-                            {label}
-                        </Link>
-                    ))}
-                </nav>
-            </aside>
-
-            <main className="flex-1 p-8 overflow-y-auto">
-                {/* Profile Header */}
-                <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex items-center justify-between mb-8">
+        <div className="min-h-screen bg-[#0f172a] text-white">
+            <main className="p-8 overflow-y-auto max-w-3xl mx-auto w-full">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8">
                     <div className="flex items-center gap-6">
                         <div
-                            className="w-20 h-20 rounded-full border-4 border-[#8655f6]/30 bg-gray-700 bg-cover bg-center"
-                            style={{ backgroundImage: 'url(https://lh3.googleusercontent.com/aida-public/AB6AXuADu6W6U_wGI3hym-PUPGAnLt7ZADKR5c8VG8hffkvrKXc82rcFJNoeMq-2xzzeurC8HL7sVa6TA1Ro5bnVjAgVgtNWVwS343oJOCBHE9bttCOAArQoSS3-rpX99NvIxX5npXx64EdN1npCxvBrShPfiPaufbrsNEHjtJ3eprgPJblM5ZvnWlI-0-0WRiWFtz7OnNCvBLW0by-5ufXLkll41aUhHyiXkYD_Ih5oPkQ-XxIB8XH90QKsMrneflmM1MjsHpyxD7HG28C4)' }}
-                        />
+                            className="w-20 h-20 rounded-full border-4 border-[#8655f6]/30 bg-gray-700 bg-cover bg-center shrink-0 flex items-center justify-center text-2xl font-bold text-white/90"
+                            style={avatarStyle}
+                        >
+                            {!avatarUrl && displayName.charAt(0).toUpperCase()}
+                        </div>
                         <div>
-                            <h1 className="text-2xl font-bold flex items-center gap-2">
-                                Alex Rivers
-                                <span className="text-[10px] bg-[#8655f6]/20 text-[#8655f6] px-2 py-0.5 rounded-full border border-[#8655f6]/30">PRO USER</span>
+                            <h1 className="text-2xl font-bold flex flex-wrap items-center gap-2">
+                                {displayName}
+                                {role && (
+                                    <span className="text-[10px] bg-[#8655f6]/20 text-[#8655f6] px-2 py-0.5 rounded-full border border-[#8655f6]/30 uppercase tracking-wide">
+                                        {roleLabel}
+                                    </span>
+                                )}
                             </h1>
-                            <p className="text-sm text-slate-400">Member since Oct 2023</p>
-                            <div className="flex gap-4 mt-2 text-sm">
-                                <span className="font-bold">24 <span className="font-normal text-slate-500">Events</span></span>
-                                <span className="font-bold">12 <span className="font-normal text-slate-500">Reviews</span></span>
+                            <p className="text-sm text-slate-400">Thành viên từ {memberSince}</p>
+                            <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
+                                {me?.emailVerified === false && (
+                                    <span className="text-amber-400/90">Email chưa xác thực</span>
+                                )}
+                                {me?.isActive === false && (
+                                    <span className="text-red-400/90">Tài khoản đang tạm khóa</span>
+                                )}
                             </div>
                         </div>
                     </div>
-                    <button className="px-4 py-2 border border-white/10 rounded-lg text-sm hover:bg-white/5 transition-colors">Edit Profile</button>
                 </div>
 
-                {/* Tickets Section */}
-                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <span className="w-1.5 h-6 bg-[#8655f6] rounded-full" /> Upcoming Tickets
-                </h2>
-                <div className="flex gap-6 overflow-x-auto pb-4">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="min-w-[320px] bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:shadow-[0_0_20px_rgba(134,85,246,0.2)] transition-all">
-                            <div className="h-40 bg-cover bg-center relative" style={{ backgroundImage: `url(https://picsum.photos/400/200?random=${i})` }}>
-                                <span className="absolute top-3 right-3 bg-black/60 backdrop-blur px-2 py-1 rounded text-[10px] font-bold border border-white/20">UPCOMING</span>
-                            </div>
-                            <div className="p-5">
-                                <h3 className="font-bold text-lg mb-1">Neon Lights Festival</h3>
-                                <p className="text-xs text-slate-400 mb-4 flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-sm">calendar_month</span> Dec 12 • 8:00 PM
-                                </p>
-                                <button className="w-full py-2 bg-[#8655f6] rounded-lg text-sm font-bold hover:bg-[#7f0df2]">View QR</button>
-                            </div>
+                {loading && (
+                    <p className="text-slate-400 text-sm">Đang tải thông tin hồ sơ…</p>
+                )}
+                {loadError && !loading && (
+                    <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                        {loadError}
+                    </div>
+                )}
+
+                {!loading && !loadError && (
+                    <>
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                            <span className="w-1.5 h-6 bg-[#8655f6] rounded-full" />
+                            Thông tin tài khoản
+                        </h2>
+                        <div className="grid gap-4 max-w-2xl">
+                            {[
+                                { label: 'Email', value: email },
+                                { label: 'Số điện thoại', value: phone },
+                                { label: 'Địa chỉ', value: addressLine },
+                            ].map((row) => (
+                                <div
+                                    key={row.label}
+                                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4"
+                                >
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 sm:w-40 shrink-0">
+                                        {row.label}
+                                    </span>
+                                    <span className="text-sm text-white break-all">{row.value}</span>
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </>
+                )}
             </main>
         </div>
     );

@@ -46,6 +46,13 @@ function ordersToTickets(orders: any[]): Ticket[] {
     const ticketStatus: Ticket['status'] = order.status === 'refunded' ? 'refunded' : 'active';
     const dateStr = order.paidAt ? new Date(order.paidAt).toISOString().slice(0, 10) : (order.createdAt ? new Date(order.createdAt).toISOString().slice(0, 10) : '');
     const items = order.items || [];
+    const dbTickets: { ticketId?: string }[] = Array.isArray(order.tickets) ? [...order.tickets] : [];
+    dbTickets.sort((a, b) => {
+      const ma = String(a.ticketId || '').match(/-(\d+)$/);
+      const mb = String(b.ticketId || '').match(/-(\d+)$/);
+      return (ma ? parseInt(ma[1], 10) : 0) - (mb ? parseInt(mb[1], 10) : 0);
+    });
+    let ticketSeq = 0;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       let seatNumber: string = item.seatId || '—';
@@ -76,7 +83,10 @@ function ordersToTickets(orders: any[]): Ticket[] {
       }
 
       const qty = Math.max(1, Number(item.quantity) || 1);
+      const orderSlug = Number(order.orderCode).toString(36);
       for (let j = 0; j < qty; j++) {
+        ticketSeq += 1;
+        const fromDb = dbTickets[ticketSeq - 1]?.ticketId;
         list.push({
           id: `${order._id}-${i}-${j}`,
           eventName: order.eventName || 'Sự kiện',
@@ -85,7 +95,7 @@ function ordersToTickets(orders: any[]): Ticket[] {
           location: order.location || '—',
           zone: item.zoneName || '—',
           seatNumber,
-          ticketCode: `TV-${order.orderCode}-${i}${qty > 1 ? `-${j + 1}` : ''}`,
+          ticketCode: fromDb || `TV-${orderSlug}-${ticketSeq}`,
           price: Number(item.price) || 0,
           status: ticketStatus,
           eventId: order.eventId,
@@ -181,16 +191,22 @@ export const MyTicketsPage: React.FC = () => {
   const handleConfirmCancel = async () => {
     if (!cancelTicketTarget || !user?.id) return;
 
-    // Lấy orderCode từ ticketCode: TV-{orderCode}-{index}
-    const match = cancelTicketTarget.ticketCode.match(/^TV-(\d+)-/);
-    const orderCode = match ? match[1] : null;
-    if (!orderCode) {
+    // TV-{orderSlug}-{index} — orderSlug: thập phân (vé cũ) hoặc base36 (vé mới)
+    const match = cancelTicketTarget.ticketCode.match(/^TV-([^-]+)-\d+$/);
+    const slug = match ? match[1] : null;
+    const orderCodeNum =
+      slug == null
+        ? NaN
+        : /^\d+$/.test(slug)
+          ? parseInt(slug, 10)
+          : parseInt(slug, 36);
+    if (!Number.isFinite(orderCodeNum)) {
       alert('Không xác định được đơn hàng để huỷ.');
       return;
     }
     try {
       setCancelLoading(cancelTicketTarget.id);
-      const res = await RefundAPI.cancelPaidOrderWithVoucher(orderCode);
+      const res = await RefundAPI.cancelPaidOrderWithVoucher(String(orderCodeNum), user.id);
       console.log('cancel-with-voucher result', res);
       setShowVoucherBanner(true);
       // Reload lịch sử vé để cập nhật trạng thái
@@ -200,11 +216,30 @@ export const MyTicketsPage: React.FC = () => {
       setTickets(mapped);
       resetCancelModal();
     } catch (err: any) {
-      console.error('Error cancel ticket with voucher:', err);
+      console.error('Error cancel ticket with voucher:', err?.response?.data ?? err);
+      const status = err?.response?.status;
       const msg =
         err?.response?.data?.message ||
         err?.message ||
         'Huỷ vé thất bại, vui lòng thử lại.';
+      if (status === 401) {
+        alert('Phiên đăng nhập hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.\n\n' + msg);
+        resetCancelModal();
+        navigate(ROUTES.LOGIN);
+        return;
+      }
+      if (status === 400) {
+        alert(msg + '\n\nDanh sách vé sẽ được cập nhật.');
+        resetCancelModal();
+        setCancelLoading(null);
+        // Reload danh sách để đồng bộ trạng thái (vd đơn đã huỷ trước đó)
+        try {
+          const data = await PaymentAPI.getUserOrders(user.id);
+          const orders = Array.isArray(data) ? data : (data as any)?.data ?? [];
+          setTickets(ordersToTickets(orders));
+        } catch (_) {}
+        return;
+      }
       alert(msg);
       setCancelLoading(null);
     }

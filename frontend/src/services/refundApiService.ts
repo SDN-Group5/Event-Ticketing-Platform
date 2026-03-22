@@ -22,10 +22,14 @@ refundClient.interceptors.request.use((config) => {
 export const RefundAPI = {
   /**
    * Huỷ đơn đã thanh toán để nhận voucher 50% giá trị đơn.
-   * Yêu cầu: backend lấy userId từ token hoặc x-user-id.
+   * Backend lấy userId từ: Bearer token (JWT) hoặc header x-user-id.
+   * Truyền userId khi đã đăng nhập để tránh 401 khi token hết hạn/secret khác (vd production).
    */
-  async cancelPaidOrderWithVoucher(orderCode: number | string) {
-    const res = await refundClient.post(`/cancel-with-voucher/${orderCode}`);
+  async cancelPaidOrderWithVoucher(orderCode: number | string, userId?: string) {
+    const headers: Record<string, string> = {};
+    if (userId) headers['x-user-id'] = userId;
+    // Gửi {} thay vì null để tránh body-parser strict JSON lỗi "null is not valid JSON"
+    const res = await refundClient.post(`/cancel-with-voucher/${orderCode}`, {}, { headers });
     return res.data;
   },
 };

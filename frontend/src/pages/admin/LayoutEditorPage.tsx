@@ -532,6 +532,9 @@ export const LayoutEditorPage: React.FC = () => {
                 if (zone.elevation !== undefined) cleanZone.elevation = zone.elevation;
                 if (zone.view360Url !== undefined) cleanZone.view360Url = zone.view360Url;
                 if (zone.capacity !== undefined) cleanZone.capacity = zone.capacity;
+                if (zone.hideScreen !== undefined) cleanZone.hideScreen = zone.hideScreen;
+                if (zone.screenHeight !== undefined) cleanZone.screenHeight = zone.screenHeight;
+                if (zone.screenWidthRatio !== undefined) cleanZone.screenWidthRatio = zone.screenWidthRatio;
 
                 return cleanZone;
             });

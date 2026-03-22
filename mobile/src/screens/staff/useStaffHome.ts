@@ -23,6 +23,7 @@ export function useStaffHome(eventId: string | undefined) {
   const [eventDetails, setEventDetails] = useState<any>(null);
   const [eventStaffs, setEventStaffs] = useState<any[]>([]);
   const [loadingStaffs, setLoadingStaffs] = useState<boolean>(!!eventId);
+  const [assignmentStatus, setAssignmentStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
 
   const loadEventDetails = async () => {
     if (!eventId) return;
@@ -79,11 +80,23 @@ export function useStaffHome(eventId: string | undefined) {
     }
   };
 
+  const loadStaffStatus = async () => {
+    if (!eventId) return;
+    try {
+      const res = await CheckinAPI.getStaffRequestStatus(eventId);
+      if (res.data) {
+        setAssignmentStatus(res.data.status);
+      }
+    } catch (err: any) {
+      console.log('[StaffHome] loadStaffStatus:', err?.message);
+    }
+  };
+
   const onRefresh = async () => {
     if (!eventId) return;
     setRefreshing(true);
     try {
-      await Promise.all([loadSummary(), loadRecent(), loadStaffs()]);
+      await Promise.all([loadSummary(), loadRecent(), loadStaffs(), loadStaffStatus()]);
     } finally {
       setRefreshing(false);
     }
@@ -95,6 +108,7 @@ export function useStaffHome(eventId: string | undefined) {
     void loadSummary();
     void loadRecent();
     void loadStaffs();
+    void loadStaffStatus();
   }, [eventId]);
 
   return {
@@ -104,8 +118,10 @@ export function useStaffHome(eventId: string | undefined) {
     loadingSummary,
     loadingRecent,
     loadingStaffs,
+    assignmentStatus,
     refreshing,
     eventDetails,
     onRefresh,
+    loadStaffStatus,
   };
 }

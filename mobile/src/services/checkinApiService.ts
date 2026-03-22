@@ -130,6 +130,12 @@ export const CheckinAPI = {
     });
   },
 
+  async getStaffRequestStatus(eventId: string): Promise<any> {
+    return authenticatedRequest<any>(`/api/checkin/staff/request-status/${eventId}`, {
+      method: 'GET',
+    });
+  },
+
   async getPendingRequests(): Promise<any> {
     return authenticatedRequest<any>('/api/checkin/organizer/pending-requests', {
       method: 'GET',

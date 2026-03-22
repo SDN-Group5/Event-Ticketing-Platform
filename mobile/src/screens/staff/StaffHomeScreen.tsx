@@ -26,9 +26,11 @@ export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
     loadingSummary,
     loadingRecent,
     loadingStaffs,
+    assignmentStatus,
     refreshing,
     eventDetails,
     onRefresh,
+    loadStaffStatus,
   } = useStaffHome(eventId);
 
   const displayEventName = eventNameParam || eventDetails?.eventName || 'Đang tải...';
@@ -128,30 +130,45 @@ export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
         </View>
 
         {user?.role === 'staff' && (
-          <TouchableOpacity
-            style={{ backgroundColor: colors.accent, padding: 16, borderRadius: 16, marginBottom: 24, alignItems: 'center', shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 }}
-            onPress={async () => {
-              try {
-                if (!eventId) return;
-                const res = await CheckinAPI.requestAssignment(eventId);
-                Alert.alert('Thành công', res.message || 'Vui lòng chờ Organizer phê duyệt cho bạn phụ trách sự kiện này.');
-                Toast.show({
-                  type: 'success',
-                  text1: 'Đã gửi yêu cầu',
-                  text2: res.message || 'Vui lòng chờ Organizer phê duyệt cho bạn phụ trách sự kiện này.'
-                });
-              } catch (err: any) {
-                Alert.alert('Thất bại', err.message || 'Vui lòng thử lại sau');
-                Toast.show({
-                  type: 'error',
-                  text1: 'Gửi yêu cầu thất bại',
-                  text2: err.message || 'Vui lòng thử lại sau'
-                });
-              }
-            }}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>YÊU CẦU PHỤ TRÁCH SỰ KIỆN</Text>
-          </TouchableOpacity>
+          <View style={{ marginBottom: 24 }}>
+            {!assignmentStatus || assignmentStatus === 'rejected' ? (
+              <TouchableOpacity
+                style={{ backgroundColor: colors.accent, padding: 16, borderRadius: 16, alignItems: 'center', shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 }}
+                onPress={async () => {
+                  try {
+                    if (!eventId) return;
+                    const res = await CheckinAPI.requestAssignment(eventId);
+                    Alert.alert('Thành công', res.message || 'Vui lòng chờ Organizer phê duyệt cho bạn phụ trách sự kiện này.');
+                    Toast.show({
+                      type: 'success',
+                      text1: 'Đã gửi yêu cầu',
+                      text2: res.message || 'Vui lòng chờ Organizer phê duyệt cho bạn phụ trách sự kiện này.'
+                    });
+                    void loadStaffStatus(); // Cập nhật lại trạng thái ngay lập tức
+                  } catch (err: any) {
+                    Alert.alert('Thất bại', err.message || 'Vui lòng thử lại sau');
+                    Toast.show({
+                      type: 'error',
+                      text1: 'Gửi yêu cầu thất bại',
+                      text2: err.message || 'Vui lòng thử lại sau'
+                    });
+                  }
+                }}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>{assignmentStatus === 'rejected' ? 'GỬI LẠI YÊU CẦU PHỤ TRÁCH' : 'YÊU CẦU PHỤ TRÁCH SỰ KIỆN'}</Text>
+              </TouchableOpacity>
+            ) : assignmentStatus === 'pending' ? (
+              <View style={{ backgroundColor: '#ffb30020', borderColor: '#ffb300', borderWidth: 1, padding: 16, borderRadius: 16, alignItems: 'center' }}>
+                <Text style={{ color: '#ffb300', fontWeight: 'bold', fontSize: 16 }}>ĐANG CHỜ PHÊ DUYỆT</Text>
+                <Text style={{ color: '#ffb300', fontSize: 12, marginTop: 4 }}>Yêu cầu phụ trách sự kiện của bạn đang được xét duyệt</Text>
+              </View>
+            ) : (
+              <View style={{ backgroundColor: '#00e5ff20', borderColor: '#00e5ff', borderWidth: 1, padding: 16, borderRadius: 16, alignItems: 'center' }}>
+                <Text style={{ color: '#00e5ff', fontWeight: 'bold', fontSize: 16 }}>ĐÃ ĐƯỢC PHÂN QUYỀN</Text>
+                <Text style={{ color: '#00e5ff', fontSize: 12, marginTop: 4 }}>Bạn là nhân viên chính thức của sự kiện này</Text>
+              </View>
+            )}
+          </View>
         )}
 
         {(user?.role === 'admin' || user?.role === 'organizer') && (

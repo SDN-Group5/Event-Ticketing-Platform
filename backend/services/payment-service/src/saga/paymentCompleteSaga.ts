@@ -5,6 +5,7 @@ import { transferToOrganizerBank } from '../services/bankTransfer.service';
 import { sendPaymentConfirmationEmail, sendTicketQREmail } from '../services/email.service';
 import { getUserFromAuthService } from '../services/user.service';
 import { createTicketsForOrder } from '../services/ticket.service';
+import QRCode from 'qrcode';
 
 export interface PaymentCompleteContext {
   order: any;
@@ -264,13 +265,24 @@ const sendTicketQRStep: SagaStep<PaymentCompleteContext> = {
         return ctx;
       }
 
+      // Generate QR Code Buffers
+      const ticketsWithQRBuffers = await Promise.all(
+        tickets.map(async (ticket: any) => {
+          const qrCodeBuffer = await QRCode.toBuffer(ticket.qrCodePayload || ticket.ticketId);
+          return {
+            ...ticket,
+            qrCodeBuffer,
+          };
+        })
+      );
+
       // Send ticket QR email
       const qrEmailSent = await sendTicketQREmail({
         to: user.email,
         firstName: user.firstName,
         eventName: order.eventName,
         orderCode: order.orderCode,
-        tickets,
+        tickets: ticketsWithQRBuffers,
       });
 
       if (!qrEmailSent) {

@@ -39,8 +39,8 @@ export const RegisterPage: React.FC = () => {
             setValidationError('First name is required');
             return;
         }
-        if (fnTrimmed.length < 2 || fnTrimmed.length > 50) {
-            setValidationError('First name phải từ 2-50 ký tự');
+        if (fnTrimmed.length < 2 || fnTrimmed.length > 10) {
+            setValidationError('First name phải từ 2-10 ký tự');
             return;
         }
         if (!nameRegex.test(fnTrimmed)) {
@@ -51,8 +51,8 @@ export const RegisterPage: React.FC = () => {
             setValidationError('Last name is required');
             return;
         }
-        if (lnTrimmed.length < 2 || lnTrimmed.length > 50) {
-            setValidationError('Last name phải từ 2-50 ký tự');
+        if (lnTrimmed.length < 2 || lnTrimmed.length > 10) {
+            setValidationError('Last name phải từ 2-10 ký tự');
             return;
         }
         if (!nameRegex.test(lnTrimmed)) {
@@ -190,7 +190,7 @@ export const RegisterPage: React.FC = () => {
                                         name="firstName"
                                         value={formData.firstName}
                                         onChange={handleChange}
-                                        maxLength={50}
+                                        maxLength={10}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-slate-500 focus:border-[#a855f7] focus:ring-2 focus:ring-[#a855f7]/20 transition-all"
                                         placeholder="John"
                                         disabled={isLoading}
@@ -203,7 +203,7 @@ export const RegisterPage: React.FC = () => {
                                         name="lastName"
                                         value={formData.lastName}
                                         onChange={handleChange}
-                                        maxLength={50}
+                                        maxLength={10}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-slate-500 focus:border-[#a855f7] focus:ring-2 focus:ring-[#a855f7]/20 transition-all"
                                         placeholder="Doe"
                                         disabled={isLoading}

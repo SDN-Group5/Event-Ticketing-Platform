@@ -58,12 +58,12 @@ router.post(
     check("firstName", "First name is required")
       .isString()
       .trim()
-      .isLength({ min: 2, max: 50 }).withMessage("First name phải từ 2-50 ký tự")
+      .isLength({ min: 2, max: 10 }).withMessage("First name phải từ 2-10 ký tự")
       .matches(/^[\p{L}\s'-]+$/u).withMessage("First name chỉ được chứa chữ cái, khoảng trắng, dấu gạch ngang"),
     check("lastName", "Last name is required")
       .isString()
       .trim()
-      .isLength({ min: 2, max: 50 }).withMessage("Last name phải từ 2-50 ký tự")
+      .isLength({ min: 2, max: 10 }).withMessage("Last name phải từ 2-10 ký tự")
       .matches(/^[\p{L}\s'-]+$/u).withMessage("Last name chỉ được chứa chữ cái, khoảng trắng, dấu gạch ngang"),
     check("email", "Email is required").isEmail(),
     check("password", "Password with 6 or more characters required").isLength({

@@ -5,7 +5,7 @@ const NAME_REGEX = /^[\p{L}\s'-]+$/u;
 function validateName(value: string, fieldLabel: string): string | null {
   const trimmed = value.trim();
   if (trimmed.length < 2) return `${fieldLabel} phải có ít nhất 2 ký tự`;
-  if (trimmed.length > 30) return `${fieldLabel} không được vượt quá 30 ký tự`;
+  if (trimmed.length > 10) return `${fieldLabel} không được vượt quá 10 ký tự`;
   if (!NAME_REGEX.test(trimmed)) return `${fieldLabel} chỉ được chứa chữ cái, khoảng trắng, dấu gạch ngang`;
   return null;
 }

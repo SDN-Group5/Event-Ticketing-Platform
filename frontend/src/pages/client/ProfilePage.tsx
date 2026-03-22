@@ -121,13 +121,13 @@ export const ProfilePage: React.FC = () => {
         const nameRegex = /^[\p{L}\s'-]+$/u;
         const fnTrimmed = form.firstName.trim();
         const lnTrimmed = form.lastName.trim();
-        if (!fnTrimmed || fnTrimmed.length < 2 || fnTrimmed.length > 30 || !nameRegex.test(fnTrimmed)) {
-            setSaveMsg({ ok: false, text: 'Họ không hợp lệ (2-30 ký tự, chỉ chữ cái, khoảng trắng, dấu gạch ngang)' });
+        if (!fnTrimmed || fnTrimmed.length < 2 || fnTrimmed.length > 10 || !nameRegex.test(fnTrimmed)) {
+            setSaveMsg({ ok: false, text: 'Họ không hợp lệ (2-10 ký tự, chỉ chữ cái, khoảng trắng, dấu gạch ngang)' });
             setSaving(false);
             return;
         }
-        if (!lnTrimmed || lnTrimmed.length < 2 || lnTrimmed.length > 30 || !nameRegex.test(lnTrimmed)) {
-            setSaveMsg({ ok: false, text: 'Tên không hợp lệ (2-30 ký tự, chỉ chữ cái, khoảng trắng, dấu gạch ngang)' });
+        if (!lnTrimmed || lnTrimmed.length < 2 || lnTrimmed.length > 10 || !nameRegex.test(lnTrimmed)) {
+            setSaveMsg({ ok: false, text: 'Tên không hợp lệ (2-10 ký tự, chỉ chữ cái, khoảng trắng, dấu gạch ngang)' });
             setSaving(false);
             return;
         }
@@ -251,11 +251,11 @@ export const ProfilePage: React.FC = () => {
                                     <div className="grid sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className={labelCls}>Họ</label>
-                                            <input className={inputCls} maxLength={30} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+                                            <input className={inputCls} maxLength={10} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
                                         </div>
                                         <div>
                                             <label className={labelCls}>Tên</label>
-                                            <input className={inputCls} maxLength={30} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+                                            <input className={inputCls} maxLength={10} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
                                         </div>
                                     </div>
                                     <div>

@@ -9,18 +9,19 @@ const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:4000
 
 /** Đánh dấu tất cả orders của sự kiện là payout success trong payment-service */
 async function markPaymentServicePayoutSuccess(eventId: string): Promise<void> {
-  const token = localStorage.getItem('auth_token');
-  await axios.patch(
-    `${API_BASE}/api/payments/admin/payout-event/${eventId}`,
-    {},
-    { headers: { Authorization: `Bearer ${token}` } },
-  );
+    const token = localStorage.getItem('auth_token');
+    await axios.patch(
+        `${API_BASE}/api/payments/admin/payout-event/${eventId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+    );
 }
 
 interface EventRevenue {
     _id: string; // eventId
     eventName: string;
     organizerId: string;
+    organizerName?: string;
     ticketsSold: number;
     totalRevenue: number;
     totalSubtotal: number;
@@ -177,7 +178,7 @@ export const PayoutsPage: React.FC = () => {
                             <thead className="bg-black/20 text-slate-400 text-xs uppercase font-bold tracking-wider">
                                 <tr>
                                     <th className="text-left py-4 px-6">Event Name</th>
-                                    <th className="text-left py-4 px-6">Organizer ID</th>
+                                    <th className="text-left py-4 px-6">Organizer Name</th>
                                     <th className="text-left py-4 px-6">Tickets Sold</th>
                                     <th className="text-left py-4 px-6">Total Sales</th>
                                     <th className="text-left py-4 px-6">App Cut</th>
@@ -189,7 +190,7 @@ export const PayoutsPage: React.FC = () => {
                                 {revenues.map((row, i) => (
                                     <tr key={i} className="hover:bg-slate-700/20 group transition-colors">
                                         <td className="py-4 px-6 font-semibold max-w-[200px] truncate" title={row.eventName}>{row.eventName}</td>
-                                        <td className="py-4 px-6 text-slate-400 text-sm max-w-[150px] truncate" title={row.organizerId}>{row.organizerId}</td>
+                                        <td className="py-4 px-6 text-slate-400 text-sm max-w-[150px] truncate" title={row.organizerName || row.organizerId}>{row.organizerName || row.organizerId}</td>
                                         <td className="py-4 px-6 font-mono text-center">{row.ticketsSold}</td>
                                         <td className="py-4 px-6 text-blue-400 font-medium">{formatCurrency(row.totalRevenue)}</td>
                                         <td className="py-4 px-6 text-emerald-400 font-medium">{formatCurrency(row.totalCommission)}</td>
@@ -238,8 +239,8 @@ export const PayoutsPage: React.FC = () => {
                                         <p className="font-medium text-white">{selectedEvent.ticketsSold}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-slate-400 mb-1">Organizer ID</p>
-                                        <p className="font-medium text-white truncate" title={selectedEvent.organizerId}>{selectedEvent.organizerId}</p>
+                                        <p className="text-sm text-slate-400 mb-1">Organizer Name</p>
+                                        <p className="font-medium text-white truncate" title={selectedEvent.organizerName || selectedEvent.organizerId}>{selectedEvent.organizerName || selectedEvent.organizerId}</p>
                                     </div>
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-slate-700/50">

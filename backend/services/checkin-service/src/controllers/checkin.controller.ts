@@ -192,26 +192,41 @@ export const requestAssignment = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: 'Bạn đã gửi yêu cầu cho sự kiện này rồi' });
     }
 
-    // Lấy thông tin Staff từ Auth Service
-    // Đảm bảo URL kết thúc đúng format: base + /api/users/staffId
-    const authBase = AUTH_SERVICE_URL.endsWith('/api') ? AUTH_SERVICE_URL : `${AUTH_SERVICE_URL}/api`;
-    
-    const staffProfile = await axios.get(`${authBase}/users/${staffId}`, {
-      headers: { Authorization: req.headers.authorization }
-    });
-    const staffName = staffProfile.data?.data 
-      ? `${staffProfile.data.data.firstName} ${staffProfile.data.data.lastName}` 
-      : (staffProfile.data?.firstName ? `${staffProfile.data.firstName} ${staffProfile.data.lastName}` : 'Staff');
+    let staffName = 'Staff';
+    let eventName = 'Sự kiện';
+    let organizerId = '';
 
-    // Lấy thông tin Sự kiện từ Layout Service 
-    // Layout Service thường mount tại /api/v1 nên ta gọi đúng Gateway route
-    const layoutBase = LAYOUT_SERVICE_URL.endsWith('/api') ? LAYOUT_SERVICE_URL : `${LAYOUT_SERVICE_URL}/api`;
-    const eventLayout = await axios.get(`${layoutBase}/v1/layouts/event/${eventId}`, {
-      headers: { Authorization: req.headers.authorization }
-    });
-    
-    const eventName = eventLayout.data?.data?.eventName || 'Sự kiện';
-    const organizerId = eventLayout.data?.data?.createdBy;
+    // Lấy thông tin Staff từ Auth Service với Fallback
+    try {
+      const authBase = AUTH_SERVICE_URL.endsWith('/api') ? AUTH_SERVICE_URL : `${AUTH_SERVICE_URL}/api`;
+      const staffProfile = await axios.get(`${authBase}/users/${staffId}`, {
+        headers: { Authorization: req.headers.authorization },
+        timeout: 5000 
+      });
+      const data = staffProfile.data?.data || staffProfile.data;
+      if (data) {
+        staffName = `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Staff';
+      }
+    } catch (e: any) {
+      console.warn('[Checkin] Could not fetch staff name:', e.message);
+    }
+
+    // Lấy thông tin Sự kiện từ Layout Service với Fallback
+    try {
+      const layoutBase = LAYOUT_SERVICE_URL.endsWith('/api') ? LAYOUT_SERVICE_URL : `${LAYOUT_SERVICE_URL}/api`;
+      // Thử gọi /v1/layouts (Gateway chuẩn) hoặc /layouts
+      const eventLayout = await axios.get(`${layoutBase}/v1/layouts/event/${eventId}`, {
+        headers: { Authorization: req.headers.authorization },
+        timeout: 5000
+      });
+      const data = eventLayout.data?.data || eventLayout.data;
+      if (data) {
+        eventName = data.eventName || 'Sự kiện';
+        organizerId = data.createdBy || '';
+      }
+    } catch (e: any) {
+      console.warn('[Checkin] Could not fetch event info:', e.message);
+    }
 
     const newRequest = await StaffRequest.create({
       staffId,

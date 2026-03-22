@@ -7,12 +7,14 @@ interface OrganizerLayoutProps {
     children: React.ReactNode;
     title?: string;
     fullWidth?: boolean;
+    hideSidebar?: boolean;
 }
 
 export const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({
     children,
     title,
     fullWidth = false,
+    hideSidebar = false,
 }) => {
     const location = useLocation();
     const [activePath, setActivePath] = useState(location.pathname);
@@ -23,13 +25,15 @@ export const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({
 
     return (
         <div className="flex min-h-screen bg-[#0f0f12] text-white">
-            <Sidebar
-                items={organizerSidebarItems}
-                activePath={activePath}
-                onNavigate={setActivePath}
-                variant="organizer"
-                subtitle="Organizer Portal"
-            />
+            {!hideSidebar && (
+                <Sidebar
+                    items={organizerSidebarItems}
+                    activePath={activePath}
+                    onNavigate={setActivePath}
+                    variant="organizer"
+                    subtitle="Organizer Portal"
+                />
+            )}
             <main className={`flex-1 overflow-y-auto ${fullWidth ? '' : 'p-8 max-w-7xl mx-auto'}`}>
                 {children}
             </main>

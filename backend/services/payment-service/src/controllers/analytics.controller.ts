@@ -2,6 +2,165 @@ import { Request, Response } from 'express';
 import { Order } from '../models/order.model';
 import mongoose from 'mongoose';
 
+// ============================================
+// ADMIN OVERVIEW: Platform-wide analytics
+// ============================================
+export const getAdminOverview = async (req: Request, res: Response) => {
+  try {
+    const { period = 'month' } = req.query;
+
+    const now = new Date();
+    let startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    if (period === 'month') startDate.setMonth(now.getMonth() - 1);
+    else if (period === 'quarter') startDate.setMonth(now.getMonth() - 3);
+    else if (period === 'year') startDate.setFullYear(now.getFullYear() - 1);
+    else startDate.setMonth(now.getMonth() - 1);
+
+    const matchPeriod = { status: 'paid', createdAt: { $gte: startDate, $lte: now } };
+    const matchAllPaid = { status: 'paid' };
+
+    // 1. KPI tổng
+    const [kpiPeriod, kpiAll, activeEventAggr] = await Promise.all([
+      Order.aggregate([
+        { $match: matchPeriod },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: '$totalAmount' },
+            totalCommission: { $sum: '$commissionAmount' },
+            ticketsSold: { $sum: { $sum: '$items.quantity' } },
+            orderCount: { $sum: 1 },
+          },
+        },
+      ]),
+      Order.aggregate([
+        { $match: matchAllPaid },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: '$totalAmount' },
+            totalCommission: { $sum: '$commissionAmount' },
+            ticketsSold: { $sum: { $sum: '$items.quantity' } },
+          },
+        },
+      ]),
+      Order.aggregate([
+        { $match: { status: 'paid' } },
+        { $group: { _id: '$eventId' } },
+      ]),
+    ]);
+
+    const periodRevenue = kpiPeriod[0]?.totalRevenue ?? 0;
+    const periodCommission = kpiPeriod[0]?.totalCommission ?? 0;
+    const periodTickets = kpiPeriod[0]?.ticketsSold ?? 0;
+    const periodOrders = kpiPeriod[0]?.orderCount ?? 0;
+    const allTimeRevenue = kpiAll[0]?.totalRevenue ?? 0;
+    const allTimeTickets = kpiAll[0]?.ticketsSold ?? 0;
+    const totalEvents = activeEventAggr.length;
+
+    // 2. Refund requests trong kỳ
+    const refundCount = await Order.countDocuments({
+      status: { $in: ['refunded', 'cancelled'] },
+      updatedAt: { $gte: startDate, $lte: now },
+    });
+
+    // 3. Revenue by time (theo ngày hoặc tháng)
+    const groupByFormat = period === 'year' || period === 'quarter' ? '%Y-%m' : '%Y-%m-%d';
+    const revenueByTimeRaw = await Order.aggregate([
+      { $match: matchPeriod },
+      {
+        $group: {
+          _id: { $dateToString: { format: groupByFormat, date: '$createdAt' } },
+          revenue: { $sum: '$totalAmount' },
+          commission: { $sum: '$commissionAmount' },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    const revenueByTime = revenueByTimeRaw.map((v) => ({
+      date: v._id,
+      revenue: v.revenue,
+      commission: v.commission,
+      orders: v.orders,
+    }));
+
+    // 4. Top organizers by revenue
+    const topOrganizersRaw = await Order.aggregate([
+      { $match: matchPeriod },
+      {
+        $group: {
+          _id: '$organizerId',
+          revenue: { $sum: '$totalAmount' },
+          ticketsSold: { $sum: { $sum: '$items.quantity' } },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 5 },
+    ]);
+
+    // 5. Top events by revenue
+    const topEventsRaw = await Order.aggregate([
+      { $match: matchPeriod },
+      {
+        $group: {
+          _id: '$eventId',
+          eventName: { $first: '$eventName' },
+          revenue: { $sum: '$totalAmount' },
+          ticketsSold: { $sum: { $sum: '$items.quantity' } },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 5 },
+    ]);
+
+    // 6. Order status distribution
+    const orderStatusRaw = await Order.aggregate([
+      { $match: { createdAt: { $gte: startDate, $lte: now } } },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]);
+    const ordersByStatus: Record<string, number> = {};
+    orderStatusRaw.forEach((s) => { ordersByStatus[s._id] = s.count; });
+
+    return res.json({
+      success: true,
+      data: {
+        kpi: {
+          totalRevenue: periodRevenue,
+          totalCommission: periodCommission,
+          ticketsSold: periodTickets,
+          totalOrders: periodOrders,
+          totalEvents,
+          allTimeRevenue,
+          allTimeTickets,
+          refundRequests: refundCount,
+        },
+        revenueByTime,
+        topEvents: topEventsRaw.map((e) => ({
+          eventId: e._id,
+          eventName: e.eventName,
+          revenue: e.revenue,
+          ticketsSold: e.ticketsSold,
+          orderCount: e.orderCount,
+        })),
+        topOrganizers: topOrganizersRaw.map((o) => ({
+          organizerId: o._id,
+          revenue: o.revenue,
+          ticketsSold: o.ticketsSold,
+          orderCount: o.orderCount,
+        })),
+        ordersByStatus,
+      },
+    });
+  } catch (error: any) {
+    console.error('getAdminOverview error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getOverviewAnalytics = async (req: Request, res: Response) => {
   try {
     const organizerId = (req as any).userId;
@@ -144,8 +303,12 @@ export const getAdminEventRevenues = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    // Search by event name or organizer ID if provided
-    const matchStage: any = { status: 'paid', payoutStatus: 'pending' };
+    // status='paid' và chưa payout thành công
+    // Dùng $ne thay vì ='pending' để bắt cả orders cũ không có field payoutStatus
+    const matchStage: any = {
+      status: 'paid',
+      payoutStatus: { $ne: 'success' },
+    };
 
     // Add eventIds filter if provided (for filtering only completed events)
     if (req.query.eventIds) {

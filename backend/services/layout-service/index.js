@@ -28,7 +28,10 @@ const allowedOrigins = [
     process.env.FRONTEND_URL,
 ].filter(Boolean);
 const isAllowedOrigin = (origin) =>
-    !origin || allowedOrigins.includes(origin) || /railway\.app/.test(origin);
+    !origin ||
+    allowedOrigins.includes(origin) ||
+    /railway\.app/.test(origin) ||
+    /\.vercel\.app$/i.test(origin || '');
 const corsOptions = {
     origin: (origin, callback) => {
         callback(null, isAllowedOrigin(origin));

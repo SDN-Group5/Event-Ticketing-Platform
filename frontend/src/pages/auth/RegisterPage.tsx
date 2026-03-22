@@ -31,13 +31,32 @@ export const RegisterPage: React.FC = () => {
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validation
-        if (!formData.firstName.trim()) {
+        const nameRegex = /^[\p{L}\s'-]+$/u;
+        const fnTrimmed = formData.firstName.trim();
+        const lnTrimmed = formData.lastName.trim();
+
+        if (!fnTrimmed) {
             setValidationError('First name is required');
             return;
         }
-        if (!formData.lastName.trim()) {
+        if (fnTrimmed.length < 2 || fnTrimmed.length > 50) {
+            setValidationError('First name phải từ 2-50 ký tự');
+            return;
+        }
+        if (!nameRegex.test(fnTrimmed)) {
+            setValidationError('First name chỉ được chứa chữ cái, khoảng trắng, dấu gạch ngang');
+            return;
+        }
+        if (!lnTrimmed) {
             setValidationError('Last name is required');
+            return;
+        }
+        if (lnTrimmed.length < 2 || lnTrimmed.length > 50) {
+            setValidationError('Last name phải từ 2-50 ký tự');
+            return;
+        }
+        if (!nameRegex.test(lnTrimmed)) {
+            setValidationError('Last name chỉ được chứa chữ cái, khoảng trắng, dấu gạch ngang');
             return;
         }
         if (!formData.email.trim()) {
@@ -171,6 +190,7 @@ export const RegisterPage: React.FC = () => {
                                         name="firstName"
                                         value={formData.firstName}
                                         onChange={handleChange}
+                                        maxLength={50}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-slate-500 focus:border-[#a855f7] focus:ring-2 focus:ring-[#a855f7]/20 transition-all"
                                         placeholder="John"
                                         disabled={isLoading}
@@ -183,6 +203,7 @@ export const RegisterPage: React.FC = () => {
                                         name="lastName"
                                         value={formData.lastName}
                                         onChange={handleChange}
+                                        maxLength={50}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-slate-500 focus:border-[#a855f7] focus:ring-2 focus:ring-[#a855f7]/20 transition-all"
                                         placeholder="Doe"
                                         disabled={isLoading}

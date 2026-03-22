@@ -11,7 +11,7 @@ const sendBrevoEmail = async (payload: any) => {
     console.warn('⚠️  [EMAIL] BREVO_API_KEY (hoặc EMAIL_PASSWORD) chưa được cấu hình.');
     return false;
   }
-  
+
   try {
     const response = await axios.post(BREVO_API_URL, payload, {
       headers: {
@@ -27,23 +27,6 @@ const sendBrevoEmail = async (payload: any) => {
     return false;
   }
 };
-
-async function sendWithResend(params: { to: string; subject: string; html: string }): Promise<boolean> {
-  if (!resend || !EMAIL_FROM) return false;
-  try {
-    await resend.emails.send({
-      from: EMAIL_FROM,
-      to: params.to,
-      subject: params.subject,
-      html: params.html,
-    });
-    console.log(`✅ [EMAIL] Resend sent to ${params.to}`);
-    return true;
-  } catch (error) {
-    console.error('❌ [EMAIL] Resend failed:', error);
-    return false;
-  }
-}
 
 // ============================================
 // SEND PAYMENT CONFIRMATION EMAIL
@@ -305,7 +288,7 @@ export const sendTicketQREmail = async ({
       // Dùng Data URI (Base64 Inline Image) để nhúng trực tiếp QR Code vào HTML
       const base64Img = ticket.qrCodeBuffer.toString('base64');
       const imgSrc = `data:image/png;base64,${base64Img}`;
-      
+
       return `
         <div style="
           flex: 0 0 calc(50% - 10px);

@@ -28,6 +28,9 @@ import MyEvents from '../screens/MyEvents';
 import AboutEventix from '../screens/AboutEventix';
 import HelpSupport from '../screens/HelpSupport';
 import AIAssistant from '../screens/AIAssistant';
+import EventAnalytics from '../screens/organizer/EventAnalytics';
+import EventTimeline from '../screens/EventTimeline';
+import VoucherManagement from '../screens/VoucherManagement';
 
 const Stack = createNativeStackNavigator();
 
@@ -39,14 +42,13 @@ export default function AppNavigator() {
       {auth.role === 'staff' ? (
         // Staff is signed in
         <Stack.Group>
+          <Stack.Screen name="MainTabs" component={TabNavigator} />
           <Stack.Screen name="StaffScreen" component={StaffScreen} />
           <Stack.Screen name="ScanTicket" component={ScanTicket} />
           <Stack.Screen name="MyEvents" component={MyEvents} />
-          <Stack.Screen name="CreateEvent" component={CreateEvent} />
-          <Stack.Screen name="EventDetail" component={EventDetail} />
           <Stack.Screen name="Notifications" component={Notifications} />
         </Stack.Group>
-      ) : auth.role === 'user' ? (
+      ) : (auth.role === 'user' || auth.role === 'organizer' || auth.role === 'admin') ? (
         // User is signed in
         <Stack.Group>
           <Stack.Screen name="MainTabs" component={TabNavigator} />
@@ -61,9 +63,14 @@ export default function AppNavigator() {
           <Stack.Screen name="EditProfile" component={EditProfile} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettings} />
           <Stack.Screen name="Notifications" component={Notifications} />
+          <Stack.Screen name="ScanTicket" component={ScanTicket} />
+          <Stack.Screen name="StaffScreen" component={StaffScreen} />
           <Stack.Screen name="AboutEventix" component={AboutEventix} />
           <Stack.Screen name="HelpSupport" component={HelpSupport} />
           <Stack.Screen name="AIAssistant" component={AIAssistant} />
+          <Stack.Screen name="EventAnalytics" component={EventAnalytics} />
+          <Stack.Screen name="EventTimeline" component={EventTimeline} />
+          <Stack.Screen name="VoucherManagement" component={VoucherManagement} />
         </Stack.Group>
       ) : (
         // User is NOT signed in

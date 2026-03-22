@@ -1,63 +1,68 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, Linking } from 'react-native';
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContextType';
 
 export default function AboutEventix({ navigation }: any) {
+  const { colors } = useTheme();
   return (
-    <View className="flex-1 bg-[#0a0014]">
-      <View className="flex-row items-center p-4 pt-12 bg-[#1a0033] border-b border-[#4d0099]">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
-          <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingTop: 50, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={{ width: 40, height: 40, backgroundColor: colors.surfaceSecondary, borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Về Eventix</Text>
+        <Text style={{ flex: 1, textAlign: 'center', fontSize: 18, fontWeight: 'bold', color: colors.text, paddingRight: 40 }}>Về Eventix</Text>
       </View>
 
       <ScrollView className="flex-1 px-4">
         <View className="items-center py-10">
-          <View className="w-24 h-24 bg-[#d500f9] rounded-3xl items-center justify-center shadow-[0_0_20px_#d500f9]">
+          <View style={{ width: 96, height: 96, backgroundColor: colors.accent, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowColor: colors.accent, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
             <MaterialIcons name="confirmation-number" size={50} color="white" />
           </View>
-          <Text className="text-3xl font-extrabold text-white mt-6">Eventix</Text>
-          <Text className="text-[#b388ff] mt-1 font-medium italic">Version 1.0.0 (Beta)</Text>
+          <Text style={{ fontSize: 30, fontWeight: '900', color: colors.text, marginTop: 24 }}>Eventix</Text>
+          <Text style={{ color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' }}>Version 1.0.0 (Beta)</Text>
         </View>
 
-        <View className="bg-[#1a0033] border border-[#4d0099] rounded-3xl p-6 mb-8">
-          <Text className="text-xl font-bold text-white mb-4">Sứ mệnh của chúng tôi</Text>
-          <Text className="text-[#b388ff] leading-6">
+        <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 24, padding: 24, marginBottom: 32 }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 16 }}>Sứ mệnh của chúng tôi</Text>
+          <Text style={{ color: colors.textSecondary, lineHeight: 24 }}>
             Eventix là nền tảng quản lý và phân phối vé sự kiện hàng đầu, được xây dựng để mang lại trải nghiệm mua vé mượt mà, bảo mật và hiện đại cho mọi người yêu thích nghệ thuật và giải trí.
           </Text>
-          <Text className="text-[#b388ff] leading-6 mt-4">
+          <Text style={{ color: colors.textSecondary, lineHeight: 24, marginTop: 16 }}>
             Chúng tôi tin rằng việc tiếp cận các sự kiện văn hóa, âm nhạc và thể thao nên thật đơn giản - chỉ với vài bước chạm trên điện thoại của bạn.
           </Text>
         </View>
 
-        <View className="bg-[#1a0033] border border-[#4d0099] rounded-3xl p-6 mb-8">
-          <Text className="text-xl font-bold text-white mb-6">Kết nối với chúng tôi</Text>
+        <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 24, padding: 24, marginBottom: 32 }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 24 }}>Kết nối với chúng tôi</Text>
           <View className="flex-row justify-around">
             <TouchableOpacity className="items-center">
               <View className="w-12 h-12 bg-[#3b5998] rounded-full items-center justify-center mb-2">
                 <FontAwesome name="facebook" size={24} color="white" />
               </View>
-              <Text className="text-white text-xs">Facebook</Text>
+              <Text style={{ color: colors.text, fontSize: 12 }}>Facebook</Text>
             </TouchableOpacity>
             <TouchableOpacity className="items-center">
-              <View className="w-12 h-12 bg-[#000000] rounded-full items-center justify-center mb-2 border border-[#4d0099]">
+              <View style={{ width: 48, height: 48, backgroundColor: '#000', borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 8, borderWidth: 1, borderColor: colors.border }}>
                 <FontAwesome name="github" size={24} color="white" />
               </View>
-              <Text className="text-white text-xs">Github</Text>
+              <Text style={{ color: colors.text, fontSize: 12 }}>Github</Text>
             </TouchableOpacity>
             <TouchableOpacity className="items-center">
-              <View className="w-12 h-12 bg-[#e1306c] rounded-full items-center justify-center mb-2">
+              <View style={{ width: 48, height: 48, backgroundColor: '#e1306c', borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
                 <FontAwesome name="instagram" size={24} color="white" />
               </View>
-              <Text className="text-white text-xs">Instagram</Text>
+              <Text style={{ color: colors.text, fontSize: 12 }}>Instagram</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View className="items-center pb-10">
-          <Text className="text-[#4d0099] text-xs font-bold text-center">
-            © 2026 Eventix Team. All rights reserved.{"\n"}
+          <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: 'bold', textAlign: 'center', opacity: 0.6 }}>
+            © {new Date().getFullYear()} Eventix Team. All rights reserved.{"\n"}
             Designed for FPT University Case Study.
           </Text>
         </View>

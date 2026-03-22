@@ -4,6 +4,7 @@ import Toast from 'react-native-toast-message';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AuthAPI } from '../../services/authApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../context/ThemeContextType';
 
 export default function SecuritySettings({ navigation }: any) {
   const [faceId, setFaceId] = useState(true);
@@ -18,6 +19,7 @@ export default function SecuritySettings({ navigation }: any) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { colors } = useTheme();
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -86,40 +88,46 @@ export default function SecuritySettings({ navigation }: any) {
   };
 
   return (
-    <View className="flex-1 bg-[#0a0014]">
-      <View className="flex-row items-center p-4 pt-12 bg-[#1a0033] border-b border-[#4d0099]">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]">
-          <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
+      <View className="flex-row items-center p-4 pt-12 border-b" style={{ backgroundColor: colors.surface, borderBottomColor: colors.border }}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          className="w-10 h-10 rounded-full items-center justify-center border"
+          style={{ backgroundColor: colors.surfaceSecondary, borderColor: colors.border }}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text className="flex-1 text-center text-lg font-bold text-white pr-10">Bảo mật</Text>
+        <Text className="flex-1 text-center text-lg font-bold" style={{ color: colors.text }}>Bảo mật</Text>
       </View>
 
       <ScrollView className="flex-1 px-4 pt-6">
-        <Text className="text-sm font-bold text-[#b388ff] uppercase tracking-wider mb-4 ml-2">Xác thực</Text>
+        <Text className="text-sm font-bold uppercase tracking-wider mb-4 ml-2" style={{ color: colors.textSecondary }}>Xác thực</Text>
         
-        <View className="bg-[#1a0033] border border-[#4d0099] rounded-3xl overflow-hidden mb-8">
+        <View className="border rounded-3xl overflow-hidden mb-8" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
           <TouchableOpacity 
             onPress={() => setIsChangingPassword(!isChangingPassword)}
-            className="flex-row items-center justify-between p-5 border-b border-[#4d0099]"
+            className="flex-row items-center justify-between p-5 border-b"
+            style={{ borderBottomColor: colors.border }}
           >
             <View className="flex-row items-center">
-              <View className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center mr-4">
-                <MaterialIcons name="lock" size={20} color="#00e5ff" />
+              <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: colors.surfaceSecondary }}>
+                <MaterialIcons name="lock" size={20} color={colors.accentSecondary} />
               </View>
-              <Text className="text-base font-bold text-white">Đổi mật khẩu</Text>
+              <Text className="text-base font-bold" style={{ color: colors.text }}>Đổi mật khẩu</Text>
             </View>
-            <MaterialIcons name={isChangingPassword ? "expand-less" : "expand-more"} size={24} color="#6a1b9a" />
+            <MaterialIcons name={isChangingPassword ? "expand-less" : "expand-more"} size={24} color={colors.textSecondary} />
           </TouchableOpacity>
 
           {isChangingPassword && (
-            <View className="p-5 bg-[#140026]">
-              <Text className="text-xs text-[#b388ff] mb-2 ml-1">Mật khẩu hiện tại</Text>
-              <View className="bg-[#0a0014] border border-[#4d0099] h-12 rounded-xl px-4 mb-4 flex-row items-center">
+            <View className="p-5" style={{ backgroundColor: colors.surfaceSecondary + '50' }}>
+              <Text className="text-xs mb-2 ml-1" style={{ color: colors.textSecondary }}>Mật khẩu hiện tại</Text>
+              <View className="border h-12 rounded-xl px-4 mb-4 flex-row items-center" style={{ backgroundColor: colors.background, borderColor: colors.border }}>
                 <TextInput
                   secureTextEntry={!showCurrentPassword}
-                  className="flex-1 text-white text-sm"
+                  className="flex-1 text-sm"
+                  style={{ color: colors.text }}
                   placeholder="Nhập mật khẩu hiện tại"
-                  placeholderTextColor="#4d0099"
+                  placeholderTextColor={colors.textSecondary + '80'}
                   value={currentPassword}
                   onChangeText={setCurrentPassword}
                 />
@@ -127,18 +135,19 @@ export default function SecuritySettings({ navigation }: any) {
                   <MaterialIcons 
                     name={showCurrentPassword ? "visibility" : "visibility-off"} 
                     size={20} 
-                    color="#6a1b9a" 
+                    color={colors.textSecondary} 
                   />
                 </TouchableOpacity>
               </View>
 
-              <Text className="text-xs text-[#b388ff] mb-2 ml-1">Mật khẩu mới</Text>
-              <View className="bg-[#0a0014] border border-[#4d0099] h-12 rounded-xl px-4 mb-4 flex-row items-center">
+              <Text className="text-xs mb-2 ml-1" style={{ color: colors.textSecondary }}>Mật khẩu mới</Text>
+              <View className="border h-12 rounded-xl px-4 mb-4 flex-row items-center" style={{ backgroundColor: colors.background, borderColor: colors.border }}>
                 <TextInput
                   secureTextEntry={!showNewPassword}
-                  className="flex-1 text-white text-sm"
+                  className="flex-1 text-sm"
+                  style={{ color: colors.text }}
                   placeholder="Nhập mật khẩu mới"
-                  placeholderTextColor="#4d0099"
+                  placeholderTextColor={colors.textSecondary + '80'}
                   value={newPassword}
                   onChangeText={setNewPassword}
                 />
@@ -146,18 +155,19 @@ export default function SecuritySettings({ navigation }: any) {
                   <MaterialIcons 
                     name={showNewPassword ? "visibility" : "visibility-off"} 
                     size={20} 
-                    color="#6a1b9a" 
+                    color={colors.textSecondary} 
                   />
                 </TouchableOpacity>
               </View>
 
-              <Text className="text-xs text-[#b388ff] mb-2 ml-1">Xác nhận mật khẩu mới</Text>
-              <View className="bg-[#0a0014] border border-[#4d0099] h-12 rounded-xl px-4 mb-6 flex-row items-center">
+              <Text className="text-xs mb-2 ml-1" style={{ color: colors.textSecondary }}>Xác nhận mật khẩu mới</Text>
+              <View className="border h-12 rounded-xl px-4 mb-6 flex-row items-center" style={{ backgroundColor: colors.background, borderColor: colors.border }}>
                 <TextInput
                   secureTextEntry={!showConfirmPassword}
-                  className="flex-1 text-white text-sm"
+                  className="flex-1 text-sm"
+                  style={{ color: colors.text }}
                   placeholder="Nhập lại mật khẩu mới"
-                  placeholderTextColor="#4d0099"
+                  placeholderTextColor={colors.textSecondary + '80'}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                 />
@@ -165,7 +175,7 @@ export default function SecuritySettings({ navigation }: any) {
                   <MaterialIcons 
                     name={showConfirmPassword ? "visibility" : "visibility-off"} 
                     size={20} 
-                    color="#6a1b9a" 
+                    color={colors.textSecondary} 
                   />
                 </TouchableOpacity>
               </View>
@@ -173,66 +183,67 @@ export default function SecuritySettings({ navigation }: any) {
               <TouchableOpacity 
                 disabled={loading}
                 onPress={handleChangePassword}
-                className="bg-[#d500f9] h-12 rounded-xl items-center justify-center shadow-[0_0_15px_rgba(213,0,249,0.4)]"
+                className="h-12 rounded-xl items-center justify-center"
+                style={{ backgroundColor: colors.accent, shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
               >
                 {loading ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold">Cập nhật mật khẩu</Text>}
               </TouchableOpacity>
             </View>
           )}
 
-          <View className="flex-row items-center justify-between p-5 border-b border-[#4d0099]">
+          <View className="flex-row items-center justify-between p-5 border-b" style={{ borderBottomColor: colors.border }}>
             <View className="flex-row items-center">
-              <View className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center mr-4">
-                <MaterialIcons name="face" size={20} color="#d500f9" />
+              <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: colors.surfaceSecondary }}>
+                <MaterialIcons name="face" size={20} color={colors.accent} />
               </View>
-              <Text className="text-base font-bold text-white">Face ID / Vân tay</Text>
+              <Text className="text-base font-bold" style={{ color: colors.text }}>Face ID / Vân tay</Text>
             </View>
             <Switch
               value={faceId}
               onValueChange={setFaceId}
-              trackColor={{ false: '#4d0099', true: '#d500f9' }}
-              thumbColor={faceId ? '#fff' : '#b388ff'}
+              trackColor={{ false: colors.border, true: colors.accent }}
+              thumbColor={faceId ? '#fff' : '#f4f3f4'}
             />
           </View>
 
           <View className="flex-row items-center justify-between p-5">
             <View className="flex-row items-center">
-              <View className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center mr-4">
-                <MaterialIcons name="security" size={20} color="#00e5ff" />
+              <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: colors.surfaceSecondary }}>
+                <MaterialIcons name="security" size={20} color={colors.accentSecondary} />
               </View>
-              <Text className="text-base font-bold text-white">Xác thực 2 lớp (2FA)</Text>
+              <Text className="text-base font-bold" style={{ color: colors.text }}>Xác thực 2 lớp (2FA)</Text>
             </View>
             <Switch
               value={twoFactor}
               onValueChange={setTwoFactor}
-              trackColor={{ false: '#4d0099', true: '#d500f9' }}
-              thumbColor={twoFactor ? '#fff' : '#b388ff'}
+              trackColor={{ false: colors.border, true: colors.accent }}
+              thumbColor={twoFactor ? '#fff' : '#f4f3f4'}
             />
           </View>
         </View>
 
-        <Text className="text-sm font-bold text-[#b388ff] uppercase tracking-wider mb-4 ml-2">Thiết bị đang đăng nhập</Text>
+        <Text className="text-sm font-bold uppercase tracking-wider mb-4 ml-2" style={{ color: colors.textSecondary }}>Thiết bị đang đăng nhập</Text>
         
-        <View className="bg-[#1a0033] border border-[#4d0099] rounded-3xl overflow-hidden mb-8">
-          <View className="flex-row items-center justify-between p-5 border-b border-[#4d0099]">
+        <View className="border rounded-3xl overflow-hidden mb-8" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+          <View className="flex-row items-center justify-between p-5 border-b" style={{ borderBottomColor: colors.border }}>
             <View className="flex-row items-center">
-              <View className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center mr-4">
-                <MaterialIcons name="smartphone" size={20} color="#d500f9" />
+              <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: colors.surfaceSecondary }}>
+                <MaterialIcons name="smartphone" size={20} color={colors.accent} />
               </View>
               <View>
-                <Text className="text-base font-bold text-white">Thiết bị này</Text>
-                <Text className="text-xs text-[#00e5ff] mt-1">Đang hoạt động</Text>
+                <Text className="text-base font-bold" style={{ color: colors.text }}>Thiết bị này</Text>
+                <Text className="text-xs mt-1" style={{ color: colors.accentSecondary }}>Đang hoạt động</Text>
               </View>
             </View>
           </View>
           <View className="flex-row items-center justify-between p-5">
             <View className="flex-row items-center">
-              <View className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center mr-4">
-                <MaterialIcons name="laptop-mac" size={20} color="#6a1b9a" />
+              <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: colors.surfaceSecondary }}>
+                <MaterialIcons name="laptop-mac" size={20} color={colors.textSecondary} />
               </View>
               <View>
-                <Text className="text-base font-bold text-white">Trình duyệt Web</Text>
-                <Text className="text-xs text-[#b388ff] mt-1">Hoạt động 2 ngày trước</Text>
+                <Text className="text-base font-bold" style={{ color: colors.text }}>Trình duyệt Web</Text>
+                <Text className="text-xs mt-1" style={{ color: colors.textSecondary }}>Hoạt động 2 ngày trước</Text>
               </View>
             </View>
             <TouchableOpacity>

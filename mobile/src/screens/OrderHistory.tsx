@@ -4,6 +4,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { PaymentAPI } from '../services/paymentApiService';
+import { useTheme } from '../context/ThemeContextType';
+import { useFocusEffect } from '@react-navigation/native';
 
 type OrderItem = {
   id: string;
@@ -24,6 +26,13 @@ export default function OrderHistory({ navigation }: any) {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { colors, isDarkMode } = useTheme();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadOrders();
+    }, [])
+  );
 
   const loadOrders = async () => {
     if (!user?.id) return;
@@ -116,7 +125,8 @@ export default function OrderHistory({ navigation }: any) {
     <TouchableOpacity
       key={order.id}
       onPress={() => navigation.navigate('TicketDetail', { orderCode: order.orderCode.replace('#', '') })}
-      className="bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 mb-4 shadow-[0_0_15px_rgba(0,229,255,0.1)]"
+      style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+      className="border rounded-2xl p-4 mb-4"
     >
       <View className="flex-row">
         {order.eventImage ? (
@@ -138,7 +148,7 @@ export default function OrderHistory({ navigation }: any) {
             </Text>
             <View
               className="px-2 py-1 rounded-full"
-              style={{ backgroundColor: `${getStatusColor(order.status)}20` }}
+              style={{ backgroundColor: getStatusColor(order.status) + '20' }}
             >
               <Text
                 className="text-xs font-bold"
@@ -162,10 +172,10 @@ export default function OrderHistory({ navigation }: any) {
           </View>
 
           <View className="flex-row items-center justify-between mt-2">
-            <Text className="text-[#b388ff] text-sm">
+            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
               {formatDate(order.orderDate)}
             </Text>
-            <Text className="text-[#00e5ff] font-bold text-base">
+            <Text style={{ color: colors.accentSecondary, fontWeight: 'bold', fontSize: 16 }}>
               ${order.totalAmount.toFixed(2)}
             </Text>
           </View>
@@ -175,39 +185,36 @@ export default function OrderHistory({ navigation }: any) {
   );
 
   return (
-    <View className="flex-1 bg-[#0a0014]">
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
-      <LinearGradient
-        colors={['#1a0033', '#0a0014']}
-        className="pt-12 pb-4 px-4"
-      >
-        <View className="flex-row items-center">
+      <View style={{ paddingTop: 50, paddingBottom: 16, paddingHorizontal: 16, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099] mr-4"
+            style={{ width: 40, height: 40, backgroundColor: colors.surfaceSecondary, borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, marginRight: 16 }}
           >
-            <MaterialIcons name="arrow-back" size={24} color="#d500f9" />
+            <MaterialIcons name="arrow-back" size={24} color={colors.accent} />
           </TouchableOpacity>
-          <Text className="flex-1 text-xl font-bold text-white">Lịch sử mua vé</Text>
+          <Text style={{ flex: 1, fontSize: 20, fontWeight: 'bold', color: colors.text }}>Lịch sử mua vé</Text>
           <TouchableOpacity
             onPress={onRefresh}
             disabled={refreshing}
-            className="w-10 h-10 bg-[#2a004d] rounded-full items-center justify-center border border-[#4d0099]"
+            style={{ width: 40, height: 40, backgroundColor: colors.surfaceSecondary, borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
           >
-            <MaterialIcons name="sync" size={24} color={refreshing ? "#4d0099" : "#00e5ff"} />
+            <MaterialIcons name="sync" size={24} color={refreshing ? colors.textSecondary : colors.accentSecondary} />
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Content */}
       <ScrollView
-        className="flex-1 px-4 pt-4"
+        style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#d500f9"
-            colors={['#d500f9']}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
           />
         }
       >
@@ -234,11 +241,11 @@ export default function OrderHistory({ navigation }: any) {
           </View>
         ) : (
           <>
-            <View className="bg-[#1a0033] border border-[#4d0099] rounded-2xl p-4 mb-6">
+            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20, padding: 16, marginBottom: 24, shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 }}>
               <View className="flex-row items-center justify-between">
                 <View>
-                  <Text className="text-white font-bold text-lg">Tổng quan</Text>
-                  <Text className="text-[#b388ff] text-sm mt-1">
+                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 18 }}>Tổng quan</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
                     {orders.length} đơn hàng • {orders.filter(o => o.status === 'paid').length} đã thanh toán
                   </Text>
                 </View>

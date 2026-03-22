@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useStaffHome } from './useStaffHome';
@@ -22,8 +22,10 @@ export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
   const {
     summary,
     recentScans,
+    eventStaffs,
     loadingSummary,
     loadingRecent,
+    loadingStaffs,
     refreshing,
     eventDetails,
     onRefresh,
@@ -125,19 +127,21 @@ export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
           </View>
         </View>
 
-        {(user?.role === 'staff' && !summary) && (
+        {user?.role === 'staff' && (
           <TouchableOpacity
             style={{ backgroundColor: colors.accent, padding: 16, borderRadius: 16, marginBottom: 24, alignItems: 'center', shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 }}
             onPress={async () => {
               try {
                 if (!eventId) return;
                 const res = await CheckinAPI.requestAssignment(eventId);
+                Alert.alert('Thành công', res.message || 'Vui lòng chờ Organizer phê duyệt cho bạn phụ trách sự kiện này.');
                 Toast.show({
                   type: 'success',
                   text1: 'Đã gửi yêu cầu',
                   text2: res.message || 'Vui lòng chờ Organizer phê duyệt cho bạn phụ trách sự kiện này.'
                 });
               } catch (err: any) {
+                Alert.alert('Thất bại', err.message || 'Vui lòng thử lại sau');
                 Toast.show({
                   type: 'error',
                   text1: 'Gửi yêu cầu thất bại',
@@ -150,6 +154,29 @@ export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
           </TouchableOpacity>
         )}
 
+        {(user?.role === 'admin' || user?.role === 'organizer') && (
+          <View style={{ marginBottom: 24 }}>
+            <Text className="text-lg font-bold text-[#d500f9] mb-4">Nhân viên Sự kiện</Text>
+            {loadingStaffs ? (
+              <ActivityIndicator color="#d500f9" />
+            ) : eventStaffs.length === 0 ? (
+              <Text className="text-[#b388ff] text-xs">Chưa có nhân viên nào được phân quyền.</Text>
+            ) : (
+              eventStaffs.map((staff, idx) => (
+                <View key={staff._id || idx} className="bg-[#1a0033] border border-[#4d0099] rounded-xl p-3 mb-2 flex-row items-center">
+                  <View className="w-8 h-8 rounded-full bg-[#d500f9]/20 items-center justify-center mr-3">
+                    <MaterialIcons name="person" size={16} color="#d500f9" />
+                  </View>
+                  <View>
+                    <Text className="text-white font-bold">{staff.staffName || staff.staffId}</Text>
+                    <Text className="text-[#b388ff] text-xs">Đã phê duyệt</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
         {eventId && (
           <View className="flex-row justify-between border-t border-[#4d0099] pt-4 mb-6">
             <View className="items-center">
@@ -157,14 +184,14 @@ export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
               {loadingSummary ? (
                 <ActivityIndicator color="#d500f9" />
               ) : (
-                <Text className="text-white font-bold text-xl">
+                <Text className="text-[#d500f9] font-bold text-xl">
                   {summary?.checkedIn ?? 0}
                 </Text>
               )}
             </View>
             <View className="items-center">
               <Text className="text-[#b388ff] text-xs mb-1">Total Tickets</Text>
-              <Text className="text-white font-bold text-xl">
+              <Text className="text-[#d500f9] font-bold text-xl">
                 {summary?.total ?? 0}
               </Text>
             </View>
@@ -177,7 +204,7 @@ export default function StaffHomeScreen({ navigation, route }: StaffHomeProps) {
           </View>
         )}
 
-        <Text className="text-lg font-bold text-white mb-4">Recent Scans</Text>
+        <Text className="text-lg font-bold text-[#d500f9] mb-4">Recent Scans</Text>
         {loadingRecent && (
           <View className="items-center my-4">
             <ActivityIndicator color="#d500f9" />

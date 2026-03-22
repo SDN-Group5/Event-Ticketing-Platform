@@ -258,6 +258,20 @@ export const getPendingRequests = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getEventStaffs = async (req: AuthRequest, res: Response) => {
+  try {
+    const { eventId } = req.params;
+    if (!eventId) return res.status(400).json({ success: false, message: 'Thiếu eventId' });
+    const organizerId = req.userId;
+    // Tìm các staff đã được duyệt cho sự kiện này
+    const staffs = await StaffRequest.find({ eventId, organizerId, status: 'approved' }).sort({ updatedAt: -1 });
+    return res.json({ success: true, data: staffs });
+  } catch (err: any) {
+    console.error('[Checkin] getEventStaffs error:', err.message);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 export const approveRequest = async (req: AuthRequest, res: Response) => {
   try {
     const { requestId } = req.params;

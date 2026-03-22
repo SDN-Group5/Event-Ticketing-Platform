@@ -21,6 +21,8 @@ export function useStaffHome(eventId: string | undefined) {
   const [loadingRecent, setLoadingRecent] = useState<boolean>(!!eventId);
   const [refreshing, setRefreshing] = useState(false);
   const [eventDetails, setEventDetails] = useState<any>(null);
+  const [eventStaffs, setEventStaffs] = useState<any[]>([]);
+  const [loadingStaffs, setLoadingStaffs] = useState<boolean>(!!eventId);
 
   const loadEventDetails = async () => {
     if (!eventId) return;
@@ -64,11 +66,24 @@ export function useStaffHome(eventId: string | undefined) {
     }
   };
 
+  const loadStaffs = async () => {
+    if (!eventId) return;
+    try {
+      setLoadingStaffs(true);
+      const res = await CheckinAPI.getEventStaffs(eventId);
+      setEventStaffs(res.data || []);
+    } catch (err: any) {
+      console.log('[StaffHome] loadStaffs:', err?.message);
+    } finally {
+      setLoadingStaffs(false);
+    }
+  };
+
   const onRefresh = async () => {
     if (!eventId) return;
     setRefreshing(true);
     try {
-      await Promise.all([loadSummary(), loadRecent()]);
+      await Promise.all([loadSummary(), loadRecent(), loadStaffs()]);
     } finally {
       setRefreshing(false);
     }
@@ -79,13 +94,16 @@ export function useStaffHome(eventId: string | undefined) {
     void loadEventDetails();
     void loadSummary();
     void loadRecent();
+    void loadStaffs();
   }, [eventId]);
 
   return {
     summary,
     recentScans,
+    eventStaffs,
     loadingSummary,
     loadingRecent,
+    loadingStaffs,
     refreshing,
     eventDetails,
     onRefresh,

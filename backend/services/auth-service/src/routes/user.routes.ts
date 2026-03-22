@@ -360,15 +360,15 @@ router.patch("/:userId", verifyToken, roleCheck(["admin"]), async (req, res) => 
     const NAME_REGEX = /^[\p{L}\s'-]+$/u;
     if (firstName !== undefined) {
       const fn = firstName.trim();
-      if (fn.length < 2 || fn.length > 50 || !NAME_REGEX.test(fn)) {
-        return res.status(400).json({ success: false, message: "First name không hợp lệ (2-50 ký tự, chỉ chữ cái)" });
+      if (fn.length < 2 || fn.length > 30 || !NAME_REGEX.test(fn)) {
+        return res.status(400).json({ success: false, message: "First name không hợp lệ (2-30 ký tự, chỉ chữ cái)" });
       }
       user.firstName = fn;
     }
     if (lastName !== undefined) {
       const ln = lastName.trim();
-      if (ln.length < 2 || ln.length > 50 || !NAME_REGEX.test(ln)) {
-        return res.status(400).json({ success: false, message: "Last name không hợp lệ (2-50 ký tự, chỉ chữ cái)" });
+      if (ln.length < 2 || ln.length > 30 || !NAME_REGEX.test(ln)) {
+        return res.status(400).json({ success: false, message: "Last name không hợp lệ (2-30 ký tự, chỉ chữ cái)" });
       }
       user.lastName = ln;
     }

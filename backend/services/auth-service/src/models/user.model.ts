@@ -57,11 +57,23 @@ const userSchema = new Schema<IUserDocument>(
       type: String,
       required: [true, 'Họ là bắt buộc'],
       trim: true,
+      minlength: [2, 'Họ phải có ít nhất 2 ký tự'],
+      maxlength: [50, 'Họ không được vượt quá 50 ký tự'],
+      validate: {
+        validator: (v: string) => /^[\p{L}\s'-]+$/u.test(v),
+        message: 'Họ chỉ được chứa chữ cái, khoảng trắng, dấu gạch ngang và dấu nháy đơn',
+      },
     },
     lastName: {
       type: String,
       required: [true, 'Tên là bắt buộc'],
       trim: true,
+      minlength: [2, 'Tên phải có ít nhất 2 ký tự'],
+      maxlength: [50, 'Tên không được vượt quá 50 ký tự'],
+      validate: {
+        validator: (v: string) => /^[\p{L}\s'-]+$/u.test(v),
+        message: 'Tên chỉ được chứa chữ cái, khoảng trắng, dấu gạch ngang và dấu nháy đơn',
+      },
     },
     phone: {
       type: String,

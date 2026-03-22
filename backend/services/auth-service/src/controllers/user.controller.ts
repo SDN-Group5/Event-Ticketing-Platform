@@ -1,6 +1,15 @@
 import { Request, Response } from "express";
 import { User } from "../models/user.model";
 
+const NAME_REGEX = /^[\p{L}\s'-]+$/u;
+function validateName(value: string, fieldLabel: string): string | null {
+  const trimmed = value.trim();
+  if (trimmed.length < 2) return `${fieldLabel} phải có ít nhất 2 ký tự`;
+  if (trimmed.length > 50) return `${fieldLabel} không được vượt quá 50 ký tự`;
+  if (!NAME_REGEX.test(trimmed)) return `${fieldLabel} chỉ được chứa chữ cái, khoảng trắng, dấu gạch ngang`;
+  return null;
+}
+
 /**
  * GET /api/users/me
  * Lấy thông tin user hiện tại (đã đăng nhập)
@@ -46,8 +55,16 @@ export const updateCurrentUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (firstName !== undefined) user.firstName = firstName;
-    if (lastName !== undefined) user.lastName = lastName;
+    if (firstName !== undefined) {
+      const err = validateName(firstName, "First name");
+      if (err) return res.status(400).json({ message: err });
+      user.firstName = firstName.trim();
+    }
+    if (lastName !== undefined) {
+      const err = validateName(lastName, "Last name");
+      if (err) return res.status(400).json({ message: err });
+      user.lastName = lastName.trim();
+    }
     if (phone !== undefined) user.phone = phone;
     if (avatar !== undefined) user.avatar = avatar;
     if (address !== undefined) {
@@ -89,12 +106,16 @@ export const createStaff = async (req: Request, res: Response) => {
 
     const { email, password, firstName, lastName, phone } = req.body;
 
-    // Validate input
     if (!email || !password || !firstName || !lastName) {
       return res.status(400).json({
         message: "Email, password, firstName, lastName là bắt buộc",
       });
     }
+
+    const fnErr = validateName(firstName, "First name");
+    if (fnErr) return res.status(400).json({ message: fnErr });
+    const lnErr = validateName(lastName, "Last name");
+    if (lnErr) return res.status(400).json({ message: lnErr });
 
     // Check nếu email đã tồn tại
     const existingUser = await User.findOne({ email });
@@ -257,8 +278,16 @@ export const updateStaff = async (req: Request, res: Response) => {
       staff.email = email;
     }
 
-    if (firstName !== undefined) staff.firstName = firstName;
-    if (lastName !== undefined) staff.lastName = lastName;
+    if (firstName !== undefined) {
+      const err = validateName(firstName, "First name");
+      if (err) return res.status(400).json({ message: err });
+      staff.firstName = firstName.trim();
+    }
+    if (lastName !== undefined) {
+      const err = validateName(lastName, "Last name");
+      if (err) return res.status(400).json({ message: err });
+      staff.lastName = lastName.trim();
+    }
     if (phone !== undefined) staff.phone = phone;
     if (isActive !== undefined) staff.isActive = isActive;
 

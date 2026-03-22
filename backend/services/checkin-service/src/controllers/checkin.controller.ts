@@ -193,11 +193,23 @@ export const requestAssignment = async (req: AuthRequest, res: Response) => {
     }
 
     // Lấy thông tin Staff từ Auth Service
-    const staffProfile = await axios.get(`${AUTH_SERVICE_URL}/api/users/${staffId}`);
-    const staffName = staffProfile.data?.data ? `${staffProfile.data.data.firstName} ${staffProfile.data.data.lastName}` : 'Staff';
+    // Đảm bảo URL kết thúc đúng format: base + /api/users/staffId
+    const authBase = AUTH_SERVICE_URL.endsWith('/api') ? AUTH_SERVICE_URL : `${AUTH_SERVICE_URL}/api`;
+    
+    const staffProfile = await axios.get(`${authBase}/users/${staffId}`, {
+      headers: { Authorization: req.headers.authorization }
+    });
+    const staffName = staffProfile.data?.data 
+      ? `${staffProfile.data.data.firstName} ${staffProfile.data.data.lastName}` 
+      : (staffProfile.data?.firstName ? `${staffProfile.data.firstName} ${staffProfile.data.lastName}` : 'Staff');
 
-    // Lấy thông tin Sự kiện từ Layout Service
-    const eventLayout = await axios.get(`${LAYOUT_SERVICE_URL}/api/v1/layouts/event/${eventId}`);
+    // Lấy thông tin Sự kiện từ Layout Service 
+    // Layout Service thường mount tại /api/v1 nên ta gọi đúng Gateway route
+    const layoutBase = LAYOUT_SERVICE_URL.endsWith('/api') ? LAYOUT_SERVICE_URL : `${LAYOUT_SERVICE_URL}/api`;
+    const eventLayout = await axios.get(`${layoutBase}/v1/layouts/event/${eventId}`, {
+      headers: { Authorization: req.headers.authorization }
+    });
+    
     const eventName = eventLayout.data?.data?.eventName || 'Sự kiện';
     const organizerId = eventLayout.data?.data?.createdBy;
 

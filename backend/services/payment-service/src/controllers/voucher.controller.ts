@@ -5,11 +5,12 @@ import { Voucher } from '../models/voucher.model';
  * Helper: lấy organizerId từ header hoặc body/query (tạm thời, vì payment-service không verify JWT trực tiếp)
  */
 function getOrganizerId(req: Request): string | null {
+  const fromMiddleware = (req as any).userId as string | undefined;
   const headerId = (req.headers['x-user-id'] as string) || (req.headers['x-organizer-id'] as string);
   const bodyId = (req.body && (req.body.organizerId as string)) || undefined;
   const queryId = (req.query && (req.query.organizerId as string)) || undefined;
 
-  return headerId || bodyId || queryId || null;
+  return fromMiddleware || headerId || bodyId || queryId || null;
 }
 
 /**

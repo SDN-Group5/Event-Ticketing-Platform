@@ -49,30 +49,34 @@ export const PayoutsPage: React.FC = () => {
 
     const fetchRevenues = async () => {
         setLoading(true);
+        setError(null);
         try {
-            // 1. Chỉ lấy những sự kiện đã kết thúc/hoàn thành từ layout service
-            const completedLayouts = await LayoutAPI.getCompletedLayouts();
-            const completedIds = completedLayouts?.map(l => l.eventId).join(',');
-
-            if (!completedIds) {
-                setRevenues([]);
-                setLoading(false);
-                return;
+            // 1. Lấy sự kiện đã hoàn thành từ layout service (nếu có)
+            let eventIdsParam: string | undefined;
+            try {
+                const completedLayouts = await LayoutAPI.getCompletedLayouts();
+                if (completedLayouts && completedLayouts.length > 0) {
+                    eventIdsParam = completedLayouts.map(l => l.eventId).join(',');
+                }
+                // Nếu không có completed events → không lọc theo eventIds
+                // để vẫn hiện tất cả sự kiện có đơn paid chưa payout
+            } catch {
+                // Layout service lỗi → fallback: lấy tất cả
             }
 
-            // 2. Lấy doanh thu dựa trên danh sách ID đã chốt
+            // 2. Lấy doanh thu (có hoặc không có filter theo eventIds)
             const res = await AnalyticsAPI.getAdminEventRevenues({
-                limit: 50,
-                eventIds: completedIds
+                limit: 100,
+                ...(eventIdsParam ? { eventIds: eventIdsParam } : {}),
             });
 
             if (res.success) {
                 setRevenues(res.data);
             } else {
-                setError('Failed to fetch revenues');
+                setError('Không thể tải dữ liệu payout');
             }
         } catch (err: any) {
-            setError(err.message || 'Error loading data');
+            setError(err.message || 'Lỗi tải dữ liệu');
         } finally {
             setLoading(false);
         }

@@ -303,8 +303,12 @@ export const getAdminEventRevenues = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    // Search by event name or organizer ID if provided
-    const matchStage: any = { status: 'paid', payoutStatus: 'pending' };
+    // status='paid' và chưa payout thành công
+    // Dùng $ne thay vì ='pending' để bắt cả orders cũ không có field payoutStatus
+    const matchStage: any = {
+      status: 'paid',
+      payoutStatus: { $ne: 'success' },
+    };
 
     // Add eventIds filter if provided (for filtering only completed events)
     if (req.query.eventIds) {

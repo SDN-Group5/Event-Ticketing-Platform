@@ -1,5 +1,6 @@
 import { SagaOrchestrator, SagaStep } from './sagaOrchestrator';
 import { Voucher } from '../models/voucher.model';
+import { Ticket } from '../models/ticket.model';
 import { releaseSeatsForOrder } from '../services/seatRelease.service';
 import { publishEvent } from '../config/rabbitmq';
 
@@ -76,6 +77,23 @@ const updateOrderStep: SagaStep<CancelVoucherContext> = {
   },
 };
 
+const refundTicketsStep: SagaStep<CancelVoucherContext> = {
+  name: 'refund-tickets',
+  async execute(ctx) {
+    await Ticket.updateMany(
+      { orderId: ctx.order._id.toString() },
+      { $set: { status: 'refunded', cancelledAt: new Date() } }
+    );
+    return ctx;
+  },
+  async compensate(ctx) {
+    await Ticket.updateMany(
+      { orderId: ctx.order._id.toString() },
+      { $set: { status: 'issued' }, $unset: { cancelledAt: '' } }
+    );
+  },
+};
+
 const releaseSeatsStep: SagaStep<CancelVoucherContext> = {
   name: 'release-seats',
   async execute(ctx) {
@@ -106,6 +124,7 @@ export function createCancelVoucherSaga() {
   return new SagaOrchestrator<CancelVoucherContext>('CancelVoucherSaga', [
     createVoucherStep,
     updateOrderStep,
+    refundTicketsStep,
     releaseSeatsStep,
   ]);
 }

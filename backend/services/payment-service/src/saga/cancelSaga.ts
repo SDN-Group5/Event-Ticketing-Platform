@@ -1,5 +1,6 @@
 import { SagaOrchestrator, SagaStep } from './sagaOrchestrator';
 import { Order } from '../models/order.model';
+import { Ticket } from '../models/ticket.model';
 import { releaseSeatsForOrder } from '../services/seatRelease.service';
 import PayOS from '@payos/node';
 
@@ -36,6 +37,23 @@ const releaseSeatsStep: SagaStep<CancelContext> = {
   },
 };
 
+const cancelTicketsStep: SagaStep<CancelContext> = {
+  name: 'cancel-tickets',
+  async execute(ctx) {
+    await Ticket.updateMany(
+      { orderId: ctx.order._id.toString() },
+      { $set: { status: 'cancelled', cancelledAt: new Date() } }
+    );
+    return ctx;
+  },
+  async compensate(ctx) {
+    await Ticket.updateMany(
+      { orderId: ctx.order._id.toString() },
+      { $set: { status: 'issued' }, $unset: { cancelledAt: '' } }
+    );
+  },
+};
+
 const deleteOrderStep: SagaStep<CancelContext> = {
   name: 'delete-order',
   async execute(ctx) {
@@ -51,6 +69,7 @@ export function createCancelSaga() {
   return new SagaOrchestrator<CancelContext>('CancelSaga', [
     cancelPayOSStep,
     releaseSeatsStep,
+    cancelTicketsStep,
     deleteOrderStep,
   ]);
 }

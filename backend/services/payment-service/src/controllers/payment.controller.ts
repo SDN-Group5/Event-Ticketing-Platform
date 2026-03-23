@@ -10,7 +10,7 @@ import { SagaResult } from '../saga/sagaOrchestrator';
 import { getTicketsByOrderId } from '../services/ticket.service';
 import axios from 'axios';
 
-const COMMISSION_RATE = 0.05;
+const COMMISSION_RATE = 0.05; // 5% hoa hồng của organizer
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 const PAYOS_CLIENT_ID = process.env.PAYOS_CLIENT_ID;
@@ -21,8 +21,10 @@ const PAYOS_MOBILE_CLIENT_ID = process.env.PAYOS_MOBILE_CLIENT_ID;
 const PAYOS_MOBILE_API_KEY = process.env.PAYOS_MOBILE_API_KEY;
 const PAYOS_MOBILE_CHECKSUM_KEY = process.env.PAYOS_MOBILE_CHECKSUM_KEY;
 
+// Kênh thanh toán jsp - web ; mobile - di động
 type PayOSChannel = 'jsp' | 'mobile';
 
+// ném ra lỗi nếu thiếu bất kỳ thông tin nào của PayOS
 function createPayOSInstance(clientId?: string, apiKey?: string, checksumKey?: string) {
   if (!clientId || !apiKey || !checksumKey) {
     throw new Error('Chưa cấu hình đầy đủ thông tin PayOS (clientId/apiKey/checksumKey)');
@@ -30,6 +32,7 @@ function createPayOSInstance(clientId?: string, apiKey?: string, checksumKey?: s
   return new PayOS(clientId, apiKey, checksumKey);
 }
 
+// lấy ra sài cổng thanh toán phù hợp -> mobile có hỏng -> thì fallback về web
 function getPayOSClient(channel?: string) {
   const normalized = channel === 'mobile' ? 'mobile' : 'jsp';
 
@@ -42,7 +45,7 @@ function getPayOSClient(channel?: string) {
 
   return createPayOSInstance(PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY);
 }
-
+// xác minh chữ ký của webhook nhận được từ PayOS
 function verifyWebhookWithMultipleKeys(body: any): { data: any; channel: PayOSChannel } | null {
   try {
     const client = createPayOSInstance(PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY);
@@ -69,6 +72,7 @@ function verifyWebhookWithMultipleKeys(body: any): { data: any; channel: PayOSCh
   return null;
 }
 
+// lấy thông tin khách hàng từ Auth Service
 const getCustomerInfo = async (userId: string) => {
   try {
     // Lưu ý: Thay đổi port 4000 thành cổng chạy API Gateway hoặc Auth Service của bạn
@@ -86,6 +90,8 @@ const getCustomerInfo = async (userId: string) => {
   } catch (error) {
     // Im lặng bỏ qua nếu lỗi mạng hoặc không tìm thấy user
   }
+
+  //  Fallback: trả về tên placeholder khi không lấy được thông tin
   return {
     name: `Khách hàng (ID: ${userId.substring(0, 5)}...)`,
     email: 'N/A',
@@ -104,6 +110,14 @@ const formatOrderDetails = (items: any[]) => {
   }));
 };
 
+/**
+ * Lưu log kết quả thực thi Saga vào trường `sagaLog` của Order.
+ * Dùng để debug và audit trail — biết bước nào thành công/thất bại trong luồng xử lý.
+ *
+ * @param order   - Document Order trong MongoDB
+ * @param sagaName - Tên Saga đã thực thi (vd: 'BookingSaga', 'CancelSaga')
+ * @param result  - Kết quả trả về từ Saga
+ */
 async function saveSagaLog(order: any, sagaName: string, result: SagaResult): Promise<void> {
   try {
     if (!order?._id) return;
@@ -127,9 +141,23 @@ async function saveSagaLog(order: any, sagaName: string, result: SagaResult): Pr
 }
 
 // ==================== BOOKING (createPayment) ====================
-
+/**
+ * POST /payments
+ * Tạo đơn hàng mới và link thanh toán PayOS.
+ *
+ * Luồng xử lý (Booking Saga):
+ *   1. Validate voucher (nếu có)
+ *   2. Giữ ghế (lock seats)
+ *   3. Tính tổng tiền (áp dụng voucher, hoa hồng)
+ *   4. Tạo Order trong DB
+ *   5. Tạo payment link trên PayOS
+ *
+ * Nếu bất kỳ bước nào thất bại, Saga tự động rollback các bước trước
+ * (ví dụ: giải phóng ghế đã giữ, xóa order đã tạo).
+ */
 export const createPayment = async (req: Request, res: Response) => {
   try {
+    // userId có thể đến từ header (qua API Gateway) hoặc body (fallback)
     const userId = req.headers['x-user-id'] as string || req.body.userId;
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Thiếu userId - hãy đăng nhập' });
@@ -139,10 +167,10 @@ export const createPayment = async (req: Request, res: Response) => {
       eventId,
       eventName,
       organizerId,
-      items,
-      organizerBank,
-      channel: rawChannel,
-      voucherCode: rawVoucherCode,
+      items,                 // danh sách ghế và giá
+      organizerBank,         // thông tin ngân hàng của organizer
+      channel: rawChannel,   // kênh thanh toán
+      voucherCode: rawVoucherCode, // mã voucher
     } = req.body;
 
     if (!eventId || !eventName || !organizerId || !items?.length) {
@@ -152,6 +180,7 @@ export const createPayment = async (req: Request, res: Response) => {
     const channel: PayOSChannel = rawChannel === 'mobile' ? 'mobile' : 'jsp';
     const payosClient = getPayOSClient(channel);
 
+    // Context chứa tất cả dữ liệu cần thiết cho Saga
     const ctx: BookingContext = {
       userId,
       eventId,
@@ -210,7 +239,11 @@ export const createPayment = async (req: Request, res: Response) => {
 };
 
 // ==================== GET ORDER ====================
-
+/**
+ * GET /payments/:orderCode
+ * Lấy chi tiết một đơn hàng theo orderCode.
+ * Đồng thời trả về danh sách vé đính kèm (nếu đã được phát hành).
+ */
 export const getOrder = async (req: Request, res: Response) => {
   try {
     const { orderCode } = req.params;
@@ -243,7 +276,11 @@ export const getOrder = async (req: Request, res: Response) => {
 };
 
 // ==================== GET USER ORDERS ====================
-
+/**
+ * Sắp xếp danh sách vé theo thứ tự dòng (line index) trong ticketId.
+ * ticketId có dạng: "TICKET-ORDER123-1", "TICKET-ORDER123-2", ...
+ * Việc sắp xếp đúng thứ tự giúp hiển thị vé theo đúng vị trí ghế.
+ */
 function sortTicketsByLineIndex(tickets: { ticketId: string }[]) {
   return [...tickets].sort((a, b) => {
     const ma = String(a.ticketId).match(/-(\d+)$/);
@@ -252,6 +289,12 @@ function sortTicketsByLineIndex(tickets: { ticketId: string }[]) {
   });
 }
 
+/**
+ * GET /payments/user/:userId
+ * Lấy toàn bộ lịch sử đơn hàng của một người dùng.
+ * Bao gồm tất cả trạng thái: paid, refunded, cancelled, expired, pending, processing.
+ * Sắp xếp từ mới nhất đến cũ nhất.
+ */
 export const getUserOrders = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
@@ -284,7 +327,17 @@ export const getUserOrders = async (req: Request, res: Response) => {
 };
 
 // ==================== GET ORGANIZER ORDERS ====================
-
+/**
+ * GET /payments/organizer/orders
+ * Lấy danh sách đơn hàng theo ban tổ chức (có phân trang và lọc).
+ * Chỉ trả về đơn hàng của organizerId lấy từ token đăng nhập (req.userId).
+ *
+ * Query params:
+ *   - page: số trang (mặc định 1)
+ *   - limit: số đơn mỗi trang (mặc định 20, tối đa 100)
+ *   - eventId: lọc theo sự kiện cụ thể
+ *   - status: lọc theo trạng thái đơn hàng
+ */
 export const getOrganizerOrders = async (req: Request, res: Response) => {
   try {
     const organizerId = (req as any).userId;
@@ -293,19 +346,22 @@ export const getOrganizerOrders = async (req: Request, res: Response) => {
     }
 
     const { page = 1, limit = 20, eventId, status } = req.query;
+
+    // Đảm bảo page và limit hợp lệ, tránh giá trị âm hoặc quá lớn
     const pageNum = Math.max(1, parseInt(page as string) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
     const skip = (pageNum - 1) * limitNum;
 
+    // Xây dựng filter động theo các tham số được truyền vào
     const filter: any = { organizerId };
-
     if (eventId) filter.eventId = eventId;
     if (status) filter.status = status;
     else filter.status = { $in: ['paid', 'refunded', 'pending', 'processing', 'cancelled', 'expired'] };
 
+    // Thực hiện query song song: lấy dữ liệu và đếm tổng số để tính totalPages
     const [orders, total] = await Promise.all([
       Order.find(filter)
-        .sort({ paidAt: -1, createdAt: -1 })
+        .sort({ paidAt: -1, createdAt: -1 }) // Ưu tiên sort theo paidAt, fallback về createdAt
         .skip(skip)
         .limit(limitNum),
       Order.countDocuments(filter),
@@ -313,6 +369,7 @@ export const getOrganizerOrders = async (req: Request, res: Response) => {
 
     const totalPages = Math.ceil(total / limitNum);
 
+    // Bổ sung tên khách hàng vào từng đơn hàng (gọi Auth Service)
     const ordersWithCustomerInfo = await Promise.all(
       orders.map(async (order) => {
         const userInfo = await getCustomerInfo(order.userId);
@@ -326,12 +383,7 @@ export const getOrganizerOrders = async (req: Request, res: Response) => {
     return res.json({
       success: true,
       data: ordersWithCustomerInfo,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        totalPages,
-      },
+      pagination: { page: pageNum, limit: limitNum, total, totalPages },
     });
   } catch (err: any) {
     console.error('[getOrganizerOrders] Error:', err);
@@ -339,8 +391,16 @@ export const getOrganizerOrders = async (req: Request, res: Response) => {
   }
 };
 
-// ==================== GET ORGANIZER CUSTOMERS ====================
 
+// ==================== GET ORGANIZER CUSTOMERS ====================
+/**
+ * GET /payments/organizer/customers
+ * Lấy danh sách khách hàng đã mua vé của ban tổ chức (chỉ đơn đã thanh toán).
+ * Tổng hợp thống kê: số đơn, tổng chi tiêu, lần mua gần nhất.
+ *
+ * Note: Pagination được thực hiện in-memory vì cần aggregate trước,
+ *       phù hợp khi số lượng khách hàng không quá lớn.
+ */
 export const getOrganizerCustomers = async (req: Request, res: Response) => {
   try {
     const organizerId = (req as any).userId;
@@ -436,6 +496,12 @@ export const getOrganizerCustomers = async (req: Request, res: Response) => {
 
 // ==================== WEBHOOK ====================
 
+/**
+ * Xử lý đơn hàng khi PayOS xác nhận đã thanh toán thành công.
+ * Chạy Payment Complete Saga: cập nhật trạng thái order, phát hành vé, ghi nhận payout.
+ *
+ * Idempotent: nếu order đã ở trạng thái 'paid', bỏ qua (tránh xử lý 2 lần khi webhook đến nhiều lần).
+ */
 async function handlePaidOrder(order: any): Promise<void> {
   if (order.status === 'paid') {
     console.log(`[handlePaidOrder] Order ${order.orderCode} đã ở trạng thái paid, bỏ qua.`);
@@ -445,8 +511,8 @@ async function handlePaidOrder(order: any): Promise<void> {
   console.log(`[handlePaidOrder] Bắt đầu xử lý orderCode=${order.orderCode}, currentStatus=${order.status}`);
 
   const saga = createPaymentCompleteSaga();
-  const result = await saga.execute({ order });
-  await saveSagaLog(order, 'PaymentCompleteSaga', result);
+  const result = await saga.execute({ order }); // lấy ra kết quả từ Saga
+  await saveSagaLog(order, 'PaymentCompleteSaga', result); // lưu log kết quả thực thi Saga vào trường `sagaLog` của Order
 
   if (!result.success) {
     console.error(
@@ -459,6 +525,20 @@ async function handlePaidOrder(order: any): Promise<void> {
   }
 }
 
+/**
+ * POST /payments/webhook
+ * Nhận và xử lý webhook từ PayOS khi có cập nhật trạng thái thanh toán.
+ *
+ * Luồng xử lý:
+ *   1. Xác minh chữ ký webhook (thử cả 2 bộ key JSP và Mobile)
+ *   2. Tìm order tương ứng trong DB
+ *   3. Gọi PayOS để lấy trạng thái thanh toán mới nhất (tránh giả mạo webhook)
+ *   4a. PAID       → chạy PaymentCompleteSaga (tạo vé, cập nhật trạng thái)
+ *   4b. CANCELLED/EXPIRED → chạy CancelSaga (trả ghế, xóa order)
+ *   4c. Trạng thái khác → ghi log, không làm gì
+ *
+ * Luôn trả về 200 để PayOS không retry webhook liên tục.
+ */
 export const handleWebhook = async (req: Request, res: Response) => {
   try {
     const verified = verifyWebhookWithMultipleKeys(req.body);

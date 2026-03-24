@@ -133,11 +133,77 @@ stateDiagram-v2
   - **Các trạng thái theo góc nhìn client/phiên làm việc**; server không lưu trạng thái "Validated" giữa bước preview và tạo thanh toán.
 
 ### 4. Communication Diagram
-```mermaid
-graph LR
-    U((User)) -- Sends voucher code --> P[Payment Service]
-    P -- Reads/Writes --> DB[(Voucher DB)]
+```plantuml
+@startuml
+title UC-14 : Voucher Preview — Integrated Communication Diagram
+
+left to right direction
+skinparam backgroundColor white
+skinparam shadowing false
+
+skinparam TitleBackgroundColor white
+skinparam TitleBorderColor #000000
+skinparam TitleBorderThickness 2
+skinparam TitleFontSize 13
+skinparam TitleAlignment center
+
+skinparam object {
+  BackgroundColor #A9D6F5
+  BorderColor #000000
+  FontColor #000000
+  RoundCorner 6
+}
+skinparam database {
+  BackgroundColor #A9D6F5
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFACD
+  BorderColor #888888
+  FontColor #000000
+}
+skinparam ArrowColor #000000
+skinparam ArrowThickness 1
+
+' ── Object Definitions ──────────────────────────────────────
+object ":User" as U
+object ":PaymentScreen (UI)" as SC
+object ":PaymentService" as PS
+database ":VoucherDB\n(MongoDB)" as DB
+
+' ── Links & Numbered Messages ───────────────────────────────
+U   -->  SC  : 1 : enterVoucherCode(voucherCode)
+SC  -->  PS  : 2 : previewVoucher(items, voucherCode, eventId, userId)
+PS  -->  DB  : 3 : findByCode(voucherCode)
+DB  -->  PS  : 4 : VoucherDoc | null
+
+note bottom of PS
+  5 : validateRules(voucher, items, eventId, userId)
+  ─────────────────────────────────────────────
+  5.1 : status == "active"
+  5.2 : startDate <= now <= endDate
+  5.3 : usedCount < maxUses
+  5.4 : totalPrice >= minimumPrice
+  5.5 : eventId matches (if set)
+  5.6 : userId matches (CANCEL-* prefix only)
+end note
+
+PS  -->  SC  : 6 : [valid]   return { subtotal, discountAmount, newTotal }\n    [invalid] throw Error { 400/404, errorMessage }
+SC  -->  U   : 7 : showResult(updatedTotal | errorMessage)
+
+@enduml
 ```
+
+- _Comment (VI):_
+  - **1**: User nhập mã voucher → `:PaymentScreen` nhận sự kiện.
+  - **2**: UI gọi `previewVoucher()` với đầy đủ tham số lên `:PaymentService`.
+  - **3**: `:PaymentService` gọi `findByCode()` xuống `:VoucherDB`.
+  - **4**: DB trả về `VoucherDoc` nếu tìm thấy, `null` nếu không.
+  - **5 → 5.6**: `:PaymentService` tự validate toàn bộ business rules (6 rule con).
+  - **6a** _(valid)_: Trả về `{ subtotal, discountAmount, newTotal }`.
+  - **6b** _(invalid)_: Ném lỗi `400/404` kèm `errorMessage`.
+  - **7**: UI render kết quả cuối cho user.
 
 ### 5. Detail Design
 - **Validation:** If `voucher.userId` is set (especially for refund vouchers with prefix `CANCEL-*`), only the assigned `userId` is allowed to use this voucher.
@@ -278,13 +344,66 @@ stateDiagram-v2
 - _Comment (VI): Không có trạng thái trung gian "RefundPending" — code xử lý đồng bộ trong 1 saga: validate → tạo voucher → đổi status `refunded` → nhả ghế. Nếu validate thất bại (sai user, đơn không phải `paid`, số tiền không hợp lệ) thì order vẫn giữ `paid` và trả lỗi 400/403._
 
 ### 4. Communication Diagram
-```mermaid
-graph TD
-    U((User)) -- Request --> P[Payment Service]
-    P -- Release --> R[RabbitMQ]
-    R -- Notify --> L[Layout Service]
-    P -- Save --> DB[(Voucher DB)]
+```plantuml
+@startuml
+title UC-15 : Cancel Ticket & Refund via Voucher — Communication Diagram
+
+left to right direction
+skinparam backgroundColor white
+skinparam shadowing false
+
+skinparam TitleBackgroundColor white
+skinparam TitleBorderColor #000000
+skinparam TitleBorderThickness 2
+skinparam TitleAlignment center
+
+skinparam object {
+  BackgroundColor #A9D6F5
+  BorderColor #000000
+  FontColor #000000
+  RoundCorner 6
+}
+skinparam database {
+  BackgroundColor #A9D6F5
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFACD
+  BorderColor #888888
+  FontColor #000000
+}
+skinparam ArrowColor #000000
+skinparam ArrowThickness 1
+
+object ":User" as U
+object ":PaymentScreen (UI)" as SC
+object ":PaymentService" as PS
+object ":RabbitMQ" as R
+object ":LayoutService" as LS
+database ":MongoDB\n(voucher / order / ticket)" as DB
+
+U   --> SC  : 1 : requestCancel(orderId)
+SC  --> PS  : 2 : POST /api/payments/cancel-with-voucher/:id
+
+note bottom of PS
+  3 : validateCancellationRules(order, user, ticket)
+  ─────────────────────────────────────────────
+  If allowed: generate CANCEL-* voucher (50%),
+  set order/ticket REFUNDED
+end note
+
+PS  --> DB  : 4 : saveVoucherAndUpdateOrder()
+PS  --> R   : 5 : publish(seats.release, payload)
+R   --> LS  : 6 : consume seats.release → releaseSeats()
+
+PS  --> SC  : 7 : [allowed] 200 OK (refundVoucherCode)\n    [rejected] 400/403 (reason)
+SC  --> U   : 8 : showResult(voucher | error)
+
+@enduml
 ```
+
+- _Comment (VI): Thứ tự khớp sequence UC-15: user gọi API hủy → Payment Service validate → lưu DB (voucher + trạng thái) → publish `seats.release` → Layout Service nhận message và nhả ghế → phản hồi UI._
 
 ### 5. Detail Design
 - **Logic:** Refund vouchers are created with prefix `CANCEL-` and are strictly bound to the `userId` of the user who cancelled the ticket.
@@ -457,11 +576,71 @@ stateDiagram-v2
 - _Comment (VI): Trong MongoDB, trạng thái thật là `pending` → `processing` → `paid` (không có tên `LinkCreated`). Khi PayOS `CANCELLED`/`EXPIRED`, hoặc cleanup timeout, hoặc user hủy đơn chưa trả tiền, code thường **xoá document Order** (`CancelSaga`), không lưu `cancelled`/`expired` trên đơn. Enum trong schema vẫn có `cancelled`/`expired` nhưng luồng hiện tại chủ yếu là xóa._
 
 ### 4. Communication Diagram (Money flow vs. system callbacks)
-```mermaid
-graph LR
-    U((User)) -- Scans QR / opens link --> Bank((Banking App))
-    Bank -- Transfers money --> OS[PayOS]
-    OS -- Sends webhook --> P[Payment Service]
+```plantuml
+@startuml
+title UC-17 : Online Payment via PayOS — Communication Diagram
+
+left to right direction
+skinparam backgroundColor white
+skinparam shadowing false
+
+skinparam TitleBackgroundColor white
+skinparam TitleBorderColor #000000
+skinparam TitleBorderThickness 2
+skinparam TitleAlignment center
+
+skinparam object {
+  BackgroundColor #A9D6F5
+  BorderColor #000000
+  FontColor #000000
+  RoundCorner 6
+}
+skinparam note {
+  BackgroundColor #FFFACD
+  BorderColor #888888
+  FontColor #000000
+}
+skinparam ArrowColor #000000
+skinparam ArrowThickness 1
+
+object ":User" as U
+object ":BankingApp" as B
+object ":PayOS" as OS
+object ":PaymentService" as P
+object ":LayoutService" as L
+object ":WebClient (FE)" as FE
+object ":MongoDB (Order/Ticket)" as DB
+
+FE  --> P   : 1 : createPayment(eventId, items, voucherCode, userId)
+P   --> OS  : 1.1 : createPaymentLink(...)
+OS  --> P   : 1.2 : checkoutUrl + qrCode + paymentLinkId
+P   --> FE  : 1.3 : return checkoutUrl/qrCode/orderCode
+
+U   --> B   : 2 : scanQrOrOpenCheckout(checkoutUrl|qrCode)
+B   --> OS  : 2.1 : transferMoney(...)
+
+OS  --> P   : 3 : webhook(orderCode, signature, ...)
+P   --> OS  : 3.1 : verifyStatusFromPayOS(paymentLinkId)
+OS  --> P   : 3.2 : paymentStatus(...)
+P   --> P   : 3.3 : [PAID] completeOrder()
+P   --> L   : 3.4 : [CANCELLED/EXPIRED] releaseSeats()
+P   --> DB  : 3.5 : [CANCELLED/EXPIRED] deleteOrder()
+P   --> FE  : 3.6 : always 200 success
+
+FE  --> P   : 4 : verifyPayment(orderCode)
+P   --> OS  : 4.1 : recheckPaymentStatus(orderCode)
+P   --> DB  : 4.2 : loadOrderAndTickets()
+P   --> FE  : 4.3 : return {status, order/tickets or deleted}
+
+note bottom of P
+  Summary:
+  - PAID -> complete order + issue tickets
+  - CANCELLED/EXPIRED -> release seats + delete order
+  - verifyPayment is used by FE to get final status
+  Security: verify webhook signature (HMAC-SHA256)
+end note
+
+@enduml
 ```
 
 ### 5. Detail Design

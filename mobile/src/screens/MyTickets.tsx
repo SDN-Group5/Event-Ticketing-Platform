@@ -74,15 +74,34 @@ export default function MyTickets({ navigation }: any) {
     };
   }, [authLoading, isAuthenticated, user?.id]);
 
-  const visibleOrders = useMemo(() => {
-    // Chỉ hiển thị các đơn đã thanh toán trong màn hình "My Tickets"
-    return orders.filter(o => o.status === 'paid');
+  const upcomingOrders = useMemo(() => {
+    return orders.filter(o => {
+      if (o.status !== 'paid') return false;
+      const tickets = Array.isArray(o.tickets) ? o.tickets : [];
+      if (tickets.length === 0) return true;
+      return !tickets.some((t: any) => t.status === 'checked-in' || t.status === 'used');
+    });
   }, [orders]);
 
-  const renderStatus = (status: string) => {
-    if (status === 'paid') return { text: 'Paid', cls: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' };
-    if (status === 'refunded') return { text: 'Refunded', cls: 'bg-blue-500/10 text-blue-400 border border-blue-500/20' };
-    return { text: status || 'Unknown', cls: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' };
+  const pastOrders = useMemo(() => {
+    return orders.filter(o => {
+      const tickets = Array.isArray(o.tickets) ? o.tickets : [];
+      const hasUsedTicket = tickets.some((t: any) => t.status === 'checked-in' || t.status === 'used');
+      const isInactive = o.status === 'refunded' || o.status === 'cancelled';
+      return hasUsedTicket || isInactive;
+    });
+  }, [orders]);
+
+  const visibleOrders = tab === 'upcoming' ? upcomingOrders : pastOrders;
+
+  const renderBadge = (o: any) => {
+    const tickets = Array.isArray(o.tickets) ? o.tickets : [];
+    const hasCheckedIn = tickets.some((t: any) => t.status === 'checked-in' || t.status === 'used');
+    if (hasCheckedIn) return { text: 'Đã check-in', color: '#10b981' };
+    if (o.status === 'refunded') return { text: 'Đã hoàn tiền', color: '#60a5fa' };
+    if (o.status === 'cancelled') return { text: 'Đã hủy', color: '#f87171' };
+    if (o.status === 'paid') return { text: 'Có hiệu lực', color: '#a855f7' };
+    return { text: o.status || 'Unknown', color: '#9ca3af' };
   };
 
   return (
@@ -134,34 +153,67 @@ export default function MyTickets({ navigation }: any) {
             <Text className="text-red-400 font-bold text-center">{error}</Text>
           </View>
         ) : visibleOrders.length === 0 ? (
-          <View className="py-10 items-center justify-center">
-            <Text className="text-[#b388ff] font-bold">Chưa có vé nào</Text>
+          <View className="py-20 items-center justify-center">
+            <MaterialIcons
+              name={tab === 'upcoming' ? 'confirmation-number' : 'history'}
+              size={56}
+              color={colors.textSecondary}
+            />
+            <Text className="mt-4 font-bold text-base" style={{ color: colors.textSecondary }}>
+              {tab === 'upcoming' ? 'Chưa có vé sắp tới' : 'Chưa có sự kiện đã đi'}
+            </Text>
+            {tab === 'upcoming' && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Home')}
+                className="mt-4 px-6 py-3 rounded-2xl"
+                style={{ backgroundColor: colors.accent }}
+              >
+                <Text className="text-white font-bold">Khám phá sự kiện</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           visibleOrders.map((o) => {
             const items = Array.isArray(o.items) ? o.items : [];
             const first = items[0];
             const qty = items.reduce((s: number, it: any) => s + Number(it.quantity || 1), 0);
-            const s = renderStatus(String(o.status || ''));
+            const badge = renderBadge(o);
+            const isPast = tab === 'past';
             return (
               <TouchableOpacity
                 key={String(o._id || o.orderCode)}
                 onPress={() => navigation.navigate('TicketDetail', { orderCode: o.orderCode })}
                 className="w-full rounded-3xl overflow-hidden mb-6 border"
-                style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  opacity: isPast ? 0.8 : 1,
+                }}
               >
                 <ImageBackground
                   source={{ uri: o.eventImage || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30' }}
                   className="w-full h-32 justify-end p-4"
                 >
-                  <View className={`px-3 py-1 rounded-lg self-start border`} style={{ backgroundColor: s.cls.split(' ')[0].replace('bg-', '') + '20', borderColor: colors.border }}>
-                    <Text className="font-black text-[10px] uppercase" style={{ color: colors.accentSecondary }}>{s.text}</Text>
+                  {isPast && (
+                    <View
+                      className="absolute inset-0"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
+                    />
+                  )}
+                  <View
+                    className="px-3 py-1 rounded-lg self-start"
+                    style={{ backgroundColor: badge.color + '33', borderWidth: 1, borderColor: badge.color + '66' }}
+                  >
+                    <Text className="font-black text-[10px] uppercase" style={{ color: badge.color }}>{badge.text}</Text>
                   </View>
                 </ImageBackground>
 
                 <View className="p-4 relative">
-                  <View className="absolute -top-6 right-4 w-12 h-12 rounded-full items-center justify-center border-4 shadow-xl" style={{ backgroundColor: colors.accent, borderColor: colors.surface }}>
-                    <MaterialIcons name="qr-code-2" size={24} color="white" />
+                  <View
+                    className="absolute -top-6 right-4 w-12 h-12 rounded-full items-center justify-center border-4 shadow-xl"
+                    style={{ backgroundColor: isPast ? colors.textSecondary : colors.accent, borderColor: colors.surface }}
+                  >
+                    <MaterialIcons name={isPast ? 'check-circle' : 'qr-code-2'} size={24} color="white" />
                   </View>
 
                   <Text className="text-xl font-black mb-2 pr-12" style={{ color: colors.text }}>{o.eventName || 'Event'}</Text>

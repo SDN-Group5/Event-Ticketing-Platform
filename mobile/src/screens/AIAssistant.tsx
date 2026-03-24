@@ -13,6 +13,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { LayoutAPI, EventLayout } from '../services/layoutApiService';
+import { askAIAssistant } from '../services/aiAssistantService';
 import Animated, { FadeIn, SlideInRight } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContextType';
 
@@ -35,10 +36,14 @@ export default function AIAssistant({ navigation }: any) {
 
   useEffect(() => {
     // Initial greeting
+    const welcomeText =
+      user?.role === 'organizer'
+        ? `Xin chào ${user?.firstName || ''}! Tôi là trợ lý Eventix cho organizer. Tôi có thể hỗ trợ bạn tạo sự kiện, tối ưu giá vé, setup seat map, check-in và theo dõi hiệu quả bán vé. Bạn muốn bắt đầu từ việc nào?`
+        : `Xin chào ${user?.firstName || ''}! Tôi là trợ lý ảo Eventix. Tôi có thể giúp bạn tìm kiếm sự kiện và đặt vé nhanh chóng. Bạn muốn tìm sự kiện gì hôm nay?`;
     setMessages([
       {
         id: '1',
-        text: `Xin chào ${user?.firstName || ''}! Tôi là trợ lý ảo Eventix. Tôi có thể giúp bạn tìm kiếm sự kiện và đặt vé nhanh chóng. Bạn muốn tìm sự kiện gì hôm nay?`,
+        text: welcomeText,
         sender: 'bot',
         timestamp: new Date(),
       }
@@ -57,7 +62,7 @@ export default function AIAssistant({ navigation }: any) {
     }
   }
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMsg: Message = {
@@ -74,11 +79,11 @@ export default function AIAssistant({ navigation }: any) {
 
     // Simulate AI Processing
     setTimeout(() => {
-      processInput(currentInput);
+      void processInput(currentInput);
     }, 1000);
   };
 
-  const processInput = (text: string) => {
+  const processInput = async (text: string) => {
     let botResponse: Partial<Message> = {
       id: (Date.now() + 1).toString(),
       sender: 'bot',
@@ -115,7 +120,19 @@ export default function AIAssistant({ navigation }: any) {
       botResponse.text = `Tuyệt vời! Tôi đã tìm thấy sự kiện "${event.eventName}" diễn ra tại ${event.eventLocation}. Bạn có muốn xem chi tiết hoặc đặt vé ngay không?`;
       botResponse.event = event;
     } else {
-      if (lowerText.includes('nhạc') || lowerText.includes('âm nhạc') || lowerText.includes('ca nhạc')) {
+      const aiAnswer = await askAIAssistant({
+        role: user?.role,
+        firstName: user?.firstName,
+        message: text,
+        events: allEvents,
+      });
+
+      if (aiAnswer) {
+        botResponse.text = aiAnswer;
+      } else if (user?.role === 'organizer') {
+        botResponse.text =
+          'Mình có thể hỗ trợ organizer theo 6 nhóm chính: (1) tạo sự kiện, (2) thiết kế seat map, (3) định giá vé, (4) lập timeline mở bán, (5) vận hành check-in, (6) đọc số liệu sau sự kiện. Bạn muốn mình đi từng bước mục nào trước?';
+      } else if (lowerText.includes('nhạc') || lowerText.includes('âm nhạc') || lowerText.includes('ca nhạc')) {
         botResponse.text = "Hiện tại tôi chưa thấy show âm nhạc nào khớp với mô tả của bạn. Bạn thử nhập tên nghệ sĩ hoặc thể loại nhạc xem sao?";
       } else if (lowerText.includes('đá bóng') || lowerText.includes('bóng đá') || lowerText.includes('mu') || lowerText.includes('mc')) {
         botResponse.text = "Có vẻ bạn đang tìm các trận bóng đá hấp dẫn. Rất tiếc hiện chưa có sự kiện thể thao nào trong danh sách. Hãy quay lại sau nhé!";
@@ -230,7 +247,9 @@ export default function AIAssistant({ navigation }: any) {
             style={{ flex: 1, color: colors.text, fontSize: 14, height: 40 }}
           />
           <TouchableOpacity 
-            onPress={handleSend}
+            onPress={() => {
+              void handleSend();
+            }}
             style={{ width: 40, height: 40, backgroundColor: colors.accent, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
           >
             <MaterialIcons name="send" size={20} color="white" />

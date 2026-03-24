@@ -11,6 +11,7 @@ import Profile from '../screens/Profile';
 import UserScreen from '../screens/user/UserHomeScreen';
 import AIAssistant from '../screens/AIAssistant';
 import SavedEvents from '../screens/SavedEvents';
+import NewsFeed from '../screens/NewsFeed';
 import { useTheme } from '../context/ThemeContextType';
 
 const Tab = createBottomTabNavigator();
@@ -32,6 +33,7 @@ export default function TabNavigator() {
           else if (route.name === 'Tickets') iconName = 'local-activity';
           else if (route.name === 'Saved') iconName = 'favorite';
           else if (route.name === 'Manage') iconName = 'event';
+          else if (route.name === 'News') iconName = 'campaign';
           else if (route.name === 'Profile') iconName = 'person';
 
           return <MaterialIcons name={iconName} size={size} color={color} />;
@@ -58,6 +60,7 @@ export default function TabNavigator() {
     >
       {(user?.role === 'user' || user?.role === 'admin') && <Tab.Screen name="Home" component={UserScreen} />}
       {(user?.role === 'organizer' || user?.role === 'staff') && <Tab.Screen name="Manage" component={MyEvents} />}
+      <Tab.Screen name="News" component={NewsFeed} />
       <Tab.Screen name="AI Assistant" component={AIAssistant} />
       {(user?.role === 'user' || user?.role === 'admin') && <Tab.Screen name="Tickets" component={MyTickets} />}
       {(user?.role === 'user' || user?.role === 'admin') && <Tab.Screen name="Saved" component={SavedEvents} />}

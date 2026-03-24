@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   FlatList,
   Dimensions,
   Share,
+  StyleSheet,
 } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { PaymentAPI } from '../services/paymentApiService';
@@ -98,6 +99,48 @@ export default function TicketDetail({ navigation, route }: any) {
     loadOrder();
   }, [orderCode]);
 
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'paid': return { text: 'Đã thanh toán', color: '#00e5ff' };
+      case 'refunded': return { text: 'Đã hoàn tiền', color: '#ff9100' };
+      case 'cancelled': return { text: 'Đã hủy', color: '#ff1744' };
+      case 'expired': return { text: 'Đã hết hạn', color: '#ff1744' };
+      case 'pending':
+      case 'processing': return { text: 'Đang xử lý', color: '#d500f9' };
+      default: return { text: 'Không xác định', color: '#b388ff' };
+    }
+  };
+
+  const formatVND = (value: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
+
+  // Hooks phải luôn chạy theo cùng thứ tự ở mọi lần render
+  const tickets = (order as any)?.tickets || [];
+  const items = Array.isArray(order?.items) ? order.items : [];
+  const ticketPages = useMemo(() => {
+    if (tickets.length > 0) {
+      return tickets.map((ticket: any, index: number) => {
+        const matchedItem =
+          items.find(
+            (it: any) =>
+              (ticket.seatId && it.seatId && ticket.seatId === it.seatId) ||
+              (ticket.zoneName && it.zoneName && ticket.zoneName === it.zoneName)
+          ) || items[index] || items[0] || {};
+        return {
+          key: String(ticket.ticketId || `ticket-${index}`),
+          ticket,
+          item: matchedItem,
+        };
+      });
+    }
+
+    return items.map((item: any, index: number) => ({
+      key: `item-${index}`,
+      ticket: null,
+      item,
+    }));
+  }, [tickets, items]);
+
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
@@ -122,22 +165,7 @@ export default function TicketDetail({ navigation, route }: any) {
     );
   }
 
-  const getStatusInfo = (status: string) => {
-    switch (status) {
-      case 'paid': return { text: 'Đã thanh toán', color: '#00e5ff' };
-      case 'refunded': return { text: 'Đã hoàn tiền', color: '#ff9100' };
-      case 'cancelled': return { text: 'Đã hủy', color: '#ff1744' };
-      case 'expired': return { text: 'Đã hết hạn', color: '#ff1744' };
-      case 'pending':
-      case 'processing': return { text: 'Đang xử lý', color: '#d500f9' };
-      default: return { text: 'Không xác định', color: '#b388ff' };
-    }
-  };
-
   const statusInfo = getStatusInfo(order.status);
-
-  // Map tickets (có QR payload) theo thứ tự để hiển thị
-  const tickets = (order as any).tickets || [];
 
   const webBaseUrl = normalizeWebBaseUrl(
     process.env.EXPO_PUBLIC_WEB_URL || 'https://event-ticketing-platform-six.vercel.app'
@@ -145,16 +173,8 @@ export default function TicketDetail({ navigation, route }: any) {
   const activeTicket = tickets[activeIndex];
 
   const handleShareTicket = async () => {
-    const items = order.items || [];
-    const activeItem = items[activeIndex];
-    const matchingTicket =
-      activeItem && tickets.length
-        ? tickets.find(
-            (t: any) =>
-              (t.seatId && activeItem.seatId && t.seatId === activeItem.seatId) ||
-              (t.zoneName && activeItem.zoneName && t.zoneName === activeItem.zoneName)
-          ) || tickets[activeIndex]
-        : tickets[activeIndex];
+    const activePage = ticketPages[activeIndex];
+    const matchingTicket = activePage?.ticket || tickets[activeIndex];
 
     let ticketId: string | null =
       matchingTicket?.ticketId != null ? String(matchingTicket.ticketId) : null;
@@ -195,7 +215,7 @@ export default function TicketDetail({ navigation, route }: any) {
       <View className="flex-1">
         <View className="pt-4 flex-1">
           <FlatList
-            data={order.items || []}
+            data={ticketPages}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
@@ -204,15 +224,10 @@ export default function TicketDetail({ navigation, route }: any) {
               const index = Math.round(contentOffset / SCREEN_WIDTH);
               setActiveIndex(index);
             }}
-            keyExtractor={(_, index) => index.toString()}
-            renderItem={({ item, index }) => {
-              // Tìm vé tương ứng (ưu tiên cùng seatId, nếu không có thì dùng index)
-              const matchingTicket =
-                tickets.find(
-                  (t: any) =>
-                    (t.seatId && item.seatId && t.seatId === item.seatId) ||
-                    (t.zoneName && item.zoneName && t.zoneName === item.zoneName)
-                ) || tickets[index];
+            keyExtractor={(page) => page.key}
+            renderItem={({ item: page, index }) => {
+              const item = page.item || {};
+              const matchingTicket = page.ticket || tickets[index];
               const qrValue =
                 matchingTicket?.qrCodePayload ||
                 (matchingTicket?.ticketId ? `ticket:${matchingTicket.ticketId}` : '') ||
@@ -221,16 +236,24 @@ export default function TicketDetail({ navigation, route }: any) {
               return (
               <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 16 }}>
                 <View style={{ backgroundColor: colors.surface, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, marginBottom: 16, shadowColor: colors.accent, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 6 }}>
-                  <Image
-                    source={{ uri: order.eventImage || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=2070&auto=format&fit=crop' }}
-                    className="w-full h-48"
-                  />
+                  <View style={styles.heroWrapper}>
+                    <Image
+                      source={{ uri: order.eventImage || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=2070&auto=format&fit=crop' }}
+                      style={styles.heroImage}
+                    />
+                    <View style={styles.heroOverlay} />
+                    <View style={{ position: 'absolute', left: 14, bottom: 12, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6 }}>
+                      <Text style={{ color: 'white', fontSize: 11, fontWeight: '700' }}>
+                        {order.eventDate ? new Date(order.eventDate).toLocaleDateString('vi-VN') : 'Sự kiện sắp diễn ra'}
+                      </Text>
+                    </View>
+                  </View>
                   <View className="p-6">
                     <View className="flex-row justify-between items-start mb-4">
                       <View className="flex-1 mr-4">
                         <Text style={{ fontSize: 24, fontWeight: '900', color: colors.text }}>{order.eventName}</Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', marginTop: 4, letterSpacing: 1.5 }}>
-                          Ticket {index + 1} of {order.items?.length}
+                          Ticket {index + 1} of {ticketPages.length}
                         </Text>
                       </View>
                       <View
@@ -260,10 +283,7 @@ export default function TicketDetail({ navigation, route }: any) {
                       <View className="flex-row justify-between mb-2">
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Order Reference</Text>
                         <View className="flex-row items-center">
-                          <Text style={{ color: colors.text, fontSize: 14, fontVariant: ['tabular-nums'] }}>#{order.orderCode}</Text>
-                          <TouchableOpacity className="ml-2">
-                            <MaterialIcons name="content-copy" size={14} color={colors.accentSecondary} />
-                          </TouchableOpacity>
+                          <Text style={{ color: colors.text, fontSize: 14, fontVariant: ['tabular-nums'], fontWeight: '700' }}>#{order.orderCode}</Text>
                         </View>
                       </View>
                       <View className="flex-row justify-between mb-2">
@@ -272,7 +292,9 @@ export default function TicketDetail({ navigation, route }: any) {
                       </View>
                       <View className="flex-row justify-between mt-3 pt-3 border-t" style={{ borderTopColor: colors.border }}>
                         <Text style={{ color: colors.text, fontWeight: 'bold' }}>Ticket Price</Text>
-                        <Text style={{ color: colors.accentSecondary, fontWeight: '900', fontSize: 20 }}>${(order.totalAmount / (order.items?.length || 1)).toFixed(2)}</Text>
+                        <Text style={{ color: colors.accentSecondary, fontWeight: '900', fontSize: 20 }}>
+                          {formatVND(order.totalAmount / (ticketPages.length || 1))}
+                        </Text>
                       </View>
                     </View>
 
@@ -296,7 +318,7 @@ export default function TicketDetail({ navigation, route }: any) {
                       )}
                       <View className="mt-4 px-6 py-2 bg-[#f0f0f0] rounded-full">
                         <Text className="text-[#0a0014] font-mono text-[9px] font-bold tracking-[2px] uppercase">
-                          {item.zoneName} - ID:{index + 101}
+                          {item.zoneName} - VE {index + 1}
                         </Text>
                       </View>
                     </View>
@@ -307,9 +329,9 @@ export default function TicketDetail({ navigation, route }: any) {
           />
 
           {/* Pagination Indicator */}
-          {order.items && order.items.length > 1 && (
+          {ticketPages.length > 1 && (
             <View className="flex-row justify-center mb-4">
-              {order.items.map((_: any, i: number) => (
+              {ticketPages.map((_: any, i: number) => (
                 <View
                   key={i}
                   style={{ width: i === activeIndex ? 16 : 6, height: 6, borderRadius: 3, marginHorizontal: 4, backgroundColor: i === activeIndex ? colors.accent : colors.border }}
@@ -359,3 +381,23 @@ export default function TicketDetail({ navigation, route }: any) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  heroWrapper: {
+    width: '100%',
+    height: 180,
+    position: 'relative',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(10,0,20,0.28)',
+  },
+});

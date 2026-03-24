@@ -46,6 +46,111 @@
   - Nếu đang chọn event A -> AI trả lời dựa trên dữ liệu event A
   - Có thể kèm KPI/event summary vào prompt
 
+### 2.2.1 Plan triển khai để clear task (step-by-step)
+
+**Mục tiêu hoàn thành:**
+- Organizer có thể bấm quick prompt và nhận câu trả lời theo đúng event đang chọn.
+- AI không trả lời chung chung; có dựa vào KPI/check-in/zone/voucher.
+- Có fallback an toàn khi thiếu dữ liệu hoặc AI lỗi.
+
+**Phạm vi kỹ thuật:**
+- Mobile FE: `AIAssistant.tsx`, `aiAssistantService.ts`, tạo component quick prompt.
+- Backend BE: thêm API proxy AI + API context event.
+- Dữ liệu đầu vào context: KPI today, check-in rate, zone occupancy, failed payment trend, voucher usage.
+
+#### Giai đoạn 1 - FE quick prompts (0.5-1 ngày)
+- Task:
+  - Thêm cụm nút gợi ý trong `AIAssistant.tsx`:
+    - "Checklist trước giờ diễn"
+    - "Gợi ý giá vé"
+    - "Tối ưu seat map"
+    - "Xử lý check-in fail"
+  - Khi bấm nút: tự fill input hoặc gửi trực tiếp.
+- Kết quả đầu ra:
+  - UI ổn định trên màn hình nhỏ.
+  - Organizer thao tác được trong <= 2 chạm.
+- Done khi:
+  - Bấm đủ 4 nút đều tạo được câu hỏi đúng format.
+
+#### Giai đoạn 2 - Event context selector (1 ngày)
+- Task:
+  - Thêm event selector trong `AIAssistant.tsx` (lấy từ `LayoutAPI.listLayouts()` hoặc danh sách event manage).
+  - Lưu `selectedEventId` trong state.
+  - Gắn `selectedEventId` vào payload gọi AI.
+- Kết quả đầu ra:
+  - AI biết organizer đang hỏi cho event nào.
+- Done khi:
+  - Chuyển event A/B, câu trả lời AI thay đổi tương ứng context.
+
+#### Giai đoạn 3 - API context backend (1-2 ngày)
+- Task:
+  - Tạo endpoint:
+    - `GET /api/organizer/events/:eventId/context-for-ai`
+  - Trả về dữ liệu tối thiểu:
+    - `revenueToday`, `ticketsSoldToday`, `checkinRate`, `scanFailRate10m`, `topZones`, `topVouchers`.
+- Kết quả đầu ra:
+  - FE không phải tự gom dữ liệu rời rạc từ nhiều service.
+- Done khi:
+  - API trả về < 500ms ở dữ liệu trung bình (có cache ngắn).
+
+#### Giai đoạn 4 - Chuyển AI call qua backend proxy (1 ngày)
+- Task:
+  - Tạo endpoint:
+    - `POST /api/ai/organizer-assistant`
+  - Payload:
+    - `eventId`, `question`, `context` (hoặc backend tự fetch context).
+  - Mobile gọi endpoint backend thay vì gọi trực tiếp Groq.
+- Kết quả đầu ra:
+  - Không lộ API key trên mobile.
+- Done khi:
+  - Xóa usage key provider khỏi luồng runtime mobile.
+
+#### Giai đoạn 5 - Prompt strategy + guardrail (0.5-1 ngày)
+- Task:
+  - Chuẩn hóa system prompt theo vai trò organizer.
+  - Bắt buộc AI:
+    - Ưu tiên hành động cụ thể từng bước.
+    - Nếu thiếu data thì nói rõ thiếu gì.
+    - Không đưa số liệu bịa.
+- Kết quả đầu ra:
+  - Câu trả lời thực dụng, ngắn gọn, làm được ngay.
+- Done khi:
+  - 10 câu test mẫu không có câu trả lời mơ hồ/ảo dữ liệu.
+
+#### Giai đoạn 6 - Test và hardening (1 ngày)
+- Task:
+  - Test happy path + lỗi mạng + timeout + 429 rate limit.
+  - Thêm retry nhẹ (1 lần) + fallback message.
+  - Log requestId để trace giữa FE/BE.
+- Kết quả đầu ra:
+  - Tính năng dùng ổn định trong điều kiện mạng thực tế.
+- Done khi:
+  - Không crash; lỗi hiển thị rõ, có hướng dẫn thao tác tiếp.
+
+### 2.2.2 Breakdown giao việc theo role
+
+- **Frontend mobile**
+  - [ ] UI quick prompts
+  - [ ] Event selector + state
+  - [ ] Call API context + API AI proxy
+  - [ ] Loading/error/retry state
+- **Backend**
+  - [ ] API context-for-ai
+  - [ ] API organizer-assistant proxy
+  - [ ] Cache context 30-60s
+  - [ ] Auth + RBAC organizer
+- **QA**
+  - [ ] Bộ test 15 câu hỏi organizer
+  - [ ] Test đổi event liên tục
+  - [ ] Test mất mạng và response chậm
+
+### 2.2.3 Acceptance criteria riêng cho task 2.2
+
+- Organizer bấm quick prompt và có phản hồi trong <= 4 giây (mạng ổn định).
+- AI phản hồi có nhắc đúng event đang chọn.
+- Khi thiếu dữ liệu event, AI trả lời "thiếu dữ liệu X" thay vì bịa số.
+- Khi AI lỗi/timeouts, app có fallback message và không văng màn hình.
+
 ## 2.3 Nghiệp vụ nâng cao trên mobile (ngoài MVP)
 
 Mục tiêu của phần này là tăng năng lực vận hành tại hiện trường. Ưu tiên theo impact/effort:

@@ -31,6 +31,9 @@ import AIAssistant from '../screens/AIAssistant';
 import EventAnalytics from '../screens/organizer/EventAnalytics';
 import EventTimeline from '../screens/EventTimeline';
 import VoucherManagement from '../screens/VoucherManagement';
+import NewsFeed from '../screens/NewsFeed';
+import NewsDetail from '../screens/NewsDetail';
+import NewsManager from '../screens/organizer/NewsManager';
 
 const Stack = createNativeStackNavigator();
 
@@ -71,6 +74,9 @@ export default function AppNavigator() {
           <Stack.Screen name="EventAnalytics" component={EventAnalytics} />
           <Stack.Screen name="EventTimeline" component={EventTimeline} />
           <Stack.Screen name="VoucherManagement" component={VoucherManagement} />
+          <Stack.Screen name="NewsFeed" component={NewsFeed} />
+          <Stack.Screen name="NewsDetail" component={NewsDetail} />
+          <Stack.Screen name="NewsManager" component={NewsManager} />
         </Stack.Group>
       ) : (
         // User is NOT signed in

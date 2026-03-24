@@ -6,6 +6,7 @@ type AskAIParams = {
   firstName?: string;
   message: string;
   events?: EventLayout[];
+  selectedEvent?: EventLayout | null;
 };
 
 type GroqMessage = {
@@ -33,7 +34,17 @@ function buildSystemPrompt(role?: UserRoleMobile, firstName?: string): string {
   return `${basePrompt} ${rolePrompt} ${namePrompt} Nếu không chắc chắn, hãy nói rõ giả định của bạn.`;
 }
 
-function buildEventContext(events: EventLayout[]): string {
+function buildEventContext(events: EventLayout[], selectedEvent?: EventLayout | null): string {
+  const selectedEventContext = selectedEvent
+    ? [
+        `Sự kiện đang chọn:`,
+        `- Tên: ${selectedEvent.eventName || 'N/A'}`,
+        `- Địa điểm: ${selectedEvent.eventLocation || 'N/A'}`,
+        `- Giá vé thấp nhất: ${selectedEvent.minPrice ?? 'N/A'}`,
+        `- Số zone: ${selectedEvent.zones?.length ?? 0}`,
+      ].join('\n')
+    : 'Chưa chọn sự kiện cụ thể.';
+
   if (!events.length) return 'Hiện chưa có dữ liệu sự kiện.';
 
   const list = events
@@ -44,7 +55,7 @@ function buildEventContext(events: EventLayout[]): string {
     )
     .join('\n');
 
-  return `Một số sự kiện hiện có trong hệ thống:\n${list}`;
+  return `${selectedEventContext}\n\nMột số sự kiện hiện có trong hệ thống:\n${list}`;
 }
 
 function getProvider(): string {
@@ -70,7 +81,7 @@ export async function askAIAssistant(params: AskAIParams): Promise<string | null
     },
     {
       role: 'user',
-      content: `${buildEventContext(params.events || [])}\n\nCâu hỏi: ${params.message}`,
+      content: `${buildEventContext(params.events || [], params.selectedEvent)}\n\nCâu hỏi: ${params.message}`,
     },
   ];
 

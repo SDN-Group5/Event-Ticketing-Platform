@@ -8,7 +8,8 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   Image,
-  ActivityIndicator
+  ActivityIndicator,
+  ScrollView
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -32,7 +33,14 @@ export default function AIAssistant({ navigation }: any) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [allEvents, setAllEvents] = useState<EventLayout[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const organizerQuickPrompts = [
+    'Checklist trước giờ diễn',
+    'Gợi ý giá vé theo tình hình bán',
+    'Tối ưu seat map để tăng lấp đầy',
+    'Xử lý khi check-in fail tăng cao',
+  ];
 
   useEffect(() => {
     // Initial greeting
@@ -56,24 +64,31 @@ export default function AIAssistant({ navigation }: any) {
   async function loadEvents() {
     try {
       const data = await LayoutAPI.listLayouts();
-      setAllEvents(Array.isArray(data) ? data : []);
+      const events = Array.isArray(data) ? data : [];
+      setAllEvents(events);
+      if (events.length > 0) {
+        setSelectedEventId(events[0].eventId);
+      }
     } catch (error) {
       console.error('Failed to load events for AI:', error);
     }
   }
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const selectedEvent = allEvents.find(event => event.eventId === selectedEventId) || null;
+
+  const handleSend = async (manualText?: string) => {
+    const outgoingText = (manualText ?? input).trim();
+    if (!outgoingText) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
-      text: input,
+      text: outgoingText,
       sender: 'user',
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMsg]);
-    const currentInput = input.toLowerCase();
+    const currentInput = outgoingText.toLowerCase();
     setInput('');
     setIsTyping(true);
 
@@ -125,6 +140,7 @@ export default function AIAssistant({ navigation }: any) {
         firstName: user?.firstName,
         message: text,
         events: allEvents,
+        selectedEvent,
       });
 
       if (aiAnswer) {
@@ -236,6 +252,57 @@ export default function AIAssistant({ navigation }: any) {
           </View>
         ) : null}
       />
+
+      {user?.role === 'organizer' && (
+        <View style={{ paddingHorizontal: 12, paddingBottom: 8, backgroundColor: colors.surface }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {allEvents.slice(0, 10).map(event => {
+              const isActive = event.eventId === selectedEventId;
+              return (
+                <TouchableOpacity
+                  key={event.eventId}
+                  onPress={() => setSelectedEventId(event.eventId)}
+                  style={{
+                    marginRight: 8,
+                    borderRadius: 14,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderWidth: 1,
+                    borderColor: isActive ? colors.accent : colors.border,
+                    backgroundColor: isActive ? colors.accent + '22' : colors.background,
+                  }}
+                >
+                  <Text style={{ color: isActive ? colors.accent : colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
+                    {event.eventName || 'Untitled Event'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+            {organizerQuickPrompts.map(prompt => (
+              <TouchableOpacity
+                key={prompt}
+                onPress={() => {
+                  void handleSend(prompt);
+                }}
+                style={{
+                  marginRight: 8,
+                  borderRadius: 14,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderWidth: 1,
+                  borderColor: colors.accentSecondary,
+                  backgroundColor: colors.background,
+                }}
+              >
+                <Text style={{ color: colors.text, fontSize: 12 }}>{prompt}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       <View style={{ padding: 16, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: 25, paddingHorizontal: 16, paddingVertical: 4, borderWidth: 1, borderColor: colors.border }}>
